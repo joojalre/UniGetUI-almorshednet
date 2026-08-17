@@ -167,6 +167,7 @@ public partial class PackagesPageViewModel : ViewModelBase
     [ObservableProperty] private bool _noPackagesImageVisible;
     [ObservableProperty] private string _backgroundText = "";
     [ObservableProperty] private bool _sourcesPlaceholderVisible = true;
+    [ObservableProperty] private string _sourcesPlaceholderText = "";
     [ObservableProperty] private bool _sourcesTreeVisible;
     [ObservableProperty] private bool _megaQueryVisible;
     [ObservableProperty] private string _megaQueryText = "";
@@ -248,6 +249,12 @@ public partial class PackagesPageViewModel : ViewModelBase
         NewVersionHeaderVisible = RoleIsUpdateLike;
         ReloadButtonVisible = !DisableReload;
         SearchBoxPlaceholder = CoreTools.Translate("Search for packages");
+        // Pages that load their contents automatically (Updates, Installed) never require the
+        // user to search, so the "search to start" hint is misleading when they legitimately
+        // hold no packages. Both strings already exist in every language file.
+        SourcesPlaceholderText = CoreTools.Translate(
+            LoadsOnStart ? "No packages were found" : "Search for packages to start"
+        );
 
         AllPackagesChecked = data.PackagesAreCheckedByDefault;
         FilteredPackages.SelectionStateChanged += (_, _) =>
@@ -757,6 +764,8 @@ public partial class PackagesPageViewModel : ViewModelBase
         RootNodeForManager.Clear();
         NodesForSources.Clear();
         _localPackagesNode.Children.Clear();
+        SourcesPlaceholderVisible = true;
+        SourcesTreeVisible = false;
     }
 
     private void AddRootSourceNode(SourceTreeNode node)
