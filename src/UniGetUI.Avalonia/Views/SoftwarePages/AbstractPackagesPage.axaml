@@ -257,7 +257,7 @@
                             </Expander.Header>
                             <StackPanel Orientation="Vertical">
                                 <TextBlock x:Name="SourcesPlaceholderText"
-                                           Text="{t:Translate Search for packages to start}"
+                                           Text="{Binding SourcesPlaceholderText}"
                                            MinHeight="60"
                                            HorizontalAlignment="Center"
                                            VerticalAlignment="Center"
