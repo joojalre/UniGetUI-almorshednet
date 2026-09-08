@@ -4,6 +4,8 @@ namespace UniGetUI.Core.Classes.Tests;
 
 public class TaskRecyclerTests
 {
+    private static readonly TimeSpan TestTimeout = TimeSpan.FromSeconds(30);
+
     private int MySlowMethod1()
     {
         Thread.Sleep(1000);
@@ -148,6 +150,226 @@ public class TaskRecyclerTests
 
         Assert.Equal(42, result);
         Assert.Equal(2, calls);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task CompletedZeroCacheTaskIsEvictedBeforePublishingResult(bool returnsVoid)
+    {
+        int calls = 0;
+        Func<int> method = () => Interlocked.Increment(ref calls);
+        Action action = () => method();
+        Task Invoke() => returnsVoid
+            ? TaskRecycler<int>.RunOrAttachAsync_VOID(action)
+            : TaskRecycler<int>.RunOrAttachAsync(method);
+
+        using var scheduler = new CompletionBarrierScheduler();
+        Task first = Task.Factory.StartNew(
+            Invoke, CancellationToken.None, TaskCreationOptions.None, scheduler
+        ).Unwrap();
+
+        int callsAfterObservedCompletion;
+        try
+        {
+            await scheduler.WorkCompleted.WaitAsync(TestTimeout);
+            await Invoke().WaitAsync(TestTimeout);
+            callsAfterObservedCompletion = Volatile.Read(ref calls);
+            await Invoke().WaitAsync(TestTimeout);
+        }
+        finally
+        {
+            scheduler.Release();
+            await first.WaitAsync(TestTimeout);
+        }
+
+        Assert.Equal(callsAfterObservedCompletion + 1, calls);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task FaultedTaskWithCacheIsEvictedBeforePublishingFailure(bool returnsVoid)
+    {
+        int calls = 0;
+        Func<int> method = () =>
+        {
+            if (Interlocked.Increment(ref calls) == 1)
+                throw new InvalidOperationException("Expected first attempt failure");
+            return 42;
+        };
+        Action action = () => method();
+        Task Invoke() => returnsVoid
+            ? TaskRecycler<int>.RunOrAttachAsync_VOID(action, 60)
+            : TaskRecycler<int>.RunOrAttachAsync(method, 60);
+
+        using var scheduler = new CompletionBarrierScheduler();
+        Task first = Task.Factory.StartNew(
+            Invoke, CancellationToken.None, TaskCreationOptions.None, scheduler
+        ).Unwrap();
+
+        Exception? retryError;
+        try
+        {
+            await scheduler.WorkCompleted.WaitAsync(TestTimeout);
+            _ = await Record.ExceptionAsync(() => Invoke().WaitAsync(TestTimeout));
+            retryError = await Record.ExceptionAsync(() => Invoke().WaitAsync(TestTimeout));
+        }
+        finally
+        {
+            scheduler.Release();
+            await Assert.ThrowsAsync<InvalidOperationException>(() => first.WaitAsync(TestTimeout));
+        }
+
+        Assert.Null(retryError);
+        Assert.Equal(2, calls);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task SuccessfulCacheKeepsTheCreatorsLifetime(bool returnsVoid)
+    {
+        int calls = 0;
+        Func<int> method = () => Interlocked.Increment(ref calls);
+        Action action = () => method();
+        Task Invoke(int cacheTimeSecs) => returnsVoid
+            ? TaskRecycler<int>.RunOrAttachAsync_VOID(action, cacheTimeSecs)
+            : TaskRecycler<int>.RunOrAttachAsync(method, cacheTimeSecs);
+
+        using var scheduler = new CompletionBarrierScheduler();
+        Task first = Task.Factory.StartNew(
+            () => Invoke(60), CancellationToken.None, TaskCreationOptions.None, scheduler
+        ).Unwrap();
+
+        try
+        {
+            await scheduler.WorkCompleted.WaitAsync(TestTimeout);
+            await Invoke(0).WaitAsync(TestTimeout);
+            await Invoke(0).WaitAsync(TestTimeout);
+        }
+        finally
+        {
+            scheduler.Release();
+            await first.WaitAsync(TestTimeout);
+        }
+
+        Assert.Equal(1, calls);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ConcurrentCallsShareTheInFlightTask(bool returnsVoid)
+    {
+        int calls = 0;
+        var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var release = new ManualResetEventSlim();
+        Func<int> method = () =>
+        {
+            Interlocked.Increment(ref calls);
+            entered.SetResult();
+            if (!release.Wait(TestTimeout))
+                throw new TimeoutException("The test did not release the in-flight task");
+            return 42;
+        };
+        Action action = () => method();
+        Task Invoke() => returnsVoid
+            ? TaskRecycler<int>.RunOrAttachAsync_VOID(action)
+            : TaskRecycler<int>.RunOrAttachAsync(method);
+
+        Task first = Invoke();
+        Task? attached = null;
+        try
+        {
+            await entered.Task.WaitAsync(TestTimeout);
+            attached = Invoke();
+            Assert.Same(first, attached);
+            Assert.Equal(1, Volatile.Read(ref calls));
+        }
+        finally
+        {
+            release.Set();
+            await first.WaitAsync(TestTimeout);
+            if (attached is not null)
+                await attached.WaitAsync(TestTimeout);
+        }
+    }
+
+    [Fact]
+    public async Task OlderCompletionCannotEvictAReplacementCacheEntry()
+    {
+        int calls = 0;
+        var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var release = new ManualResetEventSlim();
+        Func<int> method = () =>
+        {
+            int call = Interlocked.Increment(ref calls);
+            if (call == 1)
+            {
+                entered.SetResult();
+                if (!release.Wait(TestTimeout))
+                    throw new TimeoutException("The test did not release the older task");
+            }
+            return call;
+        };
+        Task<int> first = TaskRecycler<int>.RunOrAttachAsync(method);
+
+        int replacement;
+        try
+        {
+            await entered.Task.WaitAsync(TestTimeout);
+            TaskRecycler<int>.RemoveFromCache(method);
+            replacement = await TaskRecycler<int>.RunOrAttachAsync(method, 60).WaitAsync(TestTimeout);
+        }
+        finally
+        {
+            release.Set();
+            await first.WaitAsync(TestTimeout);
+        }
+
+        int cached = await TaskRecycler<int>.RunOrAttachAsync(method).WaitAsync(TestTimeout);
+        Assert.Equal(2, replacement);
+        Assert.Equal(replacement, cached);
+        Assert.Equal(2, calls);
+        TaskRecycler<int>.RemoveFromCache(method);
+    }
+
+    /// <summary>
+    /// Holds the caller inside Start after its nested work has finished, so callers can
+    /// observe completion before any cleanup registered after Start gets a chance to run.
+    /// </summary>
+    private sealed class CompletionBarrierScheduler : TaskScheduler, IDisposable
+    {
+        private readonly TaskCompletionSource _workCompleted = new(
+            TaskCreationOptions.RunContinuationsAsynchronously
+        );
+        private readonly ManualResetEventSlim _release = new();
+
+        public Task WorkCompleted => _workCompleted.Task;
+
+        public void Release() => _release.Set();
+
+        protected override void QueueTask(Task task)
+        {
+            if (Current == this)
+            {
+                TryExecuteTask(task);
+                _workCompleted.SetResult();
+                if (!_release.Wait(TestTimeout))
+                    throw new TimeoutException("The test did not release the completed task");
+            }
+            else
+            {
+                ThreadPool.QueueUserWorkItem(_ => TryExecuteTask(task));
+            }
+        }
+
+        protected override bool TryExecuteTaskInline(Task task, bool taskWasPreviouslyQueued) => false;
+
+        protected override IEnumerable<Task> GetScheduledTasks() => [];
+
+        public void Dispose() => _release.Dispose();
     }
 
     [Fact]

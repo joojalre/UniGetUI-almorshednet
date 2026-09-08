@@ -6,6 +6,11 @@ on:
       - 'global.json'
       - '**.cs'
       - '**.axaml'
+      - '**.xaml'
+      - '.gitattributes'
+      - 'src/ExternalLibraries.Avalonia.DataGrid/**'
+      - 'scripts/verify-datagrid-*.ps1'
+      - 'scripts/verify-unigetui-nativeaot.ps1'
       - '**.csproj'
       - '**.props'
       - '**.targets'
@@ -20,6 +25,11 @@ on:
       - 'global.json'
       - '**.cs'
       - '**.axaml'
+      - '**.xaml'
+      - '.gitattributes'
+      - 'src/ExternalLibraries.Avalonia.DataGrid/**'
+      - 'scripts/verify-datagrid-*.ps1'
+      - 'scripts/verify-unigetui-nativeaot.ps1'
       - '**.csproj'
       - '**.props'
       - '**.targets'
@@ -59,12 +69,18 @@ jobs:
       working-directory: src
       run: dotnet restore UniGetUI.Windows.slnx
 
+    - name: Verify maintained DataGrid provenance and production comparer fixtures
+      shell: pwsh
+      run: |
+        ./scripts/verify-datagrid-provenance.ps1
+        ./scripts/verify-datagrid-production-extracts.ps1 -RepositoryRoot . -FixtureRoot src/UniGetUI.Avalonia.DataGrid.NativeAotTests/Ui
+
     - name: Check whitespace formatting
-      run: dotnet format whitespace src --folder --verify-no-changes --verbosity minimal
+      run: dotnet format whitespace src --folder --verify-no-changes --verbosity minimal --exclude ExternalLibraries.Avalonia.DataGrid/
 
     - name: Check code style formatting (Avalonia Windows solution)
       working-directory: src
-      run: dotnet format style UniGetUI.Windows.slnx --no-restore --verify-no-changes --verbosity minimal
+      run: dotnet format style UniGetUI.Windows.slnx --no-restore --verify-no-changes --verbosity minimal --exclude ExternalLibraries.Avalonia.DataGrid/
 
     - name: Build Avalonia Windows solution
       working-directory: src
@@ -91,33 +107,48 @@ jobs:
           --self-contained true `
           --output "${{ runner.temp }}\unigetui-full-trim-publish" `
           /p:Platform=x64 `
+          /p:PublishAot=false `
           /p:TrimMode=full `
           /p:TrimmerSingleWarn=false `
           /p:UseSharedCompilation=false `
           --verbosity minimal
 
-    - name: Report NativeAOT publish warnings
-      working-directory: src
+    - name: Verify NativeAOT application artifact
       shell: pwsh
       run: |
-        dotnet build-server shutdown
-        dotnet restore UniGetUI.Avalonia/UniGetUI.Avalonia.csproj `
-          --runtime win-x64 `
-          /p:Configuration=Release `
-          /p:PublishAot=true `
-          /p:SelfContained=true
-        dotnet publish UniGetUI.Avalonia/UniGetUI.Avalonia.csproj `
-          --no-restore `
-          --configuration Release `
-          --runtime win-x64 `
-          --self-contained true `
-          --output "${{ runner.temp }}\unigetui-nativeaot-publish" `
-          /m:1 `
-          /p:Platform=x64 `
-          /p:PublishProfile=Win-x64-NativeAot `
-          /p:TrimmerSingleWarn=false `
-          /p:UseSharedCompilation=false `
-          --verbosity minimal
-        if (-not (Test-Path "${{ runner.temp }}\unigetui-nativeaot-publish\UniGetUI.exe")) {
-          throw "NativeAOT publish did not produce UniGetUI.exe."
-        }
+        $ErrorActionPreference = 'Stop'
+        $evidence = "${{ runner.temp }}/unigetui-native-validation/app"
+        if (Test-Path -LiteralPath $evidence) { throw 'Native evidence directory must be fresh.' }
+        New-Item -ItemType Directory -Path $evidence | Out-Null
+        dotnet restore src/UniGetUI.Avalonia/UniGetUI.Avalonia.csproj `
+          --runtime win-x64 /p:Configuration=Release /p:Platform=x64 /p:PublishProfile=Win-x64-NativeAot /p:PublishAot=true /p:SelfContained=true `
+          2>&1 | Tee-Object -FilePath "$evidence/restore.log"
+        if ($LASTEXITCODE -ne 0) { throw 'NativeAOT application restore failed.' }
+        dotnet publish src/UniGetUI.Avalonia/UniGetUI.Avalonia.csproj `
+          --no-restore --configuration Release --runtime win-x64 --self-contained true `
+          --output "$evidence/native" /m:1 /p:Platform=x64 /p:PublishProfile=Win-x64-NativeAot `
+          /p:ILLinkTreatWarningsAsErrors=true /p:IlcTreatWarningsAsErrors=true `
+          /p:TrimmerSingleWarn=false /p:UseSharedCompilation=false --verbosity minimal `
+          2>&1 | Tee-Object -FilePath "$evidence/publish.log"
+        if ($LASTEXITCODE -ne 0) { throw 'NativeAOT application publish failed.' }
+        dotnet msbuild src/UniGetUI.Avalonia/UniGetUI.Avalonia.csproj `
+          -p:Configuration=Release -p:RuntimeIdentifier=win-x64 -p:Platform=x64 `
+          -p:PublishProfile=Win-x64-NativeAot -p:PublishAot=true -p:SelfContained=true `
+          -getProperty:PublishAot,NativeCompilationDuringPublish,NativeBinary,NativeObject,NativeIntermediateOutputPath,TargetName,MSBuildProjectDirectory `
+          -nologo > "$evidence/native-properties.json"
+        if ($LASTEXITCODE -ne 0) { throw 'NativeAOT build metadata evaluation failed.' }
+        ./scripts/verify-unigetui-nativeaot.ps1 -OutputDirectory "$evidence/native" -PublishLog "$evidence/publish.log" -NativePropertiesPath "$evidence/native-properties.json"
+
+    - name: Run DataGrid JIT and NativeAOT acceptance
+      shell: pwsh
+      run: ./scripts/verify-datagrid-aot.ps1 -OutputDirectory "${{ runner.temp }}/unigetui-native-validation/datagrid" -RuntimeIdentifier win-x64
+
+    - name: Retain NativeAOT validation evidence
+      if: always()
+      uses: actions/upload-artifact@v7
+      with:
+        name: nativeaot-validation-${{ github.run_id }}-${{ github.run_attempt }}
+        path: |
+          ${{ runner.temp }}/unigetui-native-validation/**/*.log
+          ${{ runner.temp }}/unigetui-native-validation/**/*.json
+        if-no-files-found: warn

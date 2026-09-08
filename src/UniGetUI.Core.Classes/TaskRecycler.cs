@@ -108,11 +108,12 @@ public static class TaskRecycler<ReturnT>
 
     private static Task _runTaskAndWait_VOID(Task task, int hash, int cacheTimeSecs)
     {
-        Task cachedTask = _tasks_VOID.GetOrAdd(hash, task);
-        if (ReferenceEquals(cachedTask, task))
+        TaskCompletionSource completion = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        Task cachedTask = _tasks_VOID.GetOrAdd(hash, completion.Task);
+        if (ReferenceEquals(cachedTask, completion.Task))
         {
+            _ = _completeAndScheduleCacheRemoval_VOID(hash, task, completion, cacheTimeSecs);
             task.Start();
-            _ = _scheduleCacheRemoval_VOID(hash, task, cacheTimeSecs);
         }
         else
         {
@@ -124,11 +125,12 @@ public static class TaskRecycler<ReturnT>
 
     private static Task<ReturnT> _runTaskAndWait(Task<ReturnT> task, int hash, int cacheTimeSecs)
     {
-        Task<ReturnT> cachedTask = _tasks.GetOrAdd(hash, task);
-        if (ReferenceEquals(cachedTask, task))
+        TaskCompletionSource<ReturnT> completion = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        Task<ReturnT> cachedTask = _tasks.GetOrAdd(hash, completion.Task);
+        if (ReferenceEquals(cachedTask, completion.Task))
         {
+            _ = _completeAndScheduleCacheRemoval(hash, task, completion, cacheTimeSecs);
             task.Start();
-            _ = _scheduleCacheRemoval(hash, task, cacheTimeSecs);
         }
         else
         {
@@ -138,36 +140,69 @@ public static class TaskRecycler<ReturnT>
         return cachedTask;
     }
 
-    private static Task _scheduleCacheRemoval(int hash, Task<ReturnT> task, int cacheTimeSecs) =>
+    private static Task _completeAndScheduleCacheRemoval(
+        int hash,
+        Task<ReturnT> task,
+        TaskCompletionSource<ReturnT> completion,
+        int cacheTimeSecs
+    ) =>
         task.ContinueWith(
-                completedTask => _removeFromCache(hash, completedTask, cacheTimeSecs),
-                CancellationToken.None,
-                TaskContinuationOptions.ExecuteSynchronously,
-                TaskScheduler.Default
-            )
-            .Unwrap();
+            completedTask =>
+            {
+                // Evict before publishing completion so an immediate retry cannot attach to stale work.
+                if (completedTask.IsCompletedSuccessfully && cacheTimeSecs > 0)
+                    _ = _removeFromCache(hash, completion.Task, cacheTimeSecs);
+                else
+                    ((ICollection<KeyValuePair<int, Task<ReturnT>>>)_tasks).Remove(new(hash, completion.Task));
 
-    private static Task _scheduleCacheRemoval_VOID(int hash, Task task, int cacheTimeSecs) =>
+                if (completedTask.IsCompletedSuccessfully)
+                    completion.SetResult(completedTask.Result);
+                else if (completedTask.IsCanceled)
+                    completion.SetCanceled();
+                else
+                    completion.SetException(completedTask.Exception!.InnerExceptions);
+            },
+            CancellationToken.None,
+            TaskContinuationOptions.ExecuteSynchronously,
+            TaskScheduler.Default
+        );
+
+    private static Task _completeAndScheduleCacheRemoval_VOID(
+        int hash,
+        Task task,
+        TaskCompletionSource completion,
+        int cacheTimeSecs
+    ) =>
         task.ContinueWith(
-                completedTask => _removeFromCache_VOID(hash, completedTask, cacheTimeSecs),
-                CancellationToken.None,
-                TaskContinuationOptions.ExecuteSynchronously,
-                TaskScheduler.Default
-            )
-            .Unwrap();
+            completedTask =>
+            {
+                if (completedTask.IsCompletedSuccessfully && cacheTimeSecs > 0)
+                    _ = _removeFromCache_VOID(hash, completion.Task, cacheTimeSecs);
+                else
+                    ((ICollection<KeyValuePair<int, Task>>)_tasks_VOID).Remove(new(hash, completion.Task));
+
+                if (completedTask.IsCompletedSuccessfully)
+                    completion.SetResult();
+                else if (completedTask.IsCanceled)
+                    completion.SetCanceled();
+                else
+                    completion.SetException(completedTask.Exception!.InnerExceptions);
+            },
+            CancellationToken.None,
+            TaskContinuationOptions.ExecuteSynchronously,
+            TaskScheduler.Default
+        );
 
     private static async Task _removeFromCache(int hash, Task<ReturnT> task, int cacheTimeSecs)
     {
-        if (task.IsCompletedSuccessfully && cacheTimeSecs > 0)
-            await Task.Delay(TimeSpan.FromSeconds(cacheTimeSecs)).ConfigureAwait(false);
+        await Task.Delay(TimeSpan.FromSeconds(cacheTimeSecs)).ConfigureAwait(false);
 
         ((ICollection<KeyValuePair<int, Task<ReturnT>>>)_tasks).Remove(new(hash, task));
     }
 
     private static async Task _removeFromCache_VOID(int hash, Task task, int cacheTimeSecs)
     {
-        if (task.IsCompletedSuccessfully && cacheTimeSecs > 0)
-            await Task.Delay(TimeSpan.FromSeconds(cacheTimeSecs)).ConfigureAwait(false);
+        await Task.Delay(TimeSpan.FromSeconds(cacheTimeSecs)).ConfigureAwait(false);
 
         ((ICollection<KeyValuePair<int, Task>>)_tasks_VOID).Remove(new(hash, task));
     }

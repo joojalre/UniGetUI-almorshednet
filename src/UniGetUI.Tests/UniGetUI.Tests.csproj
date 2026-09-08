@@ -13,6 +13,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
         <PackageReference Include="coverlet.collector" Version="6.0.4">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -30,6 +31,7 @@
     </ItemGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\ExternalLibraries.Avalonia.DataGrid\ExternalLibraries.Avalonia.DataGrid.csproj" />
         <ProjectReference Include="..\UniGetUI.Interface.IpcApi\UniGetUI.Interface.IpcApi.csproj" />
         <ProjectReference Include="..\UniGetUI.Core.Data\UniGetUI.Core.Data.csproj" />
         <ProjectReference Include="..\UniGetUI.Core.Logger\UniGetUI.Core.Logging.csproj" />
@@ -43,8 +45,12 @@
     </ItemGroup>
 
     <ItemGroup>
+        <Compile Include="..\UniGetUI.Avalonia\ViewModels\DialogPages\ManageShortcutsViewModel.cs" Link="ViewModels\ManageShortcutsViewModel.cs" />
+        <Compile Include="..\UniGetUI.Avalonia\Models\DataGridObservableCollection.cs" Link="Models\DataGridObservableCollection.cs" />
         <Compile Include="..\SharedAssemblyInfo.cs" Link="SharedAssemblyInfo.cs" />
         <Compile Include="..\Shared\SharedPreUiCommandDispatcher.cs" Link="Shared\SharedPreUiCommandDispatcher.cs" />
+        <Compile Include="..\Shared\StartupBundleArguments.cs" Link="Shared\StartupBundleArguments.cs" />
         <Compile Include="..\Shared\AutoUpdater.Helpers.cs" Link="AutoUpdater.Helpers.cs" />
+        <Compile Include="..\Shared\AutoUpdater.InstallerArguments.cs" Link="Shared\AutoUpdater.InstallerArguments.cs" />
     </ItemGroup>
 </Project>

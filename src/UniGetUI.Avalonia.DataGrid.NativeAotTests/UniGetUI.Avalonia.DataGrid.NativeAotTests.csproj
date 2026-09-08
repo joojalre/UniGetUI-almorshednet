@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <TargetFrameworks />
+        <OutputType>Exe</OutputType>
+        <AssemblyName>UniGetUI.Avalonia.DataGrid.NativeAotTests</AssemblyName>
+        <RootNamespace>UniGetUI.Avalonia.DataGrid.NativeAotTests</RootNamespace>
+        <StartupObject>UniGetUI.Avalonia.DataGrid.NativeAotTests.Program</StartupObject>
+        <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+        <IsPackable>false</IsPackable>
+        <PublishReadyToRun>false</PublishReadyToRun>
+        <IsAotCompatible>true</IsAotCompatible>
+        <PublishTrimmed>true</PublishTrimmed>
+        <TrimMode>full</TrimMode>
+        <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+        <DefineConstants>$(DefineConstants);PATCHED_DATAGRID</DefineConstants>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+        <PublishAot>true</PublishAot>
+        <SelfContained>true</SelfContained>
+    </PropertyGroup>
+    <ItemGroup>
+        <PackageReference Include="Avalonia" Version="12.0.4" />
+        <PackageReference Include="Avalonia.Headless" Version="12.0.4" />
+        <PackageReference Include="Avalonia.Themes.Fluent" Version="12.0.4" />
+        <ProjectReference Include="../ExternalLibraries.Avalonia.DataGrid/ExternalLibraries.Avalonia.DataGrid.csproj" />
+        <Compile Include="../UniGetUI.Avalonia/Models/DataGridObservableCollection.cs" Link="Models/DataGridObservableCollection.cs" />
+    </ItemGroup>
+    <Import Project="../DataGrid.AotContract.targets" />
+</Project>

@@ -33,7 +33,7 @@ jobs:
             daemon_project: UniGetUI.Avalonia/UniGetUI.Avalonia.csproj
             daemon_publish_profile: Win-x64-NativeAot
             daemon_build_args: '-p:Platform=x64'
-            manifest: testing/automation/cli-e2e.manifest.windows.json
+            manifest: testing/automation/cli-e2e.manifest.windows-nativeaot.json
           - name: Linux (Avalonia)
             os: ubuntu-latest
             solution: UniGetUI.Avalonia.slnx
@@ -121,7 +121,22 @@ jobs:
             if ($BuildArgs) {
               $args += $BuildArgs
             }
-            dotnet @args
+            $publishLog = Join-Path $OutputPath 'publish.log'
+            dotnet @args 2>&1 | Tee-Object -FilePath $publishLog
+            if ($LASTEXITCODE -ne 0) {
+              throw 'NativeAOT daemon publish failed.'
+            }
+
+            if ('${{ runner.os }}' -eq 'Windows') {
+              $nativeProperties = Join-Path $OutputPath 'native-properties.json'
+              dotnet msbuild '${{ matrix.daemon_project }}' `
+                -p:Configuration=Release -p:RuntimeIdentifier=$RuntimeIdentifier -p:Platform=x64 `
+                -p:PublishProfile=$PublishProfile -p:PublishAot=true -p:SelfContained=true `
+                -getProperty:PublishAot,NativeCompilationDuringPublish,NativeBinary,NativeObject,NativeIntermediateOutputPath,TargetName,MSBuildProjectDirectory `
+                -nologo > $nativeProperties
+              if ($LASTEXITCODE -ne 0) { throw 'NativeAOT daemon metadata evaluation failed.' }
+              ../scripts/verify-unigetui-nativeaot.ps1 -OutputDirectory $OutputPath -PublishLog $publishLog -NativePropertiesPath $nativeProperties
+            }
 
             $exeName = if ('${{ runner.os }}' -eq 'Windows') { 'UniGetUI.exe' } else { 'UniGetUI' }
             $daemonExe = Join-Path $OutputPath $exeName
@@ -175,5 +190,9 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: cli-headless-e2e-${{ matrix.name }}
-          path: artifacts/cli-headless-e2e/${{ runner.os }}
+          path: |
+            artifacts/cli-headless-e2e/${{ runner.os }}
+            artifacts/e2e-nativeaot/**/publish.log
+            artifacts/e2e-nativeaot/**/native-properties.json
+            artifacts/e2e-nativeaot/**/app-artifact-verification.json
           if-no-files-found: warn

@@ -1,0 +1,701 @@
+--- a/Avalonia.Controls.DataGrid.csproj
++++ b/ExternalLibraries.Avalonia.DataGrid.csproj
+@@ -1,52 +1,32 @@
+ <Project Sdk="Microsoft.NET.Sdk">
+-
+   <PropertyGroup>
++    <TargetFramework>net10.0</TargetFramework>
++    <TargetFrameworks></TargetFrameworks>
+     <OutputType>Library</OutputType>
+-    <TargetFrameworks>$(AvsCurrentTargetFramework);$(AvsLegacyTargetFrameworks)</TargetFrameworks>
+-    <IsPackable>true</IsPackable>
++    <AssemblyName>Avalonia.Controls.DataGrid</AssemblyName>
++    <PackageId>Avalonia.Controls.DataGrid</PackageId>
++    <IsPackable>false</IsPackable>
++    <Product>Avalonia.Controls.DataGrid (UniGetUI maintained variant)</Product>
++    <Authors>Avalonia Team and the UniGetUI contributors</Authors>
++    <Company>AvaloniaUI Project</Company>
++    <Copyright>Copyright The AvaloniaUI Project and contributors; retained source notices apply.</Copyright>
++    <PublishReadyToRun>false</PublishReadyToRun>
++    <!-- Preserve upstream formatting; trim/AOT analysis remains enabled. -->
++    <EnforceCodeStyleInBuild>false</EnforceCodeStyleInBuild>
++    <RootNamespace>Avalonia.Controls</RootNamespace>
++    <Version>12.0.0</Version>
++    <AssemblyVersion>12.0.0.0</AssemblyVersion>
++    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+     <Nullable>enable</Nullable>
+-    <GenerateDocumentationFile>true</GenerateDocumentationFile>
++    <ImplicitUsings>enable</ImplicitUsings>
++    <IsAotCompatible>true</IsAotCompatible>
++    <UseSharedCompilation>false</UseSharedCompilation>
++    <PublicSign>false</PublicSign>
++    <DelaySign>true</DelaySign>
++    <SignAssembly>true</SignAssembly>
++    <AssemblyOriginatorKeyFile>provenance/avalonia.public.snk</AssemblyOriginatorKeyFile>
+   </PropertyGroup>
+-
+-  <ItemGroup>
+-    <AvaloniaXaml Include="Themes/**/*.xaml" />
+-  </ItemGroup>
+-
+-  <ItemGroup>
+-    <PackageReference Include="Avalonia" Version="$(AvaloniaVersion)" />
+-  </ItemGroup>
+-
+-  <ItemGroup Label="InternalsVisibleTo">
+-    <InternalsVisibleTo Include="Avalonia.Controls.DataGrid.UnitTests, PublicKey=$(AvaloniaPublicKey)" />
+-    <InternalsVisibleTo Include="Avalonia.DesignerSupport, PublicKey=$(AvaloniaPublicKey)" />
+-  </ItemGroup>
+-
+-  <Import Project="../../build/SharedVersion.props" />
+-
+-  <Target Name="UpdateCIBuildNumber"
+-          BeforeTargets="PreBuildEvent"
+-          Condition="'$(TargetFramework)' == '$(AvsCurrentTargetFramework)' And '$(CIBranchName)' != ''">
+-
+-    <Message Text="##vso[build.updatebuildnumber]$(Version)"
+-             Importance="high" />
+-
+-  </Target>
+-
+-  <Target Name="VerifyCIBranch"
+-          BeforeTargets="PreBuildEvent"
+-          Condition="'$(CIBranchName)' != ''">
+-
+-    <Message Text="Building non-release version $(Version) for $(TargetFramework)"
+-             Condition="'$(CIVersionSuffix)' != ''"
+-             Importance="high" />
+-
+-    <Message Text="Building RELEASE version $(Version) for $(TargetFramework)"
+-             Condition="'$(CIVersionSuffix)' == ''"
+-             Importance="high" />
+-
+-    <Error Text="Current release branch '$(CIBranchName)' does not match version '$(Version)'!"
+-           Condition="'$(CIVersionSuffix)' == '' And '$(CIBranchName)' != '$(Version)'" />
+-
+-  </Target>
+-
++  <ItemGroup><AvaloniaXaml Include="Themes/**/*.xaml" /></ItemGroup>
++  <ItemGroup><PackageReference Include="Avalonia" Version="12.0.4" /></ItemGroup>
++  <Import Project="../DataGrid.AotContract.targets" />
+ </Project>
+--- a/Collections/DataGridCollectionView.cs
++++ b/Collections/DataGridCollectionView.cs
+@@ -151,12 +151,16 @@
+         /// <summary>
+         /// ConstructorInfo obtained from reflection for generating new items
+         /// </summary>
++#if DATAGRID_LEGACY_REFLECTION
+         private ConstructorInfo _itemConstructor;
++#endif
+ 
+         /// <summary>
+         /// Whether we have the correct ConstructorInfo information for the ItemConstructor
+         /// </summary>
++#if DATAGRID_LEGACY_REFLECTION
+         private bool _itemConstructorIsValid;
++#endif
+ 
+         /// <summary>
+         /// The new item we are getting ready to add to the collection
+@@ -986,12 +990,18 @@
+         {
+             get
+             {
++                if (SourceCollection is IDataGridItemMetadataProvider typed && typed.ItemMetadata.NewItemFactory != null)
++                    return true;
++#if DATAGRID_LEGACY_REFLECTION
+                 if (!_itemConstructorIsValid)
+                 {
+                     EnsureItemConstructor();
+                 }
+ 
+                 return _itemConstructor != null;
++#else
++                return false;
++#endif
+             }
+         }
+ 
+@@ -1210,11 +1220,23 @@
+                 throw new InvalidOperationException(GetOperationNotAllowedText(nameof(AddNew)));
+             }
+ 
+-            object newItem = null;
+-
+-            if (_itemConstructor != null)
+-            {
+-                newItem = _itemConstructor.Invoke(null);
++            object newItem;
++            if (SourceCollection is IDataGridItemMetadataProvider typed && typed.ItemMetadata.NewItemFactory is { } factory)
++            {
++                newItem = factory();
++                if (newItem is null || !typed.ItemMetadata.ItemType.IsInstanceOfType(newItem))
++                    throw new InvalidOperationException("The DataGrid item factory returned an item incompatible with its explicit metadata.");
++            }
++#if DATAGRID_LEGACY_REFLECTION
++            else if (Avalonia.Controls.DataGridReflectionFeatures.IsEnabled)
++            {
++                newItem = CreateItemUsingReflection();
++            }
++#endif
++
++            else
++            {
++                throw Avalonia.Controls.DataGridReflectionFeatures.Unsupported("AddNew requires an explicit item factory");
+             }
+ 
+             try
+@@ -2775,7 +2797,30 @@
+         /// <summary>
+         /// Makes sure that the ItemConstructor is set for the correct type
+         /// </summary>
++
++#if DATAGRID_LEGACY_REFLECTION
++        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Legacy DataGrid reflection requires untrimmed metadata. Use typed item metadata, template columns and explicit comparers.")]
++        private object CreateItemUsingReflection() => _itemConstructor.Invoke(null);
++#endif
++
++
+         private void EnsureItemConstructor()
++        {
++#if DATAGRID_LEGACY_REFLECTION
++            if (Avalonia.Controls.DataGridReflectionFeatures.IsEnabled)
++            {
++                EnsureItemConstructorUsingReflection();
++                return;
++            }
++#endif
++
++            throw Avalonia.Controls.DataGridReflectionFeatures.Unsupported("EnsureItemConstructor");
++        }
++
++#if DATAGRID_LEGACY_REFLECTION
++
++        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Legacy DataGrid reflection requires untrimmed metadata. Use typed item metadata, template columns and explicit comparers.")]
++        private void EnsureItemConstructorUsingReflection()
+         {
+             if (!_itemConstructorIsValid)
+             {
+@@ -2787,6 +2832,8 @@
+                 }
+             }
+         }
++#endif
++
+ 
+         /// <summary>
+         ///  If the IEnumerable has changed, bring the collection up to date.
+@@ -2821,6 +2868,23 @@
+         /// <returns>The type of the items in the collection</returns>
+         private Type GetItemType(bool useRepresentativeItem)
+         {
++            if (SourceCollection is IDataGridItemMetadataProvider typed)
++                return typed.ItemMetadata.ItemType;
++#if DATAGRID_LEGACY_REFLECTION
++            if (Avalonia.Controls.DataGridReflectionFeatures.IsEnabled)
++            {
++                return GetItemTypeUsingReflection(useRepresentativeItem);
++            }
++#endif
++
++            throw Avalonia.Controls.DataGridReflectionFeatures.Unsupported("GetItemType");
++        }
++
++#if DATAGRID_LEGACY_REFLECTION
++
++        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Legacy DataGrid reflection requires untrimmed metadata. Use typed item metadata, template columns and explicit comparers.")]
++        private Type GetItemTypeUsingReflection(bool useRepresentativeItem)
++        {
+             Type collectionType = SourceCollection.GetType();
+             Type[] interfaces = collectionType.GetInterfaces();
+ 
+@@ -2855,6 +2919,8 @@
+ 
+             return null;
+         }
++#endif
++
+ 
+         /// <summary>
+         /// Gets a representative item from the collection
+--- a/Collections/DataGridGroupDescription.cs
++++ b/Collections/DataGridGroupDescription.cs
+@@ -73,6 +73,8 @@
+ 
+         public DataGridPathGroupDescription(string propertyPath)
+         {
++                if (!string.IsNullOrEmpty(propertyPath) && !Avalonia.Controls.DataGridReflectionFeatures.IsEnabled)
++                    throw Avalonia.Controls.DataGridReflectionFeatures.Unsupported("Property-path grouping or sorting");
+             _propertyPath = propertyPath;
+         }
+ 
+--- a/Collections/DataGridSortDescription.cs
++++ b/Collections/DataGridSortDescription.cs
+@@ -138,6 +138,8 @@
+ 
+             public DataGridPathSortDescription(string propertyPath, ListSortDirection direction, IComparer internalComparer, CultureInfo culture)
+             {
++                if (!string.IsNullOrEmpty(propertyPath) && !Avalonia.Controls.DataGridReflectionFeatures.IsEnabled)
++                    throw Avalonia.Controls.DataGridReflectionFeatures.Unsupported("Property-path grouping or sorting");
+                 _propertyPath = propertyPath;
+                 _direction = direction;
+                 _cultureSensitiveComparer = new Lazy<CultureSensitiveComparer>(() => new CultureSensitiveComparer(culture ?? CultureInfo.CurrentCulture));
+@@ -180,8 +182,9 @@
+ 
+             internal static IComparer GetComparerForNotStringType(Type type)
+             {
+-#if NET6_0_OR_GREATER
++#if DATAGRID_LEGACY_REFLECTION && NET6_0_OR_GREATER
+                 if(System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported == false)
++#endif
+                 {
+                     if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>) && type.GetGenericArguments()[0].IsAssignableTo(typeof(IComparable)))
+                         return Comparer<object>.Create((x, y) => 
+@@ -192,13 +195,16 @@
+                                 return (x as IComparable)!.CompareTo(y);
+                         });
+                     else if (type.IsAssignableTo(typeof(IComparable))) //enum should be here
+-                        return Comparer<object>.Create((x, y) => (x as IComparable)!.CompareTo(y));
++                        return Comparer<object>.Create((x, y) => x == null
++                            ? (y == null ? 0 : -1)
++                            : ((IComparable)x).CompareTo(y));
+                     else
+-                        return Comparer<object>.Create((x, y) => 0); //avoid using reflection to avoid crash on AOT
+-                }
+-                else
+-#endif
++                        throw Avalonia.Controls.DataGridReflectionFeatures.Unsupported("A typed comparer is required for this item type");
++                }
++#if DATAGRID_LEGACY_REFLECTION
++                else
+                 return (typeof(Comparer<>).MakeGenericType(type).GetProperty("Default")).GetValue(null, null) as IComparer;
++#endif
+ 
+             }
+ 
+--- a/DataGridColumns.cs
++++ b/DataGridColumns.cs
+@@ -1687,6 +1687,7 @@
+ 
+         private void GenerateColumnsFromProperties()
+         {
++            if (!Avalonia.Controls.DataGridReflectionFeatures.IsEnabled) throw Avalonia.Controls.DataGridReflectionFeatures.Unsupported("AutoGenerateColumns");
+             // Autogenerated Columns are added at the end so the user columns appear first
+             if (DataConnection.DataProperties != null && DataConnection.DataProperties.Length > 0)
+             {
+@@ -1760,6 +1761,22 @@
+ 
+         private static DataGridAutoGeneratingColumnEventArgs GenerateColumn(Type propertyType, string propertyName, string header)
+         {
++#if DATAGRID_LEGACY_REFLECTION
++            if (Avalonia.Controls.DataGridReflectionFeatures.IsEnabled)
++            {
++                return GenerateColumnUsingReflection(propertyType, propertyName, header);
++            }
++#endif
++
++            throw Avalonia.Controls.DataGridReflectionFeatures.Unsupported("GenerateColumn");
++        }
++
++#if DATAGRID_LEGACY_REFLECTION
++
++        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Legacy DataGrid reflection requires untrimmed metadata. Use typed item metadata, template columns and explicit comparers.")]
++        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Legacy DataGrid reflection requires runtime code generation. Use compiled templates and explicit comparers.")]
++        private static DataGridAutoGeneratingColumnEventArgs GenerateColumnUsingReflection(Type propertyType, string propertyName, string header)
++        {
+             // Create a new DataBoundColumn for the Property
+             DataGridBoundColumn newColumn = GetDataGridColumnFromType(propertyType);
+             newColumn.Binding = new Binding(propertyName);
+@@ -1767,6 +1784,8 @@
+             newColumn.IsAutoGenerated = true;
+             return new DataGridAutoGeneratingColumnEventArgs(propertyName, propertyType, newColumn);
+         }
++#endif
++
+ 
+         private bool AddGeneratedColumn(DataGridAutoGeneratingColumnEventArgs e)
+         {
+--- a/DataGridDataConnection.cs
++++ b/DataGridDataConnection.cs
+@@ -113,7 +113,7 @@
+                 // Because the DataSource is changing, we need to reset our cached values for DataType and DataProperties,
+                 // which are dependent on the current DataSource
+                 _dataType = null;
+-                UpdateDataProperties();
++                _dataProperties = null;
+             }
+         }
+ 
+@@ -381,6 +381,21 @@
+ 
+         public bool GetPropertyIsReadOnly(string propertyName)
+         {
++#if DATAGRID_LEGACY_REFLECTION
++            if (Avalonia.Controls.DataGridReflectionFeatures.IsEnabled)
++            {
++                return GetPropertyIsReadOnlyUsingReflection(propertyName);
++            }
++#endif
++
++            throw Avalonia.Controls.DataGridReflectionFeatures.Unsupported("GetPropertyIsReadOnly");
++        }
++
++#if DATAGRID_LEGACY_REFLECTION
++
++        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Legacy DataGrid reflection requires untrimmed metadata. Use typed item metadata, template columns and explicit comparers.")]
++        private bool GetPropertyIsReadOnlyUsingReflection(string propertyName)
++        {
+             if (DataType != null)
+             {
+                 if (!String.IsNullOrEmpty(propertyName))
+@@ -418,6 +433,8 @@
+             }
+             return !AllowEdit;
+         }
++#endif
++
+ 
+         public int IndexOf(object dataItem)
+         {
+@@ -695,6 +712,23 @@
+ 
+         private void UpdateDataProperties()
+         {
++            if (DataSource is null) { _dataProperties = null; return; }
++#if DATAGRID_LEGACY_REFLECTION
++            if (Avalonia.Controls.DataGridReflectionFeatures.IsEnabled)
++            {
++                UpdateDataPropertiesUsingReflection();
++                return;
++            }
++#endif
++
++            throw Avalonia.Controls.DataGridReflectionFeatures.Unsupported("UpdateDataProperties");
++        }
++
++#if DATAGRID_LEGACY_REFLECTION
++
++        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Legacy DataGrid reflection requires untrimmed metadata. Use typed item metadata, template columns and explicit comparers.")]
++        private void UpdateDataPropertiesUsingReflection()
++        {
+             Type dataType = DataType;
+ 
+             if (DataSource != null && dataType != null && !DataTypeIsPrimitive(dataType))
+@@ -707,6 +741,8 @@
+                 _dataProperties = null;
+             }
+         }
++#endif
++
+ 
+     }
+ }
+--- a/DataGridValueConverter.cs
++++ b/DataGridValueConverter.cs
+@@ -19,11 +19,43 @@
+ 
+         public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+         {
++#if DATAGRID_LEGACY_REFLECTION
++            if (Avalonia.Controls.DataGridReflectionFeatures.IsEnabled)
++            {
++                return ConvertUsingReflection(value, targetType, parameter, culture);
++            }
++#endif
++
++            throw Avalonia.Controls.DataGridReflectionFeatures.Unsupported("Convert");
++        }
++
++#if DATAGRID_LEGACY_REFLECTION
++
++        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Legacy DataGrid reflection requires untrimmed metadata. Use typed item metadata, template columns and explicit comparers.")]
++        private object? ConvertUsingReflection(object? value, Type targetType, object? parameter, CultureInfo culture)
++        {
+             return DefaultValueConverter.Instance.Convert(value, targetType, parameter, culture);
+         }
++#endif
++
+ 
+ 
+         public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
++        {
++#if DATAGRID_LEGACY_REFLECTION
++            if (Avalonia.Controls.DataGridReflectionFeatures.IsEnabled)
++            {
++                return ConvertBackUsingReflection(value, targetType, parameter, culture);
++            }
++#endif
++
++            throw Avalonia.Controls.DataGridReflectionFeatures.Unsupported("ConvertBack");
++        }
++
++#if DATAGRID_LEGACY_REFLECTION
++
++        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Legacy DataGrid reflection requires untrimmed metadata. Use typed item metadata, template columns and explicit comparers.")]
++        private object? ConvertBackUsingReflection(object? value, Type targetType, object? parameter, CultureInfo culture)
+         {
+             if (targetType.IsNullableType())
+             {
+@@ -40,5 +72,7 @@
+             }
+             return DefaultValueConverter.Instance.ConvertBack(value, targetType, parameter, culture);
+         }
++#endif
++
+     }
+ }
+--- a/Utils/ReflectionHelper.cs
++++ b/Utils/ReflectionHelper.cs
+@@ -22,6 +22,9 @@
+         internal const char LeftParenthesisToken  = '(';
+         internal const char RightParenthesisToken = ')';
+ 
++#if DATAGRID_LEGACY_REFLECTION
++
++        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Legacy DataGrid reflection requires untrimmed metadata. Use typed item metadata, template columns and explicit comparers.")]
+         private static Type? FindGenericType(Type definition, Type? type)
+         {
+             while ((type != null) && (type != typeof(object)))
+@@ -45,6 +48,8 @@
+             }
+             return null;
+         }
++#endif
++
+ 
+         /// <summary>
+         /// Finds an int or string indexer in the specified collection of members, where int indexers take priority
+@@ -103,6 +108,21 @@
+         /// <returns>Default member name.</returns>
+         private static string? GetDefaultMemberName(this Type type)
+         {
++#if DATAGRID_LEGACY_REFLECTION
++            if (Avalonia.Controls.DataGridReflectionFeatures.IsEnabled)
++            {
++                return GetDefaultMemberNameUsingReflection(type);
++            }
++#endif
++
++            throw Avalonia.Controls.DataGridReflectionFeatures.Unsupported("GetDefaultMemberName");
++        }
++
++#if DATAGRID_LEGACY_REFLECTION
++
++        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Legacy DataGrid reflection requires untrimmed metadata. Use typed item metadata, template columns and explicit comparers.")]
++        private static string? GetDefaultMemberNameUsingReflection(this Type type)
++        {
+             object[] attributes = type.GetCustomAttributes(typeof(DefaultMemberAttribute), true);
+             if (attributes != null && attributes.Length == 1)
+             {
+@@ -114,6 +134,8 @@
+                 return null;
+             }
+         }
++#endif
++
+ 
+         /// <summary>
+         /// Finds the PropertyInfo for the specified property path within this Type, and returns
+@@ -125,6 +147,22 @@
+         /// <returns>DisplayAttribute.ShortName if it exists, null otherwise</returns>
+         internal static string? GetDisplayName(this Type type, string propertyPath)
+         {
++            if (string.IsNullOrEmpty(propertyPath)) return null;
++#if DATAGRID_LEGACY_REFLECTION
++            if (Avalonia.Controls.DataGridReflectionFeatures.IsEnabled)
++            {
++                return GetDisplayNameUsingReflection(type, propertyPath);
++            }
++#endif
++
++            throw Avalonia.Controls.DataGridReflectionFeatures.Unsupported("GetDisplayName");
++        }
++
++#if DATAGRID_LEGACY_REFLECTION
++
++        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Legacy DataGrid reflection requires untrimmed metadata. Use typed item metadata, template columns and explicit comparers.")]
++        private static string? GetDisplayNameUsingReflection(this Type type, string propertyPath)
++        {
+             PropertyInfo? propertyInfo = type.GetNestedProperty(propertyPath);
+             if (propertyInfo != null)
+             {
+@@ -140,7 +178,12 @@
+             }
+             return null;
+         }
+-
++#endif
++
++
++#if DATAGRID_LEGACY_REFLECTION
++
++        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Legacy DataGrid reflection requires untrimmed metadata. Use typed item metadata, template columns and explicit comparers.")]
+         internal static Type GetEnumerableItemType(this Type enumerableType)
+         {
+             Type? type = FindGenericType(typeof(IEnumerable<>), enumerableType);
+@@ -150,6 +193,8 @@
+             }
+             return enumerableType;
+         }
++#endif
++
+ 
+         /// <summary>
+         /// Retrieves the value and type of a property. That property can be nested and its path
+@@ -342,6 +387,24 @@
+         internal static PropertyInfo? GetPropertyOrIndexer(this Type type, string? propertyPath, out object[]? index)
+         {
+             index = null;
++            if (string.IsNullOrEmpty(propertyPath)) return null;
++#if DATAGRID_LEGACY_REFLECTION
++            if (Avalonia.Controls.DataGridReflectionFeatures.IsEnabled)
++            {
++                return GetPropertyOrIndexerUsingReflection(type, propertyPath, out index);
++            }
++#endif
++
++            throw Avalonia.Controls.DataGridReflectionFeatures.Unsupported("GetPropertyOrIndexer");
++        }
++
++#if DATAGRID_LEGACY_REFLECTION
++
++        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Legacy DataGrid reflection requires untrimmed metadata. Use typed item metadata, template columns and explicit comparers.")]
++        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Legacy DataGrid reflection requires runtime code generation. Use compiled templates and explicit comparers.")]
++        private static PropertyInfo? GetPropertyOrIndexerUsingReflection(this Type type, string? propertyPath, out object[]? index)
++        {
++            index = null;
+ 
+             if (string.IsNullOrEmpty(propertyPath))
+             {
+@@ -415,11 +478,18 @@
+ 
+             return indexer;
+         }
+-
++#endif
++
++
++#if DATAGRID_LEGACY_REFLECTION
++
++        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Legacy DataGrid reflection requires untrimmed metadata. Use typed item metadata, template columns and explicit comparers.")]
+         internal static bool IsEnumerableType(this Type enumerableType)
+         {
+             return (FindGenericType(typeof(IEnumerable<>), enumerableType) != null);
+         }
++#endif
++
+ 
+         internal static bool IsNullableType(this Type type)
+         {
+@@ -543,6 +613,22 @@
+         /// <returns>true if MemberInfo is read-only, false otherwise</returns>
+         internal static bool GetIsReadOnly(this MemberInfo? memberInfo)
+         {
++            if (memberInfo is null) return false;
++#if DATAGRID_LEGACY_REFLECTION
++            if (Avalonia.Controls.DataGridReflectionFeatures.IsEnabled)
++            {
++                return GetIsReadOnlyUsingReflection(memberInfo);
++            }
++#endif
++
++            throw Avalonia.Controls.DataGridReflectionFeatures.Unsupported("GetIsReadOnly");
++        }
++
++#if DATAGRID_LEGACY_REFLECTION
++
++        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Legacy DataGrid reflection requires untrimmed metadata. Use typed item metadata, template columns and explicit comparers.")]
++        private static bool GetIsReadOnlyUsingReflection(this MemberInfo? memberInfo)
++        {
+             if (memberInfo != null)
+             {
+                 // Check if ReadOnlyAttribute is defined on the member
+@@ -555,8 +641,27 @@
+             }
+             return false;
+         }
++#endif
++
+ 
+         internal static Type? GetItemType(this IEnumerable list)
++        {
++            if (list is Avalonia.Collections.IDataGridItemMetadataProvider typed)
++                return typed.ItemMetadata.ItemType;
++#if DATAGRID_LEGACY_REFLECTION
++            if (Avalonia.Controls.DataGridReflectionFeatures.IsEnabled)
++            {
++                return GetItemTypeUsingReflection(list);
++            }
++#endif
++
++            throw Avalonia.Controls.DataGridReflectionFeatures.Unsupported("GetItemType");
++        }
++
++#if DATAGRID_LEGACY_REFLECTION
++
++        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Legacy DataGrid reflection requires untrimmed metadata. Use typed item metadata, template columns and explicit comparers.")]
++        private static Type? GetItemTypeUsingReflection(this IEnumerable list)
+         {
+             Type listType = list.GetType();
+             Type? itemType = null;
+@@ -586,5 +691,7 @@
+             // if we're null at this point, give up
+             return itemType;
+         }
++#endif
++
+     }
+ }
+--- /dev/null
++++ b/Collections/DataGridItemMetadata.cs
+@@ -0,0 +1,25 @@
++using System;
++
++namespace Avalonia.Collections;
++
++/// <summary>Supplies explicit item metadata without inspecting a collection or its row members.</summary>
++public interface IDataGridItemMetadataProvider
++{
++    DataGridItemMetadata ItemMetadata { get; }
++}
++
++/// <summary>Stable type identity and an optional direct factory for collection-view AddNew.</summary>
++public sealed class DataGridItemMetadata
++{
++    public DataGridItemMetadata(Type itemType, Func<object>? newItemFactory = null)
++    {
++        ArgumentNullException.ThrowIfNull(itemType);
++        if (itemType.ContainsGenericParameters || itemType == typeof(void))
++            throw new ArgumentException("A closed item type is required.", nameof(itemType));
++        ItemType = itemType;
++        NewItemFactory = newItemFactory;
++    }
++
++    public Type ItemType { get; }
++    public Func<object>? NewItemFactory { get; }
++}
+--- /dev/null
++++ b/DataGridReflectionFeatures.cs
+@@ -0,0 +1,21 @@
++using System;
++
++#if DATAGRID_LEGACY_REFLECTION
++#error The maintained DataGrid variant must exclude legacy reflection in every build.
++#endif
++
++namespace Avalonia.Controls;
++
++// The local maintained variant excludes legacy reflection at C# compilation.
++// Typed templates, collections, comparers and grouping keep the original control engine.
++internal static class DataGridReflectionFeatures
++{
++#if DATAGRID_LEGACY_REFLECTION
++    internal static bool IsEnabled => true;
++#else
++    internal static bool IsEnabled => false;
++#endif
++
++    internal static InvalidOperationException Unsupported(string operation) => new(
++        $"DataGrid reflection is disabled: {operation}. Supply IDataGridItemMetadataProvider, explicit template columns, typed comparers/grouping, or an explicit AOT-safe converter as appropriate.");
++}

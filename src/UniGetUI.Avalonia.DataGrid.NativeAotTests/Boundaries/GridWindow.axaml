@@ -1,0 +1,27 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="using:DataGridAotRepro"
+        x:Class="DataGridAotRepro.GridWindow"
+        x:DataType="local:GridModel" x:CompileBindings="True"
+        Width="800" Height="500">
+  <DataGrid x:Name="RowsGrid" ItemsSource="{CompiledBinding Rows}"
+            AutoGenerateColumns="False" SelectionMode="Single"
+            CanUserSortColumns="True" HeadersVisibility="Column">
+    <DataGrid.Columns>
+      <DataGridTemplateColumn Header="Name" Width="2*" CanUserSort="True">
+        <DataGridTemplateColumn.CellTemplate>
+          <DataTemplate x:DataType="local:RowModel">
+            <TextBlock Classes="row-name" Text="{CompiledBinding Name}" />
+          </DataTemplate>
+        </DataGridTemplateColumn.CellTemplate>
+      </DataGridTemplateColumn>
+      <DataGridTemplateColumn Header="Enabled" Width="*" CanUserSort="False">
+        <DataGridTemplateColumn.CellTemplate>
+          <DataTemplate x:DataType="local:RowModel">
+            <CheckBox Classes="row-enabled" IsChecked="{CompiledBinding Enabled, Mode=TwoWay}" />
+          </DataTemplate>
+        </DataGridTemplateColumn.CellTemplate>
+      </DataGridTemplateColumn>
+    </DataGrid.Columns>
+  </DataGrid>
+</Window>

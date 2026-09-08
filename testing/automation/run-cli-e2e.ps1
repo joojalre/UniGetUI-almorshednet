@@ -227,6 +227,10 @@ function Get-DaemonCommand {
             }
         }
         'avalonia-dll' {
+            if ($env:UNIGETUI_DAEMON_EXE) {
+                throw 'UNIGETUI_DAEMON_EXE requires an executable daemon kind; the avalonia-dll manifest would ignore it.'
+            }
+
             $daemonDll = if ($env:UNIGETUI_DAEMON_DLL) {
                 $env:UNIGETUI_DAEMON_DLL
             }
@@ -554,6 +558,22 @@ try {
         -FailureMessage 'Headless daemon never became ready over named-pipe IPC.' `
         -TimeoutSeconds $daemonStartupTimeoutSeconds `
         -DelaySeconds 2
+
+    $process.Refresh()
+    $processExecutable = $process.Path
+    if ([string]$manifest.daemon.kind -eq 'avalonia-native' -and
+        -not [string]::Equals($processExecutable, $daemonCommand.FilePath, [StringComparison]::OrdinalIgnoreCase)) {
+        throw 'The running NativeAOT daemon does not match the selected published executable.'
+    }
+    [ordered]@{
+        daemonKind = $manifest.daemon.kind
+        filePath = $daemonCommand.FilePath
+        arguments = @($daemonArguments)
+        workingDirectory = $daemonCommand.WorkingDirectory
+        processId = $process.Id
+        processExecutable = $processExecutable
+        processExecutableSha256 = (Get-FileHash -LiteralPath $processExecutable -Algorithm SHA256).Hash
+    } | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath (Join-Path $artifactRoot 'daemon-launch.json') -Encoding UTF8
 
     Write-Stage 'Status and headless transport'
     if ($status.namedPipeName -ne $pipeName) {

@@ -1,12 +1,16 @@
 {
   "package_count": {
-    "total": 12411,
+    "total": 12412,
     "done": 5933,
-    "packages_with_icon": 5933,
-    "packages_with_screenshot": 1368,
-    "total_screenshots": 4140
+    "packages_with_icon": 5934,
+    "packages_with_screenshot": 1369,
+    "total_screenshots": 4141
   },
   "icons_and_screenshots": {
+    "edde746/Plezy": {
+      "icon": "https://raw.githubusercontent.com/edde746/plezy/main/assets/plezy.png",
+      "images": []
+    },
     "bbk1ng/agent-orch": {
       "icon": "https://raw.githubusercontent.com/bbk1ng/agent-orch/main/docs/assets/orch-avatar.png",
       "images": []
@@ -3011,6 +3015,18 @@
     "arkana": {
       "icon": "",
       "images": []
+    },
+    "ArKT-7.QuickRotate": {
+      "icon": "https://raw.githubusercontent.com/ArKT-7/QuickRotate/main/assets/icon.png",
+      "images": [
+        "https://raw.githubusercontent.com/ArKT-7/QuickRotate/main/assets/QuickRotate_1.png",
+        "https://raw.githubusercontent.com/ArKT-7/QuickRotate/main/assets/QuickRotate_2.png",
+        "https://raw.githubusercontent.com/ArKT-7/QuickRotate/main/assets/QuickRotate_3.png",
+        "https://raw.githubusercontent.com/ArKT-7/QuickRotate/main/assets/QuickRotate_4.png",
+        "https://raw.githubusercontent.com/ArKT-7/QuickRotate/main/assets/QuickRotate_5.png",
+        "https://raw.githubusercontent.com/ArKT-7/QuickRotate/main/assets/QuickRotate_6.png",
+        "https://raw.githubusercontent.com/ArKT-7/QuickRotate/main/assets/QuickRotate_7.png"
+      ]
     },
     "arliveforacfunlive": {
       "icon": "",
@@ -7685,6 +7701,12 @@
     "client": {
       "icon": "",
       "images": []
+    },
+    "Tsabo.ClipMate": {
+      "icon": "https://raw.githubusercontent.com/Tsabo/ClipMate/master/Resources/icons8-clipboard-color-256.png",
+      "images": [
+        "https://raw.githubusercontent.com/Tsabo/ClipMate/master/Resources/Images/explorer-window.png"
+      ]
     },
     "clingo": {
       "icon": "",
@@ -15800,6 +15822,17 @@
     "fslogix-java": {
       "icon": "https://community.chocolatey.org/content/packageimages/fslogix-java.2.9.8361.52326.png",
       "images": []
+    },
+    "FSPProductions.FileHasher": {
+      "icon": "https://raw.githubusercontent.com/fsantiago07044/filehasher/main/docs/filehasher-winget-PR-assets/app-icon/hash-icon-256.png",
+      "images": [
+        "https://raw.githubusercontent.com/fsantiago07044/filehasher/main/docs/filehasher-winget-PR-assets/app-ui-screenshots/main-ui-completion-state-simple.png",
+        "https://raw.githubusercontent.com/fsantiago07044/filehasher/main/docs/filehasher-winget-PR-assets/app-ui-screenshots/main-ui.png",
+        "https://raw.githubusercontent.com/fsantiago07044/filehasher/main/docs/filehasher-winget-PR-assets/app-ui-screenshots/main-ui-completion-inner-msi-scan.png",
+        "https://raw.githubusercontent.com/fsantiago07044/filehasher/main/docs/filehasher-winget-PR-assets/app-ui-screenshots/sidecar-file-explorer-view.png",
+        "https://raw.githubusercontent.com/fsantiago07044/filehasher/main/docs/filehasher-winget-PR-assets/app-ui-screenshots/sidecar-file-overwrite-dialog.png",
+        "https://raw.githubusercontent.com/fsantiago07044/filehasher/main/docs/filehasher-winget-PR-assets/app-ui-screenshots/completion-dialog-sidecars-overwritten.png"
+      ]
     },
     "fspy": {
       "icon": "",
@@ -28469,6 +28502,19 @@
       "icon": "",
       "images": []
     },
+    "ninja-claudeforge": {
+      "icon": "https://raw.githubusercontent.com/JanusMael/ClaudeForge/main/docs/ClaudeForge.png",
+      "images": [
+        "https://raw.githubusercontent.com/JanusMael/ClaudeForge/main/docs/screenshots/WelcomePage-Light.png",
+        "https://raw.githubusercontent.com/JanusMael/ClaudeForge/main/docs/screenshots/EffectiveSettingsPage-Light.png",
+        "https://raw.githubusercontent.com/JanusMael/ClaudeForge/main/docs/screenshots/PermissionsPage-Light.png",
+        "https://raw.githubusercontent.com/JanusMael/ClaudeForge/main/docs/screenshots/HooksPage-Light.png",
+        "https://raw.githubusercontent.com/JanusMael/ClaudeForge/main/docs/screenshots/EnvironmentPage-Light.png",
+        "https://raw.githubusercontent.com/JanusMael/ClaudeForge/main/docs/screenshots/MemoryPage-Light.png",
+        "https://raw.githubusercontent.com/JanusMael/ClaudeForge/main/docs/screenshots/PluginsPage-Light.png",
+        "https://raw.githubusercontent.com/JanusMael/ClaudeForge/main/docs/screenshots/BackupPage-Light.png"
+      ]
+    },
     "ninja-kitware": {
       "icon": "",
       "images": []
@@ -34691,6 +34737,18 @@
     "quickredis": {
       "icon": "",
       "images": []
+    },
+    "quickrotate": {
+      "icon": "https://raw.githubusercontent.com/ArKT-7/QuickRotate/main/assets/icon.png",
+      "images": [
+        "https://raw.githubusercontent.com/ArKT-7/QuickRotate/main/assets/QuickRotate_1.png",
+        "https://raw.githubusercontent.com/ArKT-7/QuickRotate/main/assets/QuickRotate_2.png",
+        "https://raw.githubusercontent.com/ArKT-7/QuickRotate/main/assets/QuickRotate_3.png",
+        "https://raw.githubusercontent.com/ArKT-7/QuickRotate/main/assets/QuickRotate_4.png",
+        "https://raw.githubusercontent.com/ArKT-7/QuickRotate/main/assets/QuickRotate_5.png",
+        "https://raw.githubusercontent.com/ArKT-7/QuickRotate/main/assets/QuickRotate_6.png",
+        "https://raw.githubusercontent.com/ArKT-7/QuickRotate/main/assets/QuickRotate_7.png"
+      ]
     },
     "quickroute": {
       "icon": "https://community.chocolatey.org/content/packageimages/quickroute.2.4.0.png",
@@ -50313,6 +50371,18 @@
     "xpdf-utils": {
       "icon": "https://community.chocolatey.org/content/packageimages/xpdf-utils.3.4.0.20170430.png",
       "images": []
+    },
+    "XPDLLZG5H4Q1V1": {
+      "icon": "https://raw.githubusercontent.com/ArKT-7/QuickRotate/main/assets/icon.png",
+      "images": [
+        "https://raw.githubusercontent.com/ArKT-7/QuickRotate/main/assets/QuickRotate_1.png",
+        "https://raw.githubusercontent.com/ArKT-7/QuickRotate/main/assets/QuickRotate_2.png",
+        "https://raw.githubusercontent.com/ArKT-7/QuickRotate/main/assets/QuickRotate_3.png",
+        "https://raw.githubusercontent.com/ArKT-7/QuickRotate/main/assets/QuickRotate_4.png",
+        "https://raw.githubusercontent.com/ArKT-7/QuickRotate/main/assets/QuickRotate_5.png",
+        "https://raw.githubusercontent.com/ArKT-7/QuickRotate/main/assets/QuickRotate_6.png",
+        "https://raw.githubusercontent.com/ArKT-7/QuickRotate/main/assets/QuickRotate_7.png"
+      ]
     },
     "XPFFTQ032PTPHF": {
       "icon": "https://raw.githubusercontent.com/Devolutions/UniGetUI/main/media/icon.png",

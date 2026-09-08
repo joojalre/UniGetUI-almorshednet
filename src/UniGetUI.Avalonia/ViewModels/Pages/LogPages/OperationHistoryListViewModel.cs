@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using UniGetUI.Avalonia.Models;
 using UniGetUI.Core.Tools;
 using UniGetUI.PackageEngine.Operations.History;
 
@@ -22,7 +23,7 @@ public partial class OperationHistoryListViewModel : ViewModelBase
     private string _filter = "";
     private bool _suppressFilter;
 
-    public ObservableCollection<OperationHistoryRowViewModel> Entries { get; } = new();
+    public ObservableCollection<OperationHistoryRowViewModel> Entries { get; } = new DataGridObservableCollection<OperationHistoryRowViewModel>();
 
     public ObservableCollection<HistoryFilterOption> StatusOptions { get; } = new();
     public ObservableCollection<HistoryFilterOption> KindOptions { get; } = new();

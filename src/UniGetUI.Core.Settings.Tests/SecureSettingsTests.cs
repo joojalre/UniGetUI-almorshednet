@@ -7,11 +7,14 @@ namespace UniGetUI.Core.SettingsEngine.Tests;
 
 public sealed class SecureSettingsTests : IDisposable
 {
+    private readonly string _testContainer;
     private readonly string _testRoot;
 
     public SecureSettingsTests()
     {
-        _testRoot = Path.Combine(Path.GetTempPath(), $"UniGetUI-SecureSettingsTests-{Guid.NewGuid():N}");
+        // Keep the parent inspected by traversal tests private to this fixture.
+        _testContainer = Path.Combine(Path.GetTempPath(), $"UniGetUI-SecureSettingsTests-{Guid.NewGuid():N}");
+        _testRoot = Path.Combine(_testContainer, "secure-settings");
         Directory.CreateDirectory(_testRoot);
         SecureSettingsStore.TEST_SecureSettingsRootOverride = _testRoot;
         ClearSecureSettingsCache();
@@ -22,9 +25,9 @@ public sealed class SecureSettingsTests : IDisposable
         ClearSecureSettingsCache();
         SecureSettingsStore.TEST_SecureSettingsRootOverride = null;
 
-        if (Directory.Exists(_testRoot))
+        if (Directory.Exists(_testContainer))
         {
-            Directory.Delete(_testRoot, true);
+            Directory.Delete(_testContainer, true);
         }
     }
 
@@ -120,6 +123,100 @@ public sealed class SecureSettingsTests : IDisposable
 
             Assert.All(results, Assert.True);
         }
+    }
+
+    [Theory]
+    [InlineData("..", "AllowCLIArguments")]
+    [InlineData("CurrentUser", "..")]
+    [InlineData("..", "..")]
+    [InlineData("", "AllowCLIArguments")]
+    [InlineData("CurrentUser", "")]
+    [InlineData("   ", "AllowCLIArguments")]
+    public void ApplyForUser_RefusesComponentsThatEscapeTheSecureSettingsRoot(
+        string username,
+        string setting
+    )
+    {
+        string parent = Directory.GetParent(_testRoot)!.FullName;
+        string[] before = Directory.GetFileSystemEntries(parent);
+
+        int result = SecureSettingsStore.ApplyForUser(username, setting, true);
+
+        Assert.NotEqual(0, result);
+        Assert.Equal(before.Length, Directory.GetFileSystemEntries(parent).Length);
+    }
+
+    [Theory]
+    [InlineData("..", "AllowCLIArguments")]
+    [InlineData("CurrentUser", "..")]
+    [InlineData("", "")]
+    public void GetForUser_RefusesComponentsThatEscapeTheSecureSettingsRoot(
+        string username,
+        string setting
+    )
+    {
+        Assert.False(SecureSettingsStore.GetForUser(username, setting));
+    }
+
+    [Fact]
+    public void ApplyForUser_StillWritesInsideTheSecureSettingsRoot()
+    {
+        int result = SecureSettingsStore.ApplyForUser("CurrentUser", "AllowCLIArguments", true);
+
+        Assert.Equal(0, result);
+        Assert.True(
+            File.Exists(Path.Combine(_testRoot, "CurrentUser", "AllowCLIArguments"))
+        );
+        Assert.True(SecureSettingsStore.GetForUser("CurrentUser", "AllowCLIArguments"));
+    }
+
+    [Fact]
+    public void GetForUser_InvalidComponentsDoNotAliasACachedValidEntry()
+    {
+        const string setting = "AllowCLIArguments";
+
+        Assert.Equal(0, SecureSettingsStore.ApplyForUser("_", setting, true));
+        Assert.True(SecureSettingsStore.GetForUser("_", setting));
+
+        Assert.False(SecureSettingsStore.GetForUser("..", setting));
+        Assert.False(SecureSettingsStore.GetForUser(".", setting));
+        Assert.False(SecureSettingsStore.GetForUser("   ", setting));
+
+        Assert.True(SecureSettingsStore.GetForUser("_", setting));
+    }
+
+    [Fact]
+    public void GetForUser_InvalidComponentsDoNotPoisonTheCacheForValidOnes()
+    {
+        const string setting = "AllowCLIArguments";
+
+        Assert.False(SecureSettingsStore.GetForUser("..", setting));
+
+        Assert.Equal(0, SecureSettingsStore.ApplyForUser("_", setting, true));
+        Assert.True(SecureSettingsStore.GetForUser("_", setting));
+    }
+
+    [Fact]
+    public void ApplyForUser_RefusesWhenTheUserDirectoryIsALink()
+    {
+        string outside = Path.Combine(Path.GetTempPath(), $"outside-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(outside);
+        string linked = Path.Combine(_testRoot, "LinkedUser");
+
+        try
+        {
+            Directory.CreateSymbolicLink(linked, outside);
+        }
+        catch
+        {
+            return;
+        }
+
+        int result = SecureSettingsStore.ApplyForUser("LinkedUser", "AllowCLIArguments", true);
+
+        Assert.NotEqual(0, result);
+        Assert.Empty(Directory.GetFiles(outside));
+        Directory.Delete(outside, recursive: true);
     }
 
     private string GetCurrentUserSettingsDirectory() =>

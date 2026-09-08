@@ -1,0 +1,10 @@
+{
+  "ref": "refs/tags/12.0.0",
+  "node_id": "MDM6UmVmMTM0OTYwMzM0OnJlZnMvdGFncy8xMi4wLjA=",
+  "url": "https://api.github.com/repos/AvaloniaUI/Avalonia.Controls.DataGrid/git/refs/tags/12.0.0",
+  "object": {
+    "sha": "3d2cf024d6f15d4e770f655246185ad417f93f51",
+    "type": "commit",
+    "url": "https://api.github.com/repos/AvaloniaUI/Avalonia.Controls.DataGrid/git/commits/3d2cf024d6f15d4e770f655246185ad417f93f51"
+  }
+}

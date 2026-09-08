@@ -3,12 +3,15 @@ using System.Diagnostics;
 using System.IO.Pipes;
 using System.Reflection;
 using System.Text;
+using UniGetUI.Core.Data;
 using UniGetUI.Core.Logging;
 using UniGetUI.Core.SettingsEngine;
 using UniGetUI.Core.Tools;
 using UniGetUI.Interface.Enums;
 using UniGetUI.PackageEngine.Enums;
 using UniGetUI.PackageEngine.Interfaces;
+using UniGetUI.PackageEngine.Managers.NpmManager;
+using UniGetUI.PackageEngine.Managers.PipManager;
 using UniGetUI.PackageEngine.Operations;
 using UniGetUI.PackageEngine.PackageClasses;
 using UniGetUI.PackageEngine.PackageLoader;
@@ -48,7 +51,41 @@ using LineType = UniGetUI.PackageOperations.AbstractOperation.LineType;
 namespace UniGetUI.PackageEngine.Tests;
 
 [CollectionDefinition(nameof(OperationOrchestrationTestCollection), DisableParallelization = true)]
-public sealed class OperationOrchestrationTestCollection;
+public sealed class OperationOrchestrationTestCollection
+    : ICollectionFixture<IsolatedUserConfigurationFixture>;
+
+/// <summary>
+/// Redirects the settings store to a throwaway directory for every test in the collection.
+/// These tests toggle real setting keys (UseAgentBroker, ProhibitElevation) and restore them in a
+/// finally block, which never runs when a test host is killed — without this the developer's own
+/// configuration keeps the toggled value.
+/// </summary>
+public sealed class IsolatedUserConfigurationFixture : IDisposable
+{
+    private readonly string _root = Path.Combine(
+        Path.GetTempPath(),
+        nameof(IsolatedUserConfigurationFixture),
+        Guid.NewGuid().ToString("N")
+    );
+
+    public IsolatedUserConfigurationFixture()
+    {
+        Directory.CreateDirectory(_root);
+        CoreData.TEST_DataDirectoryOverride = Path.Combine(_root, "Data");
+        Directory.CreateDirectory(CoreData.UniGetUIUserConfigurationDirectory);
+        Settings.ResetSettings();
+    }
+
+    public void Dispose()
+    {
+        Settings.ResetSettings();
+        CoreData.TEST_DataDirectoryOverride = null;
+        if (Directory.Exists(_root))
+        {
+            Directory.Delete(_root, recursive: true);
+        }
+    }
+}
 
 [Collection(nameof(OperationOrchestrationTestCollection))]
 public sealed class PackageOperationsTests
@@ -164,6 +201,102 @@ public sealed class PackageOperationsTests
         Assert.Contains("1.0.0 -> 3.0.0", operation.Metadata.OperationInformation);
     }
 
+    // UninstallPreviousVersionsOnUpdate is the one destructive consumer of the per-manager
+    // version comparison: it queues every installed copy it considers superseded for removal.
+    // On a SemVer registry the pre-release IS superseded by its stable release and must be
+    // cleaned up, which the shared numeric comparison could never see.
+    [Fact]
+    public async Task UpdateOperationQueuesASupersededPreReleaseForUninstallOnSemVerManagers()
+    {
+        var manager = new Npm();
+        var package = new PackageBuilder()
+            .WithManager(manager)
+            .WithId("contoso-tool")
+            .WithVersion("2.0.0-rc1")
+            .WithNewVersion("2.0.0")
+            .Build();
+        InitializeLoaders();
+        await InstalledPackagesLoader.Instance.AddForeign(
+            new PackageBuilder()
+                .WithManager(manager)
+                .WithId("contoso-tool")
+                .WithVersion("2.0.0-rc1")
+                .Build()
+        );
+
+        using var operation = new UpdatePackageOperation(
+            package,
+            new InstallOptions { UninstallPreviousVersionsOnUpdate = true }
+        );
+
+        var inner = Assert.Single(GetInnerOperations(operation, "PostOperations"));
+        var uninstall = Assert.IsType<UninstallPackageOperation>(inner.Operation);
+        Assert.Equal("2.0.0-rc1", uninstall.Package.VersionString);
+    }
+
+    // The mirror image, and the reason this had to be per-manager: on PyPI a bare trailing
+    // dash-number is an implicit POST-release, so "1.0.0-1" is NEWER than "1.0.0" and must
+    // never be queued for removal when updating onto it.
+    [Fact]
+    public async Task UpdateOperationLeavesANewerPostReleaseInstalledOnPip()
+    {
+        var manager = new Pip();
+        var package = new PackageBuilder()
+            .WithManager(manager)
+            .WithId("contoso-tool")
+            .WithVersion("0.9.0")
+            .WithNewVersion("1.0.0")
+            .Build();
+        InitializeLoaders();
+        await InstalledPackagesLoader.Instance.AddForeign(
+            new PackageBuilder()
+                .WithManager(manager)
+                .WithId("contoso-tool")
+                .WithVersion("1.0.0-1")
+                .Build()
+        );
+
+        using var operation = new UpdatePackageOperation(
+            package,
+            new InstallOptions { UninstallPreviousVersionsOnUpdate = true }
+        );
+
+        Assert.Empty(GetInnerOperations(operation, "PostOperations"));
+    }
+
+    // Pins pre-existing behaviour rather than endorsing it: when an installed version cannot be
+    // parsed at all, it is still treated as superseded and queued for removal. Left as-is
+    // deliberately - changing what a destructive operation does to unparseable input belongs in
+    // its own change, not in a version-comparison fix.
+    [Fact]
+    public async Task UpdateOperationStillQueuesAnUnparseableInstalledVersionForUninstall()
+    {
+        var manager = CreateManager();
+        var package = new PackageBuilder()
+            .WithManager(manager)
+            .WithId("Contoso.Tool")
+            .WithVersion("1.0.0")
+            .WithNewVersion("3.0.0")
+            .Build();
+        InitializeLoaders();
+        await InstalledPackagesLoader.Instance.AddForeign(
+            new PackageBuilder()
+                .WithManager(manager)
+                .WithId("Contoso.Tool")
+                .WithVersion("10c8e557")
+                .Build()
+        );
+
+        using var operation = new UpdatePackageOperation(
+            package,
+            new InstallOptions { UninstallPreviousVersionsOnUpdate = true }
+        );
+
+        var inner = Assert.Single(GetInnerOperations(operation, "PostOperations"));
+        var uninstall = Assert.IsType<UninstallPackageOperation>(inner.Operation);
+        Assert.Equal("10c8e557", uninstall.Package.VersionString);
+    }
+
     [Fact]
     public void UninstallOperationBuildsPreAndPostCommandsForUninstallPath()
     {
@@ -244,10 +377,128 @@ public sealed class PackageOperationsTests
         );
 
         await operation.MainThread();
-        await WaitForAsync(() => InstalledPackagesLoader.Instance.GetEquivalentPackage(package) is not null);
 
         Assert.Equal(PackageTag.AlreadyInstalled, package.Tag);
         Assert.NotNull(InstalledPackagesLoader.Instance.GetEquivalentPackage(package));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task SuccessfulPackageOperationWaitsForInstalledSnapshotBeforeReportingCompletion(bool update)
+    {
+        using var allowSnapshot = new ManualResetEventSlim();
+        var snapshotStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        Package? installedPackage = null;
+        var manager = new PackageManagerBuilder()
+            .WithInstalledPackages(_ =>
+            {
+                snapshotStarted.TrySetResult();
+                if (!allowSnapshot.Wait(TimeSpan.FromSeconds(30)))
+                    throw new TimeoutException("The test did not release the installed snapshot.");
+                return [Assert.IsType<Package>(installedPackage)];
+            })
+            .Build();
+        var package = new PackageBuilder()
+            .WithManager(manager)
+            .WithId("dotnetsay")
+            .WithVersion("2.1.4")
+            .WithNewVersion("3.0.3")
+            .Build();
+        installedPackage = new PackageBuilder()
+            .WithManager(manager)
+            .WithId("dotnetsay")
+            .WithVersion("3.0.3")
+            .Build();
+        InitializeLoaders();
+        if (update)
+            await InstalledPackagesLoader.Instance.AddForeign(package);
+
+        var options = new InstallOptions { Version = "3.0.3" };
+        using AbstractOperation operation = update
+            ? new SimulatedUpdatePackageOperation(package, options, OperationVeredict.Success)
+            : new SimulatedInstallPackageOperation(package, options, OperationVeredict.Success);
+        bool successReported = false;
+        bool successObservedSnapshot = false;
+        operation.OperationSucceeded += (_, _) =>
+        {
+            successReported = true;
+            successObservedSnapshot = InstalledPackagesLoader.Instance.GetEquivalentPackages(package)
+                .Any(installed => installed.VersionString == "3.0.3");
+        };
+
+        Task run = operation.MainThread();
+        try
+        {
+            await snapshotStarted.Task.WaitAsync(TimeSpan.FromSeconds(30));
+            Assert.NotEqual(OperationStatus.Succeeded, operation.Status);
+            Assert.False(run.IsCompleted);
+            Assert.False(successReported);
+        }
+        finally
+        {
+            allowSnapshot.Set();
+            await run.WaitAsync(TimeSpan.FromSeconds(30));
+            // Drain the old detached callback when this regression runs against the baseline.
+            await WaitForAsync(() => InstalledPackagesLoader.Instance.GetEquivalentPackages(package)
+                .Any(installed => installed.VersionString == "3.0.3"));
+        }
+
+        Assert.Equal(OperationStatus.Succeeded, operation.Status);
+        Assert.True(successObservedSnapshot);
+        Assert.Contains(InstalledPackagesLoader.Instance.GetEquivalentPackages(package),
+            installed => installed.VersionString == "3.0.3");
+    }
+
+    [Fact]
+    public async Task SuccessfulPackageOperationReportsBookkeepingFailureBeforeSuccess()
+    {
+        var package = CreatePackage();
+        InitializeLoaders();
+        using var operation = new FailingBookkeepingInstallPackageOperation(package);
+        bool successReported = false;
+        operation.OperationSucceeded += (_, _) => successReported = true;
+
+        await operation.MainThread();
+
+        Assert.Equal(OperationStatus.Failed, operation.Status);
+        Assert.Equal(PackageTag.Failed, package.Tag);
+        Assert.False(successReported);
+    }
+
+    [Fact]
+    public async Task InstallOperationCanceledByManagerClearsPackageTag()
+    {
+        var package = CreatePackage();
+        InitializeLoaders();
+        using var operation = new SimulatedInstallPackageOperation(
+            package,
+            new InstallOptions(),
+            OperationVeredict.Canceled
+        );
+
+        await operation.MainThread();
+
+        Assert.Equal(OperationStatus.Canceled, operation.Status);
+        Assert.Equal(PackageTag.Default, package.Tag);
+    }
+
+    [Fact]
+    public async Task InstallOperationCanceledWhileQueuedClearsPackageTag()
+    {
+        var package = CreatePackage();
+        InitializeLoaders();
+        using var operation = new SimulatedInstallPackageOperation(
+            package,
+            new InstallOptions(),
+            OperationVeredict.Success
+        );
+        operation.Enqueued += (_, _) => operation.Cancel();
+
+        await operation.MainThread();
+
+        Assert.Equal(OperationStatus.Canceled, operation.Status);
+        Assert.Equal(PackageTag.Default, package.Tag);
     }
 
     [Fact]
@@ -276,10 +527,8 @@ public sealed class PackageOperationsTests
         );
 
         await operation.MainThread();
-        await WaitForAsync(() =>
-            InstalledPackagesLoader.Instance.GetEquivalentPackages(searchResult)
-                .Any(package => package.VersionString == "2.1.4")
-        );
+        Assert.Contains(InstalledPackagesLoader.Instance.GetEquivalentPackages(searchResult),
+            package => package.VersionString == "2.1.4");
 
         Assert.DoesNotContain(
             InstalledPackagesLoader.Instance.GetEquivalentPackages(searchResult),
@@ -315,10 +564,8 @@ public sealed class PackageOperationsTests
         );
 
         await operation.MainThread();
-        await WaitForAsync(() =>
-            InstalledPackagesLoader.Instance.GetEquivalentPackages(upgradablePackage)
-                .Any(package => package.VersionString == "3.0.3")
-        );
+        Assert.Contains(InstalledPackagesLoader.Instance.GetEquivalentPackages(upgradablePackage),
+            package => package.VersionString == "3.0.3");
 
         Assert.DoesNotContain(
             InstalledPackagesLoader.Instance.GetEquivalentPackages(upgradablePackage),
@@ -353,15 +600,39 @@ public sealed class PackageOperationsTests
         );
 
         await operation.MainThread();
-        await WaitForAsync(() =>
-            InstalledPackagesLoader.Instance.GetEquivalentPackages(installedBeforeUpdate)
-                .Any(package => package.VersionString == "3.0.3")
-        );
+        Assert.Contains(InstalledPackagesLoader.Instance.GetEquivalentPackages(installedBeforeUpdate),
+            package => package.VersionString == "3.0.3");
 
         Assert.DoesNotContain(
             InstalledPackagesLoader.Instance.GetEquivalentPackages(installedBeforeUpdate),
             package => package.VersionString == "2.1.4"
         );
+    }
+
+    [Fact]
+    public async Task OutputSnapshotsDoNotThrowWhileLinesAreAppended()
+    {
+        using var operation = new LoggingStubOperation();
+        const int lines = 20_000;
+
+        var writer = Task.Run(() =>
+        {
+            for (int i = 0; i < lines; i++)
+                operation.EmitLine($"line {i}", AbstractOperation.LineType.Information);
+        });
+
+        var reader = Task.Run(() =>
+        {
+            while (!writer.IsCompleted)
+            {
+                foreach (var _ in operation.GetOutput()) { }
+                foreach (var _ in operation.RawOutputForTests()) { }
+            }
+        });
+
+        await Task.WhenAll(writer, reader);
+
+        Assert.Equal(lines, operation.GetOutput().Count);
     }
 
     [Fact]
@@ -1410,6 +1681,18 @@ public sealed class PackageOperationsTests
         {
             return Task.FromResult(_veredict);
         }
+    }
+
+    private sealed class FailingBookkeepingInstallPackageOperation : InspectableInstallPackageOperation
+    {
+        public FailingBookkeepingInstallPackageOperation(IPackage package)
+            : base(package, new InstallOptions()) { }
+
+        protected override Task<OperationVeredict> PerformOperation()
+            => Task.FromResult(OperationVeredict.Success);
+
+        protected override Task HandleSuccess()
+            => Task.FromException(new InvalidOperationException("Installed snapshot bookkeeping failed."));
     }
 
     private sealed class SimulatedUpdatePackageOperation : UpdatePackageOperation

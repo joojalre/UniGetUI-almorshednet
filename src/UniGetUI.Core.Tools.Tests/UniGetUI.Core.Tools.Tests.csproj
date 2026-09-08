@@ -32,5 +32,6 @@
 
     <ItemGroup>
         <Compile Include="..\SharedAssemblyInfo.cs" Link="SharedAssemblyInfo.cs" />
+        <Compile Include="..\UniGetUI.Avalonia\Infrastructure\MaintenanceScheduler.cs" Link="Scheduling\MaintenanceScheduler.cs" />
     </ItemGroup>
 </Project>

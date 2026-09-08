@@ -24,6 +24,10 @@ trim_trailing_whitespace = true
 insert_final_newline = true
 
 [*.cs]
+# Trim, AOT and single-file diagnostics are release correctness failures.
+dotnet_analyzer_diagnostic.category-Trimming.severity = error
+dotnet_analyzer_diagnostic.category-AOT.severity = error
+dotnet_analyzer_diagnostic.category-SingleFile.severity = error
 indent_size = 4
 dotnet_sort_system_directives_first = true
 
