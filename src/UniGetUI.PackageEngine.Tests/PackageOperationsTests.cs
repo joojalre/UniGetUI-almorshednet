@@ -377,10 +377,93 @@ public sealed class PackageOperationsTests
         );
 
         await operation.MainThread();
-        await WaitForAsync(() => InstalledPackagesLoader.Instance.GetEquivalentPackage(package) is not null);
 
         Assert.Equal(PackageTag.AlreadyInstalled, package.Tag);
         Assert.NotNull(InstalledPackagesLoader.Instance.GetEquivalentPackage(package));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task SuccessfulPackageOperationWaitsForInstalledSnapshotBeforeReportingCompletion(bool update)
+    {
+        using var allowSnapshot = new ManualResetEventSlim();
+        var snapshotStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        Package? installedPackage = null;
+        var manager = new PackageManagerBuilder()
+            .WithInstalledPackages(_ =>
+            {
+                snapshotStarted.TrySetResult();
+                if (!allowSnapshot.Wait(TimeSpan.FromSeconds(30)))
+                    throw new TimeoutException("The test did not release the installed snapshot.");
+                return [Assert.IsType<Package>(installedPackage)];
+            })
+            .Build();
+        var package = new PackageBuilder()
+            .WithManager(manager)
+            .WithId("dotnetsay")
+            .WithVersion("2.1.4")
+            .WithNewVersion("3.0.3")
+            .Build();
+        installedPackage = new PackageBuilder()
+            .WithManager(manager)
+            .WithId("dotnetsay")
+            .WithVersion("3.0.3")
+            .Build();
+        InitializeLoaders();
+        if (update)
+            await InstalledPackagesLoader.Instance.AddForeign(package);
+
+        var options = new InstallOptions { Version = "3.0.3" };
+        using AbstractOperation operation = update
+            ? new SimulatedUpdatePackageOperation(package, options, OperationVeredict.Success)
+            : new SimulatedInstallPackageOperation(package, options, OperationVeredict.Success);
+        bool successReported = false;
+        bool successObservedSnapshot = false;
+        operation.OperationSucceeded += (_, _) =>
+        {
+            successReported = true;
+            successObservedSnapshot = InstalledPackagesLoader.Instance.GetEquivalentPackages(package)
+                .Any(installed => installed.VersionString == "3.0.3");
+        };
+
+        Task run = operation.MainThread();
+        try
+        {
+            await snapshotStarted.Task.WaitAsync(TimeSpan.FromSeconds(30));
+            Assert.NotEqual(OperationStatus.Succeeded, operation.Status);
+            Assert.False(run.IsCompleted);
+            Assert.False(successReported);
+        }
+        finally
+        {
+            allowSnapshot.Set();
+            await run.WaitAsync(TimeSpan.FromSeconds(30));
+            // Drain the old detached callback when this regression runs against the baseline.
+            await WaitForAsync(() => InstalledPackagesLoader.Instance.GetEquivalentPackages(package)
+                .Any(installed => installed.VersionString == "3.0.3"));
+        }
+
+        Assert.Equal(OperationStatus.Succeeded, operation.Status);
+        Assert.True(successObservedSnapshot);
+        Assert.Contains(InstalledPackagesLoader.Instance.GetEquivalentPackages(package),
+            installed => installed.VersionString == "3.0.3");
+    }
+
+    [Fact]
+    public async Task SuccessfulPackageOperationReportsBookkeepingFailureBeforeSuccess()
+    {
+        var package = CreatePackage();
+        InitializeLoaders();
+        using var operation = new FailingBookkeepingInstallPackageOperation(package);
+        bool successReported = false;
+        operation.OperationSucceeded += (_, _) => successReported = true;
+
+        await operation.MainThread();
+
+        Assert.Equal(OperationStatus.Failed, operation.Status);
+        Assert.Equal(PackageTag.Failed, package.Tag);
+        Assert.False(successReported);
     }
 
     [Fact]
@@ -444,10 +527,8 @@ public sealed class PackageOperationsTests
         );
 
         await operation.MainThread();
-        await WaitForAsync(() =>
-            InstalledPackagesLoader.Instance.GetEquivalentPackages(searchResult)
-                .Any(package => package.VersionString == "2.1.4")
-        );
+        Assert.Contains(InstalledPackagesLoader.Instance.GetEquivalentPackages(searchResult),
+            package => package.VersionString == "2.1.4");
 
         Assert.DoesNotContain(
             InstalledPackagesLoader.Instance.GetEquivalentPackages(searchResult),
@@ -483,10 +564,8 @@ public sealed class PackageOperationsTests
         );
 
         await operation.MainThread();
-        await WaitForAsync(() =>
-            InstalledPackagesLoader.Instance.GetEquivalentPackages(upgradablePackage)
-                .Any(package => package.VersionString == "3.0.3")
-        );
+        Assert.Contains(InstalledPackagesLoader.Instance.GetEquivalentPackages(upgradablePackage),
+            package => package.VersionString == "3.0.3");
 
         Assert.DoesNotContain(
             InstalledPackagesLoader.Instance.GetEquivalentPackages(upgradablePackage),
@@ -521,10 +600,8 @@ public sealed class PackageOperationsTests
         );
 
         await operation.MainThread();
-        await WaitForAsync(() =>
-            InstalledPackagesLoader.Instance.GetEquivalentPackages(installedBeforeUpdate)
-                .Any(package => package.VersionString == "3.0.3")
-        );
+        Assert.Contains(InstalledPackagesLoader.Instance.GetEquivalentPackages(installedBeforeUpdate),
+            package => package.VersionString == "3.0.3");
 
         Assert.DoesNotContain(
             InstalledPackagesLoader.Instance.GetEquivalentPackages(installedBeforeUpdate),
@@ -1604,6 +1681,18 @@ public sealed class PackageOperationsTests
         {
             return Task.FromResult(_veredict);
         }
+    }
+
+    private sealed class FailingBookkeepingInstallPackageOperation : InspectableInstallPackageOperation
+    {
+        public FailingBookkeepingInstallPackageOperation(IPackage package)
+            : base(package, new InstallOptions()) { }
+
+        protected override Task<OperationVeredict> PerformOperation()
+            => Task.FromResult(OperationVeredict.Success);
+
+        protected override Task HandleSuccess()
+            => Task.FromException(new InvalidOperationException("Installed snapshot bookkeeping failed."));
     }
 
     private sealed class SimulatedUpdatePackageOperation : UpdatePackageOperation

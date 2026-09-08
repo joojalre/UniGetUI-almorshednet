@@ -129,9 +129,10 @@ namespace UniGetUI.PackageEngine.Operations
                 if (status is OperationStatus.Canceled)
                     Package.SetTag(PackageTag.Default);
             };
-            OperationSucceeded += (_, _) => HandleSuccess();
             OperationFailed += (_, _) => HandleFailure();
         }
+
+        protected override Task OnOperationSucceededAsync() => HandleSuccess();
 
         public static bool HasPendingOperation(IPackage package, OperationType role)
         {

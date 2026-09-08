@@ -335,6 +335,8 @@ public abstract partial class AbstractOperation : IDisposable
             try
             {
                 result = await _runOperation();
+                if (result is OperationVeredict.Success)
+                    await OnOperationSucceededAsync();
             }
             finally
             {
@@ -733,6 +735,9 @@ public abstract partial class AbstractOperation : IDisposable
     protected abstract void ApplyRetryAction(string retryMode);
     protected abstract Task<OperationVeredict> PerformOperation();
     public abstract Task<Uri> GetOperationIcon();
+
+    // Keep queue ownership until successful operations finish updating their shared state.
+    protected virtual Task OnOperationSucceededAsync() => Task.CompletedTask;
 
     protected virtual void OnRunCompleted() { }
 
