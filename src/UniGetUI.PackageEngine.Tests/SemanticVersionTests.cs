@@ -14,6 +14,11 @@ public sealed class SemanticVersionTests
     [InlineData("10.0.11", "2.1.0")]
     [InlineData("11.0.0-preview.7", "11.0.0-preview.6")]
     [InlineData("1.0.0-beta", "1.0.0-alpha.9")]
+    [InlineData("1.0.0-2147483648", "1.0.0-2147483647")]
+    [InlineData("1.0.0-10000000000", "1.0.0-9999999999")]
+    [InlineData("1.0.0-18446744073709551616", "1.0.0-9999999999999999999")]
+    [InlineData("1.0.0-0alpha", "1.0.0-9999999999")]
+    [InlineData("1.0.0-01alpha", "1.0.0-0001alpha")]
     public void HigherVersionsCompareGreater(string higher, string lower)
     {
         Assert.True(SemanticVersion.TryParse(higher, out var parsedHigher));
@@ -28,6 +33,7 @@ public sealed class SemanticVersionTests
     [InlineData("1.0.0+build.5", "1.0.0")]
     [InlineData("1.2", "1.2.0")]
     [InlineData("v1.0.0", "1.0.0")]
+    [InlineData("1.0.0-9999999999+001", "1.0.0-9999999999+002")]
     public void EquivalentVersionsCompareEqual(string left, string right)
     {
         Assert.True(SemanticVersion.TryParse(left, out var parsedLeft));
@@ -35,6 +41,40 @@ public sealed class SemanticVersionTests
 
         Assert.Equal(0, parsedLeft.CompareTo(parsedRight));
         Assert.True(parsedLeft == parsedRight);
+        Assert.Equal(parsedLeft.GetHashCode(), parsedRight.GetHashCode());
+    }
+
+    [Theory]
+    [InlineData(SemVerLabels.CaseSensitive)]
+    [InlineData(SemVerLabels.CaseInsensitive)]
+    public void NumericPreReleaseLabelsHaveNoMachineIntegerLimit(SemVerLabels labelComparison)
+    {
+        string lowerLabel = new('9', 1024);
+        string higherLabel = "1" + new string('0', 1024);
+        Assert.True(SemanticVersion.TryParse("1.0.0-" + lowerLabel, labelComparison, out var lower));
+        Assert.True(SemanticVersion.TryParse("1.0.0-" + higherLabel, labelComparison, out var higher));
+        Assert.True(SemanticVersion.TryParse("1.0.0-0alpha", labelComparison, out var alphabetic));
+
+        Assert.True(lower < higher);
+        Assert.True(higher > lower);
+        Assert.True(higher < alphabetic);
+        Assert.True(alphabetic > higher);
+    }
+
+    [Theory]
+    [InlineData(SemVerLabels.CaseSensitive)]
+    [InlineData(SemVerLabels.CaseInsensitive)]
+    public void ToleratedZeroPaddedNumericLabelsKeepNumericEquality(SemVerLabels labelComparison)
+    {
+        // Leading zeros are not canonical SemVer, but this parser already accepts them.
+        string label = new('9', 1024);
+        Assert.True(SemanticVersion.TryParse("1.0.0-" + label, labelComparison, out var plain));
+        Assert.True(SemanticVersion.TryParse("1.0.0-000" + label, labelComparison, out var padded));
+
+        Assert.Equal(0, plain.CompareTo(padded));
+        Assert.Equal(0, padded.CompareTo(plain));
+        Assert.True(plain == padded);
+        Assert.Equal(plain.GetHashCode(), padded.GetHashCode());
     }
 
     [Theory]

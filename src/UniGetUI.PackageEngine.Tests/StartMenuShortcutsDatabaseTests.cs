@@ -1085,6 +1085,22 @@ public sealed class StartMenuShortcutsDatabaseTests : IDisposable
         Assert.DoesNotContain(throughLink, StartMenuShortcutsDatabase.GetShortcutsOnDisk());
         Assert.Null(StartMenuShortcutsDatabase.ResolveTargetDirectory("Escape"));
         Assert.True(File.Exists(target));
+
+        string valid = CreateShortcut(_userPrograms, "Valid.lnk");
+        Assert.False(StartMenuShortcutsDatabase.DeleteFromDisk(throughLink));
+        Assert.Null(StartMenuShortcutsDatabase.MoveShortcut(throughLink, valid, overwrite: true));
+        Assert.Null(StartMenuShortcutsDatabase.MoveShortcut(valid, throughLink, overwrite: true));
+
+        const string packageId = "TestManager\\Contoso.Tool";
+        Settings.SetDictionaryItem(
+            Settings.K.RelocatedStartMenuShortcuts,
+            $"{packageId}|{valid}",
+            throughLink
+        );
+        Assert.Equal(0, StartMenuShortcutsDatabase.CleanupForPackage(packageId));
+        Assert.Empty(Settings.GetDictionary<string, string>(Settings.K.RelocatedStartMenuShortcuts)!);
+        Assert.Equal("shortcut", File.ReadAllText(valid));
+        Assert.Equal("shortcut", File.ReadAllText(target));
     }
 
     [Fact]
@@ -1149,5 +1165,146 @@ public sealed class StartMenuShortcutsDatabaseTests : IDisposable
 
         Assert.True(StartMenuShortcutsDatabase.DeleteFromDisk(shortcut));
         Assert.True(Directory.Exists(_userPrograms));
+    }
+
+    [Theory]
+    [InlineData("cleanup", false)]
+    [InlineData("cleanup", true)]
+    [InlineData("replay", false)]
+    [InlineData("replay", true)]
+    [InlineData("rebase", false)]
+    [InlineData("rebase", true)]
+    public void InvalidRelocationPathsAreForgottenWithoutChangingFiles(
+        string operation,
+        bool invalidOriginal
+    )
+    {
+        const string packageId = "TestManager\\Contoso.Tool";
+        string validOriginal = CreateShortcut(_userPrograms, "Original.lnk");
+        string validRelocated = CreateShortcut(_userPrograms, "Relocated.lnk");
+        string[] invalidPaths =
+        [
+            CreateShortcut(Path.Combine(_testRoot, "Outside"), "Important.lnk"),
+            CreateShortcut(_userPrograms + "-Sibling", "Important.url"),
+            CreateShortcut(_userPrograms, "Important.txt"),
+            Path.Combine(_userPrograms, "..", "Outside.lnk"),
+        ];
+        File.WriteAllText(invalidPaths[^1], "shortcut");
+
+        if (operation is "rebase")
+            StartMenuShortcutsDatabase.SetRule(packageId, "Dev Tools");
+
+        foreach (string invalidPath in invalidPaths)
+        {
+            string original = invalidOriginal ? invalidPath : validOriginal;
+            string relocated = invalidOriginal ? validRelocated : invalidPath;
+            Settings.SetDictionaryItem(
+                Settings.K.RelocatedStartMenuShortcuts,
+                $"{packageId}|{original}",
+                relocated
+            );
+
+            int changed = operation switch
+            {
+                "cleanup" => StartMenuShortcutsDatabase.CleanupForPackage(packageId),
+                "replay" => StartMenuShortcutsDatabase.ReplayRelocations(packageId),
+                "rebase" => StartMenuShortcutsDatabase.RebaseRelocations(packageId),
+                _ => throw new ArgumentException("Unknown test operation", nameof(operation)),
+            };
+
+            Assert.Equal(0, changed);
+            Assert.Equal("shortcut", File.ReadAllText(original));
+            Assert.Equal("shortcut", File.ReadAllText(relocated));
+            Assert.Empty(Settings.GetDictionary<string, string>(Settings.K.RelocatedStartMenuShortcuts)!);
+        }
+
+        Assert.False(Directory.Exists(Path.Combine(_userPrograms, "Dev Tools")));
+    }
+
+    [Fact]
+    public void MalformedRelocationRecordsAreDiscarded()
+    {
+        string shortcut = CreateShortcut(_userPrograms, "Contoso Tool.lnk");
+        Settings.SetDictionary(
+            Settings.K.RelocatedStartMenuShortcuts,
+            new Dictionary<string, string?>
+            {
+                ["missing separator"] = shortcut,
+                [$"TestManager\\Contoso.Tool|{shortcut}"] = null,
+                [$"TestManager\\Other.Tool|{shortcut}"] = " ",
+            }
+        );
+
+        Assert.Empty(StartMenuShortcutsDatabase.GetAllRelocatedShortcuts());
+        Assert.Empty(Settings.GetDictionary<string, string>(Settings.K.RelocatedStartMenuShortcuts)!);
+        Assert.Equal("shortcut", File.ReadAllText(shortcut));
+    }
+
+    [Fact]
+    public void MutationHelpersRejectUnmanagedPathsAndNonShortcutFiles()
+    {
+        string valid = CreateShortcut(_userPrograms, "Valid.lnk");
+        string[] invalidPaths =
+        [
+            CreateShortcut(Path.Combine(_testRoot, "Outside"), "Important.lnk"),
+            CreateShortcut(_userPrograms, "Important.txt"),
+        ];
+
+        foreach (string invalid in invalidPaths)
+        {
+            Assert.False(StartMenuShortcutsDatabase.DeleteFromDisk(invalid));
+            Assert.Null(StartMenuShortcutsDatabase.MoveShortcut(invalid, valid, overwrite: true));
+            Assert.Null(StartMenuShortcutsDatabase.MoveShortcut(valid, invalid, overwrite: true));
+            Assert.Equal("shortcut", File.ReadAllText(invalid));
+            Assert.Equal("shortcut", File.ReadAllText(valid));
+        }
+
+        string outsideDirectory = Path.Combine(_testRoot, "NewOutside");
+        Assert.Null(StartMenuShortcutsDatabase.MoveShortcut(valid, Path.Combine(outsideDirectory, "Valid.lnk")));
+        Assert.False(Directory.Exists(outsideDirectory));
+    }
+
+    [Fact]
+    public void MutationHelpersNeverRelocateSharedShortcuts()
+    {
+        string shared = CreateShortcut(_commonPrograms, "Shared.lnk");
+        string personal = CreateShortcut(_userPrograms, "Personal.lnk");
+
+        Assert.Null(StartMenuShortcutsDatabase.MoveShortcut(shared, personal, overwrite: true));
+        Assert.Null(StartMenuShortcutsDatabase.MoveShortcut(personal, shared, overwrite: true));
+        Assert.Equal("shortcut", File.ReadAllText(shared));
+        Assert.Equal("shortcut", File.ReadAllText(personal));
+    }
+
+    [Fact]
+    public void ShortcutFileSymlinksAreNotManagedOrMutated()
+    {
+        string target = CreateShortcut(Path.Combine(_testRoot, "Outside"), "Important.lnk");
+        string link = Path.Combine(_userPrograms, "Linked.lnk");
+        try
+        {
+            File.CreateSymbolicLink(link, target);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            // Creating symbolic links requires a privilege or Developer Mode on Windows.
+            return;
+        }
+
+        try
+        {
+            string valid = CreateShortcut(_userPrograms, "Valid.lnk");
+            Assert.False(StartMenuShortcutsDatabase.IsManagedShortcutPath(link));
+            Assert.False(StartMenuShortcutsDatabase.DeleteFromDisk(link));
+            Assert.Null(StartMenuShortcutsDatabase.MoveShortcut(link, valid, overwrite: true));
+            Assert.Null(StartMenuShortcutsDatabase.MoveShortcut(valid, link, overwrite: true));
+            Assert.Equal("shortcut", File.ReadAllText(target));
+            Assert.Equal("shortcut", File.ReadAllText(valid));
+            Assert.True(File.GetAttributes(link).HasFlag(FileAttributes.ReparsePoint));
+        }
+        finally
+        {
+            File.Delete(link);
+        }
     }
 }

@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Numerics;
 
 namespace UniGetUI.Core.Tools
 {
@@ -139,17 +140,17 @@ namespace UniGetUI.Core.Tools
 
         private static int CompareLabel(string left, string right, bool caseInsensitive)
         {
-            bool leftNumeric = int.TryParse(
+            bool leftNumeric = BigInteger.TryParse(
                 left,
                 NumberStyles.None,
                 CultureInfo.InvariantCulture,
-                out int leftValue
+                out BigInteger leftValue
             );
-            bool rightNumeric = int.TryParse(
+            bool rightNumeric = BigInteger.TryParse(
                 right,
                 NumberStyles.None,
                 CultureInfo.InvariantCulture,
-                out int rightValue
+                out BigInteger rightValue
             );
 
             if (leftNumeric && rightNumeric)

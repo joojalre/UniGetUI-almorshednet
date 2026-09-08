@@ -1,5 +1,8 @@
 using System.Net;
+using UniGetUI.Core.Data;
 using UniGetUI.Core.IconEngine;
+using UniGetUI.Core.SettingsEngine;
+using UniGetUI.Core.Tools;
 using UniGetUI.PackageEngine.Classes.Manager;
 using UniGetUI.PackageEngine.Interfaces;
 using UniGetUI.PackageEngine.ManagerClasses.Manager;
@@ -1201,6 +1204,117 @@ public sealed class NuGetV3ClientTests
         Assert.Equal(requestsAfterDetails, feed.Server.RequestPaths.Count);
     }
 
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public void UpdateDetailsUseCandidateMetadataAndKeepEachVersionCachedSeparately(
+        bool installedFirst,
+        bool omitPackageContent
+    )
+    {
+        using var feed = new FakeV3Feed
+        {
+            OmitPackageContent = omitPackageContent,
+            CatalogEntryForVersion = version => $$"""
+            {
+              "id": "Contoso.Tool",
+              "version": "{{version}}",
+              "description": "Metadata {{version}}",
+              "packageHash": "hash-{{version}}",
+              "packageSize": {{version[0]}}000,
+              "iconUrl": "https://icons.test/{{version}}.png",
+              "dependencyGroups": [{"dependencies":[{"id":"Contoso.Core","range":"[{{version}}, )"}]}]
+            }
+            """,
+        };
+        NuGetV3ServiceIndex.ClearCache();
+        NuGetV3Client.ClearCaches();
+        BaseNuGet.V3Entries.Clear();
+        BaseNuGet.V3IconUrls.Clear();
+        var manager = new TestNuGetManager($"{feed.BaseUri}v3/index.json");
+
+        Package CreatePackage(string? candidate)
+        {
+            var builder = new PackageBuilder()
+                .WithManager(manager)
+                .WithSource(manager.Properties.DefaultSource)
+                .WithId("Contoso.Tool")
+                .WithVersion("1.0.0");
+            return (candidate is null ? builder : builder.WithNewVersion(candidate)).Build();
+        }
+
+        void CheckDetails(string? candidate)
+        {
+            string version = candidate ?? "1.0.0";
+            var package = CreatePackage(candidate);
+            var details = new PackageDetailsBuilder().Build(package);
+            manager.ExposedDetailsHelper.LoadDetails(details);
+            Assert.Equal($"Metadata {version}", details.Description);
+            Assert.Equal($"hash-{version}", details.InstallerHash);
+            Assert.Equal((version[0] - '0') * 1000, details.InstallerSize);
+            Assert.Equal(
+                $"{feed.BaseUri}flatcontainer/contoso.tool/{version}/contoso.tool.{version}.nupkg",
+                details.InstallerUrl?.AbsoluteUri
+            );
+            Assert.Equal(
+                $"{feed.BaseUri}registration-gz-semver2/contoso.tool/{version}.json",
+                details.ManifestUrl?.AbsoluteUri
+            );
+            Assert.Equal(version, Assert.Single(details.Dependencies).Version);
+        }
+
+        if (installedFirst)
+            CheckDetails(null);
+        CheckDetails("2.0.0");
+        CheckDetails("3.0.0");
+        if (!installedFirst)
+            CheckDetails(null);
+
+        int requestsAfterDetails = feed.Server.RequestPaths.Count;
+        CheckDetails("2.0.0");
+        CheckDetails("3.0.0");
+        CheckDetails(null);
+        var update = CreatePackage("3.0.0");
+        BaseNuGet.V3IconUrls[update.GetVersionedHash()] = "https://icons.test/installed.png";
+        var icon = manager.ExposedDetailsHelper.LoadIcon(update);
+        Assert.NotNull(icon);
+        Assert.Equal(new Uri("https://icons.test/3.0.0.png"), icon.Value.Url);
+        Assert.Equal("3.0.0", icon.Value.Version);
+        Assert.Equal(requestsAfterDetails, feed.Server.RequestPaths.Count);
+    }
+
+    [Fact]
+    public void UpdateDetailsUseCandidateNuspecWhenRegistrationsAreUnavailable()
+    {
+        using var feed = new FakeV3Feed { AdvertiseRegistrations = false };
+        NuGetV3ServiceIndex.ClearCache();
+        NuGetV3Client.ClearCaches();
+        BaseNuGet.V3Entries.Clear();
+        var manager = new TestNuGetManager($"{feed.BaseUri}v3/index.json");
+        var package = new PackageBuilder()
+            .WithManager(manager)
+            .WithSource(manager.Properties.DefaultSource)
+            .WithId("Contoso.Tool")
+            .WithVersion("1.0.0")
+            .WithNewVersion("2.0.0")
+            .Build();
+        var details = new PackageDetailsBuilder().Build(package);
+
+        manager.ExposedDetailsHelper.LoadDetails(details);
+
+        Assert.Equal(
+            $"{feed.BaseUri}flatcontainer/contoso.tool/2.0.0/contoso.tool.nuspec",
+            details.ManifestUrl?.AbsoluteUri
+        );
+        Assert.Equal(
+            $"{feed.BaseUri}flatcontainer/contoso.tool/2.0.0/contoso.tool.2.0.0.nupkg",
+            details.InstallerUrl?.AbsoluteUri
+        );
+        Assert.DoesNotContain(feed.Server.RequestPaths, path => path.Contains("/1.0.0/"));
+    }
+
     // The flat container defines no /{id}/{version}/icon route - it is a nuget.org extension - so
     // an embedded icon must not be guessed at on a conforming third-party feed, where the request
     // would simply 404.
@@ -1290,9 +1404,56 @@ public sealed class NuGetV3ClientTests
         Assert.Empty(feed.Server.RequestPaths);
     }
 
+    [Theory]
+    [InlineData("v3/index.json", true, "2.0.0")]
+    [InlineData("v3/index.json", false, "1.0.0")]
+    [InlineData("api/v2/", true, "1.0.0")]
+    public async Task VersionBearingInstallerNamesMatchTheSourceSpecificPayload(
+        string sourcePath,
+        bool upgradable,
+        string expectedVersion
+    )
+    {
+        using var feed = new FakeV3Feed();
+        string testRoot = Path.Combine(Path.GetTempPath(), "NuGetV3InstallerNames", Guid.NewGuid().ToString("N"));
+        CoreData.TEST_DataDirectoryOverride = testRoot;
+        Directory.CreateDirectory(CoreData.UniGetUIUserConfigurationDirectory);
+        try
+        {
+            Settings.ResetSettings();
+            var manager = new TestNuGetManager($"{feed.BaseUri}{sourcePath}", ".NETTest");
+            var builder = new PackageBuilder()
+                .WithManager(manager)
+                .WithSource(manager.Properties.DefaultSource)
+                .WithName("Contoso Tool")
+                .WithId("Contoso.Tool")
+                .WithVersion("1.0.0");
+            var package = (upgradable ? builder.WithNewVersion("2.0.0") : builder).Build();
+
+            foreach (string scheme in new[]
+            {
+                InstallerFileNaming.NameAndVersionValue,
+                InstallerFileNaming.IdAndVersionValue,
+                InstallerFileNaming.PublisherNameAndVersionValue,
+            })
+            {
+                Settings.SetValue(Settings.K.InstallerFileNameScheme, scheme);
+                string name = scheme == InstallerFileNaming.NameAndVersionValue ? "Contoso Tool" : "Contoso.Tool";
+                Assert.Equal($"{name}_{expectedVersion}.nupkg", await package.GetInstallerFileName());
+            }
+            Assert.Empty(feed.Server.RequestPaths);
+        }
+        finally
+        {
+            Settings.ResetSettings();
+            CoreData.TEST_DataDirectoryOverride = null;
+            Directory.Delete(testRoot, recursive: true);
+        }
+    }
+
     private sealed class TestNuGetManager : BaseNuGet
     {
-        public TestNuGetManager(string sourceUrl)
+        public TestNuGetManager(string sourceUrl, string name = "TestNuGet")
         {
             Capabilities = new ManagerCapabilities
             {
@@ -1304,7 +1465,7 @@ public sealed class NuGetV3ClientTests
             Properties = new ManagerProperties
             {
                 Id = "test-nuget",
-                Name = "TestNuGet",
+                Name = name,
                 DefaultSource = new ManagerSource(this, "test", new Uri(sourceUrl)),
             };
 
@@ -1369,6 +1530,10 @@ public sealed class NuGetV3ClientTests
         public IReadOnlyList<string>? DuplicateIdVersions { get; init; }
 
         public string? CatalogEntryBody { get; init; }
+
+        public Func<string, string>? CatalogEntryForVersion { get; init; }
+
+        public bool OmitPackageContent { get; init; }
 
         public string? SearchBody { get; init; }
 
@@ -1445,7 +1610,10 @@ public sealed class NuGetV3ClientTests
             }
 
             if (path.Contains("/catalog/", StringComparison.OrdinalIgnoreCase))
-                return Json(CatalogEntry);
+            {
+                string version = Path.GetFileNameWithoutExtension(path)["contoso.tool.".Length..];
+                return Json(CatalogEntryForVersion?.Invoke(version) ?? CatalogEntry);
+            }
 
             if (path.Contains("/api/v2", StringComparison.OrdinalIgnoreCase))
                 return (200, "<entry><d:Id>Contoso.Tool</d:Id></entry>", "application/xml");
@@ -1560,11 +1728,14 @@ public sealed class NuGetV3ClientTests
             string catalogEntry = InlineCatalogEntry
                 ? CatalogEntry
                 : $"\"{BaseUri}catalog/contoso.tool.{version}.json\"";
+            string packageContent = OmitPackageContent
+                ? "null"
+                : $"\"{BaseUri}flatcontainer/contoso.tool/{version}/contoso.tool.{version}.nupkg\"";
 
             return $$"""
             {
               "catalogEntry": {{catalogEntry}},
-              "packageContent": "{{BaseUri}}flatcontainer/contoso.tool/{{version}}/contoso.tool.{{version}}.nupkg",
+              "packageContent": {{packageContent}},
               "published": "2026-01-02T03:04:05Z",
               "listed": {{(listed ? "true" : "false")}}
             }

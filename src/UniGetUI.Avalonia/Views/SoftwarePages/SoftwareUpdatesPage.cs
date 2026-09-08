@@ -52,6 +52,7 @@ public class SoftwareUpdatesPage : AbstractPackagesPage
         NoMatches_BackgroundText = CoreTools.Translate("No results were found matching the input criteria"),
     })
     {
+        MaintenanceScheduler.InstallUpdatesAsync = InstallScheduledUpdatesAsync;
         ViewModel.PackagesLoaded += reason => { _ = WhenPackagesLoaded(); };
     }
 
@@ -367,18 +368,33 @@ public class SoftwareUpdatesPage : AbstractPackagesPage
         IEnumerable<IPackage> packages,
         bool? elevated = null,
         bool? interactive = null,
-        bool? no_integrity = null)
+        bool? no_integrity = null,
+        bool waitForCompletion = false)
     {
-        foreach (var pkg in packages)
+        List<Task> running = [];
+        try
         {
-            var opts = await InstallOptionsFactory.LoadApplicableAsync(
-                pkg, elevated: elevated, interactive: interactive, no_integrity: no_integrity);
-            if (PackageOperation.HasPendingOperation(pkg, OperationType.Update)) continue;
-            var op = new UpdatePackageOperation(pkg, opts);
-            op.OperationSucceeded += (_, _) => TelemetryHandler.UpdatePackage(pkg, TEL_OP_RESULT.SUCCESS);
-            op.OperationFailed += (_, _) => TelemetryHandler.UpdatePackage(pkg, TEL_OP_RESULT.FAILED);
-            AvaloniaOperationRegistry.Add(op);
-            _ = op.MainThread();
+            foreach (var pkg in packages)
+            {
+                var opts = await InstallOptionsFactory.LoadApplicableAsync(
+                    pkg, elevated: elevated, interactive: interactive, no_integrity: no_integrity);
+                if (PackageOperation.HasPendingOperation(pkg, OperationType.Update)) continue;
+                var op = new UpdatePackageOperation(pkg, opts);
+                op.OperationSucceeded += (_, _) => TelemetryHandler.UpdatePackage(pkg, TEL_OP_RESULT.SUCCESS);
+                op.OperationFailed += (_, _) => TelemetryHandler.UpdatePackage(pkg, TEL_OP_RESULT.FAILED);
+                AvaloniaOperationRegistry.Add(op);
+                if (waitForCompletion)
+                    running.Add(MaintenanceScheduler.AwaitInstallOperationAsync(op));
+                else
+                    _ = op.MainThread();
+            }
+        }
+        finally
+        {
+            // Keep ownership of every launched installer even if preparing a later one fails.
+            // Launch all tasks first so the operation queue still controls parallelism.
+            if (waitForCompletion)
+                await MaintenanceScheduler.AwaitInstallOperationsAsync(running);
         }
     }
 
@@ -419,6 +435,10 @@ public class SoftwareUpdatesPage : AbstractPackagesPage
 
     private static async Task WhenPackagesLoaded()
     {
+        // The scheduler explicitly awaits its own callback after refreshing the list.
+        // Its load event must not launch the same updates through this notification path.
+        if (MaintenanceScheduler.IsInstallingUpdates) return;
+
         try
         {
             bool shouldAutoInstall = MaintenanceScheduler.IsAutoInstallDue();
@@ -429,24 +449,10 @@ public class SoftwareUpdatesPage : AbstractPackagesPage
 
             if (upgradable.Count == 0) return;
 
-            if (Settings.Get(Settings.K.DisableAUPOnBattery) && PowerConditions.IsOnBattery())
+            if (!CanInstallAutomatically(upgradable)) return;
+
+            if (shouldAutoInstall)
             {
-                Logger.Warn("Updates will not be installed automatically because the device is on battery.");
-                ShowAvailableUpdatesNotification(upgradable);
-            }
-            else if (Settings.Get(Settings.K.DisableAUPOnBatterySaver) && PowerConditions.IsBatterySaverOn())
-            {
-                Logger.Warn("Updates will not be installed automatically because battery saver is enabled.");
-                ShowAvailableUpdatesNotification(upgradable);
-            }
-            else if (Settings.Get(Settings.K.DisableAUPOnMeteredConnections) && PowerConditions.IsOnMeteredConnection())
-            {
-                Logger.Warn("Updates will not be installed automatically because the current internet connection is metered.");
-                ShowAvailableUpdatesNotification(upgradable);
-            }
-            else if (shouldAutoInstall)
-            {
-                MaintenanceScheduler.MarkAutoInstallHandled();
                 await LaunchScheduledUpdate(upgradable);
             }
             else if (CoreData.GetProcessArguments().Contains("--updateapps"))
@@ -464,6 +470,35 @@ public class SoftwareUpdatesPage : AbstractPackagesPage
         {
             Logger.Error(ex);
         }
+    }
+
+    private static async Task InstallScheduledUpdatesAsync()
+    {
+        var upgradable = UpgradablePackagesLoader.Instance.Packages
+            .Where(p => p.Tag is not PackageTag.OnQueue and not PackageTag.BeingProcessed)
+            .ToList();
+
+        if (upgradable.Count == 0) return;
+        if (!CanInstallAutomatically(upgradable))
+            throw new InvalidOperationException("Scheduled updates were deferred by the power or network settings");
+
+        await LaunchScheduledUpdate(upgradable, waitForCompletion: true);
+    }
+
+    private static bool CanInstallAutomatically(IReadOnlyList<IPackage> upgradable)
+    {
+        string? reason = null;
+        if (Settings.Get(Settings.K.DisableAUPOnBattery) && PowerConditions.IsOnBattery())
+            reason = "Updates will not be installed automatically because the device is on battery.";
+        else if (Settings.Get(Settings.K.DisableAUPOnBatterySaver) && PowerConditions.IsBatterySaverOn())
+            reason = "Updates will not be installed automatically because battery saver is enabled.";
+        else if (Settings.Get(Settings.K.DisableAUPOnMeteredConnections) && PowerConditions.IsOnMeteredConnection())
+            reason = "Updates will not be installed automatically because the current internet connection is metered.";
+
+        if (reason is null) return true;
+        Logger.Warn(reason);
+        ShowAvailableUpdatesNotification(upgradable);
+        return false;
     }
 
     private static void MarkForAutoUpdates(IEnumerable<IPackage> packages)
@@ -492,7 +527,9 @@ public class SoftwareUpdatesPage : AbstractPackagesPage
             MainWindow.RuntimeNotificationLevel.Success);
     }
 
-    private static async Task LaunchScheduledUpdate(IReadOnlyList<IPackage> upgradable)
+    private static async Task LaunchScheduledUpdate(
+        IReadOnlyList<IPackage> upgradable,
+        bool waitForCompletion = false)
     {
         bool markedOnly = MaintenanceScheduleStore.GetInstallTargets()
             is ScheduleInstallTargets.MarkedPackagesOnly;
@@ -509,8 +546,8 @@ public class SoftwareUpdatesPage : AbstractPackagesPage
 
         if (targets.Count > 0)
         {
-            await LaunchUpdate(targets);
             ShowUpgradingPackagesNotification(targets);
+            await LaunchUpdate(targets, waitForCompletion: waitForCompletion);
         }
         else
         {

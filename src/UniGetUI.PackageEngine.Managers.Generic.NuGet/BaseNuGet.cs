@@ -38,9 +38,14 @@ namespace UniGetUI.PackageEngine.Managers.PowerShellManager
         public static Dictionary<long, string> Manifests = new();
 
         internal static readonly ConcurrentDictionary<long, string> V3IconUrls = new();
-        internal static readonly ConcurrentDictionary<long, V3CatalogEntry> V3Entries = new();
+        internal static readonly ConcurrentDictionary<(long PackageHash, string Version), V3CatalogEntry> V3Entries = new();
 
         public override bool InstallerUrlFollowsPackageVersion => true;
+
+        public override string? GetInstallerVersionOverride(IPackage package) =>
+            package.IsUpgradable && NuGetV3ServiceIndex.IsV3Source(package.Source)
+                ? package.NewVersionString
+                : null;
 
         public override int? CompareVersions(string versionA, string versionB)
         {

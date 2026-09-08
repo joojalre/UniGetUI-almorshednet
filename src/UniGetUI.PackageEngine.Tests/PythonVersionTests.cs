@@ -57,6 +57,84 @@ public sealed class PythonVersionTests
     }
 
     [Theory]
+    [InlineData("", "!1.0")]
+    [InlineData("1.", "")]
+    [InlineData("1.0a", "")]
+    [InlineData("1.0b", "")]
+    [InlineData("1.0rc", "")]
+    [InlineData("1.0.post", "")]
+    [InlineData("1.0-", "")]
+    [InlineData("1.0.dev", "")]
+    [InlineData("1.0+local.", "")]
+    public void NumericComponentsHaveNoMachineIntegerLimit(string prefix, string suffix)
+    {
+        string[] numbers =
+        [
+            "0",
+            "2147483647",
+            "2147483648",
+            "9999999999",
+            "10000000000",
+            "18446744073709551616",
+            new string('9', 1024),
+            "1" + new string('0', 1024),
+        ];
+
+        for (int i = 1; i < numbers.Length; i++)
+        {
+            Assert.True(PythonVersion.TryParse(prefix + numbers[i - 1] + suffix, out var lower));
+            Assert.True(PythonVersion.TryParse(prefix + numbers[i] + suffix, out var higher));
+
+            Assert.True(lower < higher);
+            Assert.True(higher > lower);
+            Assert.False(lower == higher);
+        }
+
+        string number = numbers[^1];
+        Assert.True(PythonVersion.TryParse(prefix + number + suffix, out var plain));
+        Assert.True(PythonVersion.TryParse(prefix + "000" + number + suffix, out var padded));
+
+        Assert.Equal(0, plain.CompareTo(padded));
+        Assert.Equal(0, padded.CompareTo(plain));
+        Assert.True(plain == padded);
+        Assert.Equal(plain.GetHashCode(), padded.GetHashCode());
+    }
+
+    [Theory]
+    [InlineData("000!1.0", "1.0")]
+    [InlineData("1.0.000", "1.0")]
+    [InlineData("1.0a000", "1.0a")]
+    [InlineData("1.0.post000", "1.0.post")]
+    [InlineData("1.0-000", "1.0.post")]
+    [InlineData("1.0.dev000", "1.0.dev")]
+    [InlineData("1.0+000", "1.0+0")]
+    [InlineData("1.9999999999.000", "1.9999999999")]
+    public void ZeroComponentsNormalizeWithoutChangingEquality(string left, string right)
+    {
+        Assert.True(PythonVersion.TryParse(left, out var parsedLeft));
+        Assert.True(PythonVersion.TryParse(right, out var parsedRight));
+
+        Assert.Equal(0, parsedLeft.CompareTo(parsedRight));
+        Assert.Equal(0, parsedRight.CompareTo(parsedLeft));
+        Assert.True(parsedLeft == parsedRight);
+        Assert.Equal(parsedLeft.GetHashCode(), parsedRight.GetHashCode());
+    }
+
+    [Theory]
+    [InlineData("1.0+9999999999", "1.0+alpha", 1)]
+    [InlineData("1.0+10000000000", "1.0+9999999999", 1)]
+    [InlineData("1.0+0001alpha", "1.0+01alpha", -1)]
+    [InlineData("1.0-9999999999", "1.0.post9999999999", 0)]
+    public void LargeComponentsRetainPep440SegmentRules(string left, string right, int expected)
+    {
+        Assert.True(PythonVersion.TryParse(left, out var parsedLeft));
+        Assert.True(PythonVersion.TryParse(right, out var parsedRight));
+
+        Assert.Equal(expected, Math.Sign(parsedLeft.CompareTo(parsedRight)));
+        Assert.Equal(-expected, Math.Sign(parsedRight.CompareTo(parsedLeft)));
+    }
+
+    [Theory]
     [InlineData("")]
     [InlineData("   ")]
     [InlineData("not-a-version")]

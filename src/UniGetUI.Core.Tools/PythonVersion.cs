@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Numerics;
 using System.Text.RegularExpressions;
 
 namespace UniGetUI.Core.Tools
@@ -18,15 +19,15 @@ namespace UniGetUI.Core.Tools
         private const int PreCategoryPresent = 0;
         private const int PreCategoryAbsent = 1;
 
-        private static readonly int[] NoRelease = [];
+        private static readonly BigInteger[] NoRelease = [];
 
-        private readonly int _epoch;
-        private readonly int[] _release;
+        private readonly BigInteger _epoch;
+        private readonly BigInteger[] _release;
         private readonly int _preCategory;
         private readonly int _preRank;
-        private readonly int _preNumber;
-        private readonly int? _post;
-        private readonly int? _dev;
+        private readonly BigInteger _preNumber;
+        private readonly BigInteger? _post;
+        private readonly BigInteger? _dev;
         private readonly string[]? _local;
 
         public string Original { get; }
@@ -37,13 +38,13 @@ namespace UniGetUI.Core.Tools
 
         private PythonVersion(
             string original,
-            int epoch,
-            int[] release,
+            BigInteger epoch,
+            BigInteger[] release,
             int preCategory,
             int preRank,
-            int preNumber,
-            int? post,
-            int? dev,
+            BigInteger preNumber,
+            BigInteger? post,
+            BigInteger? dev,
             string[]? local
         )
         {
@@ -81,14 +82,14 @@ namespace UniGetUI.Core.Tools
             if (!match.Success)
                 return false;
 
-            int epoch = ParseNumber(match.Groups["epoch"], 0);
+            BigInteger epoch = ParseNumber(match.Groups["epoch"]);
 
             string[] releaseParts = match.Groups["release"].Value.Split('.');
-            int[] release = new int[releaseParts.Length];
+            BigInteger[] release = new BigInteger[releaseParts.Length];
             for (int i = 0; i < releaseParts.Length; i++)
             {
                 if (
-                    !int.TryParse(
+                    !BigInteger.TryParse(
                         releaseParts[i],
                         NumberStyles.None,
                         CultureInfo.InvariantCulture,
@@ -100,7 +101,7 @@ namespace UniGetUI.Core.Tools
 
             int preCategory = PreCategoryAbsent;
             int preRank = 0;
-            int preNumber = 0;
+            BigInteger preNumber = BigInteger.Zero;
             if (match.Groups["pre_l"].Success)
             {
                 preCategory = PreCategoryPresent;
@@ -110,17 +111,17 @@ namespace UniGetUI.Core.Tools
                     "b" or "beta" => 1,
                     _ => 2,
                 };
-                preNumber = ParseNumber(match.Groups["pre_n"], 0);
+                preNumber = ParseNumber(match.Groups["pre_n"]);
             }
 
-            int? post = null;
+            BigInteger? post = null;
             if (match.Groups["post_n1"].Success)
-                post = ParseNumber(match.Groups["post_n1"], 0);
+                post = ParseNumber(match.Groups["post_n1"]);
             else if (match.Groups["post_l"].Success)
-                post = ParseNumber(match.Groups["post_n2"], 0);
+                post = ParseNumber(match.Groups["post_n2"]);
 
-            int? dev = match.Groups["dev"].Success
-                ? ParseNumber(match.Groups["dev_n"], 0)
+            BigInteger? dev = match.Groups["dev"].Success
+                ? ParseNumber(match.Groups["dev_n"])
                 : null;
 
             string[]? local = match.Groups["local"].Success
@@ -144,21 +145,15 @@ namespace UniGetUI.Core.Tools
             return true;
         }
 
-        private static int ParseNumber(Group group, int fallback) =>
+        private static BigInteger ParseNumber(Group group) =>
             group.Success
-            && int.TryParse(
-                group.Value,
-                NumberStyles.None,
-                CultureInfo.InvariantCulture,
-                out int parsed
-            )
-                ? parsed
-                : fallback;
+                ? BigInteger.Parse(group.Value, NumberStyles.None, CultureInfo.InvariantCulture)
+                : BigInteger.Zero;
 
-        private static int[] StripTrailingZeros(int[] release)
+        private static BigInteger[] StripTrailingZeros(BigInteger[] release)
         {
             int length = release.Length;
-            while (length > 0 && release[length - 1] is 0)
+            while (length > 0 && release[length - 1].IsZero)
                 length--;
 
             if (length == release.Length)
@@ -166,7 +161,7 @@ namespace UniGetUI.Core.Tools
             if (length is 0)
                 return NoRelease;
 
-            int[] trimmed = new int[length];
+            BigInteger[] trimmed = new BigInteger[length];
             Array.Copy(release, trimmed, length);
             return trimmed;
         }
@@ -210,13 +205,13 @@ namespace UniGetUI.Core.Tools
             return CompareLocal(_local, other._local);
         }
 
-        private static int CompareRelease(int[] left, int[] right)
+        private static int CompareRelease(BigInteger[] left, BigInteger[] right)
         {
             int length = Math.Max(left.Length, right.Length);
             for (int i = 0; i < length; i++)
             {
-                int a = i < left.Length ? left[i] : 0;
-                int b = i < right.Length ? right[i] : 0;
+                BigInteger a = i < left.Length ? left[i] : BigInteger.Zero;
+                BigInteger b = i < right.Length ? right[i] : BigInteger.Zero;
                 int comparison = a.CompareTo(b);
                 if (comparison is not 0)
                     return comparison;
@@ -225,7 +220,7 @@ namespace UniGetUI.Core.Tools
             return 0;
         }
 
-        private static int CompareLowestFirst(int? left, int? right) =>
+        private static int CompareLowestFirst(BigInteger? left, BigInteger? right) =>
             (left, right) switch
             {
                 (null, null) => 0,
@@ -234,7 +229,7 @@ namespace UniGetUI.Core.Tools
                 _ => left.Value.CompareTo(right.Value),
             };
 
-        private static int CompareHighestWhenAbsent(int? left, int? right) =>
+        private static int CompareHighestWhenAbsent(BigInteger? left, BigInteger? right) =>
             (left, right) switch
             {
                 (null, null) => 0,
@@ -260,17 +255,17 @@ namespace UniGetUI.Core.Tools
                 if (i >= right.Length)
                     return 1;
 
-                bool leftNumeric = int.TryParse(
+                bool leftNumeric = BigInteger.TryParse(
                     left[i],
                     NumberStyles.None,
                     CultureInfo.InvariantCulture,
-                    out int leftValue
+                    out BigInteger leftValue
                 );
-                bool rightNumeric = int.TryParse(
+                bool rightNumeric = BigInteger.TryParse(
                     right[i],
                     NumberStyles.None,
                     CultureInfo.InvariantCulture,
-                    out int rightValue
+                    out BigInteger rightValue
                 );
 
                 if (leftNumeric && rightNumeric)

@@ -233,6 +233,7 @@ namespace UniGetUI.PackageEngine.Managers.PowerShellManager
         private static bool GetDetailsV3(IPackageDetails details, INativeTaskLogger logger)
         {
             IPackage package = details.Package;
+            string version = GetMetadataVersion(package);
             NuGetV3ServiceIndex? index = NuGetV3ServiceIndex.Resolve(package.Source);
             if (index is null)
             {
@@ -244,8 +245,8 @@ namespace UniGetUI.PackageEngine.Managers.PowerShellManager
             }
 
             details.ManifestUrl =
-                NuGetV3Client.GetRegistrationLeafUrl(index, package.Id, package.VersionString)
-                ?? NuGetV3Client.GetNuspecUrl(index, package.Id, package.VersionString);
+                NuGetV3Client.GetRegistrationLeafUrl(index, package.Id, version)
+                ?? NuGetV3Client.GetNuspecUrl(index, package.Id, version);
 
             V3CatalogEntry? entry = GetOrFetchCatalogEntry(package, index);
             if (entry is null)
@@ -283,7 +284,7 @@ namespace UniGetUI.PackageEngine.Managers.PowerShellManager
             Uri? installerUrl =
                 Uri.TryCreate(entry.PackageContent, UriKind.Absolute, out Uri? packageContent)
                     ? packageContent
-                    : NuGetV3Client.GetPackageContentUrl(index, package.Id, package.VersionString);
+                    : NuGetV3Client.GetPackageContentUrl(index, package.Id, version);
             details.InstallerUrl = installerUrl;
 
             if (entry.PackageSize > 0)
@@ -317,13 +318,17 @@ namespace UniGetUI.PackageEngine.Managers.PowerShellManager
             return true;
         }
 
+        private static string GetMetadataVersion(IPackage package) =>
+            package.Manager.GetInstallerVersionOverride(package) ?? package.VersionString;
+
         private static V3CatalogEntry? GetOrFetchCatalogEntry(
             IPackage package,
             NuGetV3ServiceIndex index
         )
         {
-            long hash = package.GetVersionedHash();
-            if (BaseNuGet.V3Entries.TryGetValue(hash, out V3CatalogEntry? cached))
+            string version = GetMetadataVersion(package);
+            var key = (package.GetHash(), version);
+            if (BaseNuGet.V3Entries.TryGetValue(key, out V3CatalogEntry? cached))
             {
                 Logger.Debug(
                     $"Loading cached NuGet V3 metadata for package {package.Id} on manager {package.Manager.Name}"
@@ -334,11 +339,11 @@ namespace UniGetUI.PackageEngine.Managers.PowerShellManager
             V3CatalogEntry? entry = NuGetV3Client.GetCatalogEntry(
                 index,
                 package.Id,
-                package.VersionString
+                version
             );
 
             if (entry is not null)
-                BaseNuGet.V3Entries[hash] = entry;
+                BaseNuGet.V3Entries[key] = entry;
 
             return entry;
         }
@@ -401,20 +406,21 @@ namespace UniGetUI.PackageEngine.Managers.PowerShellManager
 
         private static CacheableIcon? GetIconV3(IPackage package)
         {
-            long hash = package.GetVersionedHash();
-            bool searchReported = BaseNuGet.V3IconUrls.TryGetValue(
-                hash,
-                out string? searchIconUrl
+            string version = GetMetadataVersion(package);
+            string? searchIconUrl = null;
+            bool searchReported = !package.IsUpgradable && BaseNuGet.V3IconUrls.TryGetValue(
+                package.GetVersionedHash(),
+                out searchIconUrl
             );
 
             if (searchReported && !string.IsNullOrWhiteSpace(searchIconUrl))
             {
                 return Uri.TryCreate(searchIconUrl, UriKind.Absolute, out Uri? searchUri)
-                    ? new CacheableIcon(searchUri, package.VersionString)
+                    ? new CacheableIcon(searchUri, version)
                     : null;
             }
 
-            V3CatalogEntry? entry = BaseNuGet.V3Entries.GetValueOrDefault(hash);
+            V3CatalogEntry? entry = BaseNuGet.V3Entries.GetValueOrDefault((package.GetHash(), version));
 
             if (entry is null && searchReported)
                 return null;
@@ -428,14 +434,14 @@ namespace UniGetUI.PackageEngine.Managers.PowerShellManager
                 return null;
 
             if (Uri.TryCreate(entry.IconUrl, UriKind.Absolute, out Uri? iconUrl))
-                return new CacheableIcon(iconUrl, package.VersionString);
+                return new CacheableIcon(iconUrl, version);
 
             if (
                 !string.IsNullOrWhiteSpace(entry.IconFile)
-                && NuGetV3Client.GetEmbeddedIconUrl(index, package.Id, package.VersionString)
+                && NuGetV3Client.GetEmbeddedIconUrl(index, package.Id, version)
                     is { } embeddedIconUrl
             )
-                return new CacheableIcon(embeddedIconUrl, package.VersionString);
+                return new CacheableIcon(embeddedIconUrl, version);
 
             return null;
         }

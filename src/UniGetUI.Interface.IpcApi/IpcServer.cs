@@ -1,4 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using System.Text.Json;
 using Microsoft.AspNetCore.Builder;
@@ -24,10 +23,6 @@ namespace UniGetUI.Interface
         public static string Token = "";
     }
 
-    [UnconditionalSuppressMessage(
-        "Trimming",
-        "IL2026",
-        Justification = "IPC JSON metadata is supplied by IpcJsonContext; remaining ASP.NET Core JSON overload warnings are guarded by that generated resolver.")]
     public class IpcServer
     {
         public string SessionId { get; } = Guid.NewGuid().ToString("N");

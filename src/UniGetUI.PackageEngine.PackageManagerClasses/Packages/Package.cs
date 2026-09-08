@@ -333,6 +333,9 @@ namespace UniGetUI.PackageEngine.PackageClasses
 
         private string ResolveInstallerVersion()
         {
+            if (Manager.GetInstallerVersionOverride(this) is { } version)
+                return version;
+
             if (Manager.InstallerUrlFollowsPackageVersion)
                 return VersionString;
 

@@ -2,14 +2,15 @@ using Avalonia.Threading;
 using UniGetUI.Avalonia.ViewModels.Pages.SettingsPages;
 using UniGetUI.Core.Logging;
 using UniGetUI.Core.Tools.Scheduling;
+using UniGetUI.PackageEngine.Enums;
 using UniGetUI.PackageEngine.PackageLoader;
+using UniGetUI.PackageOperations;
 
 namespace UniGetUI.Avalonia.Infrastructure;
 
 internal static class MaintenanceScheduler
 {
     private static readonly TimeSpan TickInterval = TimeSpan.FromSeconds(30);
-    private static readonly TimeSpan PendingInstallLifetime = TimeSpan.FromHours(2);
     private static readonly TimeSpan RetryDelay = TimeSpan.FromMinutes(15);
     private static readonly TimeSpan TaskTimeout = TimeSpan.FromMinutes(30);
     private static readonly TimeSpan InstalledListMaxAge = TimeSpan.FromMinutes(15);
@@ -24,7 +25,18 @@ internal static class MaintenanceScheduler
     private static bool _started;
     private static bool _isHeadless;
     private static volatile bool _updatesWereLoaded;
-    private static DateTime? _pendingInstallSince;
+
+    internal static TimeProvider Clock { get; set; } = TimeProvider.System;
+    internal static Func<Task>? InstallUpdatesAsync { get; set; }
+
+    public static bool IsInstallingUpdates
+    {
+        get
+        {
+            lock (RunningTasks)
+                return RunningTasks.Contains(MaintenanceTaskKind.InstallUpdates);
+        }
+    }
 
     private sealed record RetryState(int Attempts, DateTime NextAttemptLocal);
 
@@ -61,26 +73,10 @@ internal static class MaintenanceScheduler
 
     public static bool IsAutoInstallDue()
     {
-        if (_pendingInstallSince is { } since && DateTime.Now - since > PendingInstallLifetime)
-            _pendingInstallSince = null;
-
         var schedule = MaintenanceScheduleStore.Get(MaintenanceTaskKind.InstallUpdates);
-        if (!schedule.Enabled)
-        {
-            _pendingInstallSince = null;
-            return false;
-        }
-
-        if (schedule.Frequency is ScheduleFrequency.AfterEveryUpdateCheck)
-        {
-            _pendingInstallSince = null;
-            return true;
-        }
-
-        return _pendingInstallSince is not null;
+        return !IsInstallingUpdates && schedule.Enabled
+            && schedule.Frequency is ScheduleFrequency.AfterEveryUpdateCheck;
     }
-
-    public static void MarkAutoInstallHandled() => _pendingInstallSince = null;
 
     public static bool ShouldRunAtAppStart(MaintenanceTaskKind kind)
     {
@@ -101,7 +97,7 @@ internal static class MaintenanceScheduler
 
         try
         {
-            MaintenanceScheduleStore.SetLastRun(kind, DateTime.UtcNow);
+            MaintenanceScheduleStore.SetLastRun(kind, Clock.GetUtcNow().UtcDateTime);
             Logger.ImportantInfo($"Running the maintenance task \"{MaintenanceTasks.GetId(kind)}\"");
 
             Task work = ExecuteAsync(kind);
@@ -117,11 +113,19 @@ internal static class MaintenanceScheduler
             ClearRetries(kind);
             MaintenanceScheduleStore.ClearLastFailure(kind);
         }
+        catch (OperationCanceledException ex)
+        {
+            Logger.Warn($"The maintenance task \"{MaintenanceTasks.GetId(kind)}\" was canceled");
+            Logger.Warn(ex.Message);
+            MaintenanceScheduleStore.SetLastFailure(kind, Clock.GetUtcNow().UtcDateTime);
+            // A user-canceled installer must not be launched again by a pending retry.
+            ClearRetries(kind);
+        }
         catch (Exception ex)
         {
             Logger.Error($"The maintenance task \"{MaintenanceTasks.GetId(kind)}\" failed");
             Logger.Error(ex);
-            MaintenanceScheduleStore.SetLastFailure(kind, DateTime.UtcNow);
+            MaintenanceScheduleStore.SetLastFailure(kind, Clock.GetUtcNow().UtcDateTime);
             ScheduleRetry(kind, previousRun);
         }
         finally
@@ -148,8 +152,20 @@ internal static class MaintenanceScheduler
                 break;
 
             case MaintenanceTaskKind.InstallUpdates:
-                _pendingInstallSince = DateTime.Now;
+                var installUpdates = InstallUpdatesAsync
+                    ?? throw new InvalidOperationException("The scheduled update handler is unavailable");
+                bool enabledWhenStarted = MaintenanceScheduleStore.Get(kind).Enabled;
                 await ReloadUpdatesAsync();
+                // Loader events only notify the page. This callback owns the installers and
+                // must remain awaited until their terminal results and cleanup are known.
+                await Dispatcher.UIThread.InvokeAsync(async () =>
+                {
+                    // Honor disabling an in-flight schedule, including while waiting for the
+                    // UI thread. An explicit Run now that started disabled is still allowed.
+                    if (enabledWhenStarted && !MaintenanceScheduleStore.Get(kind).Enabled)
+                        throw new OperationCanceledException("The scheduled package updates were disabled");
+                    await installUpdates();
+                });
                 break;
 
             case MaintenanceTaskKind.LocalBackup:
@@ -163,6 +179,29 @@ internal static class MaintenanceScheduler
                 if (!await BackupViewModel.DoCloudBackupStatic())
                     throw new InvalidOperationException("The cloud backup did not complete, see the log for details");
                 break;
+        }
+    }
+
+    internal static async Task AwaitInstallOperationAsync(AbstractOperation operation)
+    {
+        await operation.MainThread();
+        if (operation.Status is OperationStatus.Canceled)
+            throw new OperationCanceledException("A scheduled package update was canceled");
+        if (operation.Status is not OperationStatus.Succeeded)
+            throw new InvalidOperationException("A scheduled package update failed, see the operation log for details");
+    }
+
+    internal static async Task AwaitInstallOperationsAsync(IReadOnlyList<Task> operations)
+    {
+        try
+        {
+            await Task.WhenAll(operations);
+        }
+        catch (Exception) when (operations.Any(operation => operation.IsCanceled))
+        {
+            // WhenAll otherwise prioritizes a fault over cancellation in a mixed batch.
+            // Retrying that whole batch would relaunch packages the user just canceled.
+            throw new OperationCanceledException("A scheduled package update was canceled; the batch will not be retried");
         }
     }
 
@@ -191,13 +230,13 @@ internal static class MaintenanceScheduler
         loader.FinishedLoading += (_, _) =>
         {
             _updatesWereLoaded = true;
-            MaintenanceScheduleStore.SetLastRun(MaintenanceTaskKind.CheckForUpdates, DateTime.UtcNow);
+            MaintenanceScheduleStore.SetLastRun(MaintenanceTaskKind.CheckForUpdates, Clock.GetUtcNow().UtcDateTime);
         };
     }
 
-    private static void Evaluate()
+    internal static void Evaluate()
     {
-        DateTime now = DateTime.Now;
+        DateTime now = Clock.GetLocalNow().DateTime;
 
         foreach (var kind in MaintenanceTasks.All)
         {
@@ -210,7 +249,7 @@ internal static class MaintenanceScheduler
                     continue;
 
                 var schedule = MaintenanceScheduleStore.Get(kind);
-                if (!schedule.Enabled || !IsClockDriven(schedule.Frequency))
+                if (!schedule.Enabled)
                     continue;
 
                 if (TryGetPendingRetry(kind, out var retry))
@@ -225,7 +264,8 @@ internal static class MaintenanceScheduler
                         continue;
                     }
                 }
-                else if (!ScheduleEvaluator.IsDue(schedule, MaintenanceScheduleStore.GetLastRun(kind), now))
+                else if (!IsClockDriven(schedule.Frequency)
+                    || !ScheduleEvaluator.IsDue(schedule, MaintenanceScheduleStore.GetLastRun(kind), now))
                 {
                     continue;
                 }
@@ -274,7 +314,7 @@ internal static class MaintenanceScheduler
                 return;
             }
 
-            Retries[kind] = new RetryState(attempts, DateTime.Now + RetryDelay);
+            Retries[kind] = new RetryState(attempts, Clock.GetLocalNow().DateTime + RetryDelay);
         }
 
         if (previousRun is { } stamp)
@@ -288,7 +328,7 @@ internal static class MaintenanceScheduler
     private static async Task ReloadUpdatesAsync()
     {
         if (UpgradablePackagesLoader.Instance is not { } loader)
-            return;
+            throw new InvalidOperationException("The update list is unavailable, see the log for details");
 
         if (loader.IsLoading)
             await loader.WaitForCurrentLoadAsync();
@@ -318,5 +358,5 @@ internal static class MaintenanceScheduler
 
     private static bool IsInstalledListStale(InstalledPackagesLoader loader)
         => loader.LastLoadFinishedUtc is not { } finished
-            || DateTime.UtcNow - finished > InstalledListMaxAge;
+            || Clock.GetUtcNow().UtcDateTime - finished > InstalledListMaxAge;
 }

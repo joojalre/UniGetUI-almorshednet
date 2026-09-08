@@ -30,6 +30,9 @@ namespace UniGetUI.PackageEngine.Interfaces
 
         public bool InstallerUrlFollowsPackageVersion { get; }
 
+        /// <summary>Override the version in installer filenames for a source-specific payload.</summary>
+        public string? GetInstallerVersionOverride(IPackage package) => null;
+
         public bool CommandLineIsShellInterpreted { get; }
 
         /// <summary>

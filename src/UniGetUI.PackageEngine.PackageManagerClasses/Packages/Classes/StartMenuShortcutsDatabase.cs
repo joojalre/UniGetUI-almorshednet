@@ -125,12 +125,19 @@ public static class StartMenuShortcutsDatabase
         }
     }
 
-    private static bool IsReparsePoint(string directory)
+    private static bool IsReparsePoint(string path)
     {
         try
         {
-            var info = new DirectoryInfo(directory);
-            return info.Exists && info.Attributes.HasFlag(FileAttributes.ReparsePoint);
+            return File.GetAttributes(path).HasFlag(FileAttributes.ReparsePoint);
+        }
+        catch (FileNotFoundException)
+        {
+            return false;
+        }
+        catch (DirectoryNotFoundException)
+        {
+            return false;
         }
         catch (Exception)
         {
@@ -895,6 +902,16 @@ public static class StartMenuShortcutsDatabase
     {
         try
         {
+            if (
+                !IsManagedShortcutPath(originalPath)
+                || !IsShortcutFile(originalPath)
+                || !IsUnderUserPrograms(originalPath)
+                || !IsManagedShortcutPath(destinationPath)
+                || !IsShortcutFile(destinationPath)
+                || !IsUnderUserPrograms(destinationPath)
+            )
+                return null;
+
             string? destinationDirectory = Path.GetDirectoryName(destinationPath);
             if (string.IsNullOrEmpty(destinationDirectory))
                 return null;
@@ -904,6 +921,9 @@ public static class StartMenuShortcutsDatabase
             string finalDestination = overwrite
                 ? destinationPath
                 : GetFreeDestination(destinationPath);
+
+            if (!IsManagedShortcutPath(finalDestination) || !IsShortcutFile(finalDestination))
+                return null;
 
             File.Move(originalPath, finalDestination, overwrite);
             Logger.Info($"Relocated the Start Menu shortcut {originalPath} to {finalDestination}");
@@ -930,9 +950,12 @@ public static class StartMenuShortcutsDatabase
 
     public static bool DeleteFromDisk(string shortcutPath)
     {
-        Logger.Info("Deleting Start Menu shortcut " + shortcutPath);
         try
         {
+            if (!IsManagedShortcutPath(shortcutPath) || !IsShortcutFile(shortcutPath))
+                return false;
+
+            Logger.Info("Deleting Start Menu shortcut " + shortcutPath);
             File.Delete(shortcutPath);
             PruneEmptyDirectories(Path.GetDirectoryName(shortcutPath));
             return true;
@@ -967,12 +990,40 @@ public static class StartMenuShortcutsDatabase
 
     private static IReadOnlyDictionary<string, string> GetRelocationRecords()
     {
-        return (
-                Settings.GetDictionary<string, string>(Settings.K.RelocatedStartMenuShortcuts)
-                ?? new Dictionary<string, string?>()
+        lock (DatabaseLock)
+        {
+            Dictionary<string, string> records = [];
+
+            foreach (
+                var record in Settings.GetDictionary<string, string>(
+                    Settings.K.RelocatedStartMenuShortcuts
+                ) ?? new Dictionary<string, string?>()
             )
-            .Where(kvp => !string.IsNullOrWhiteSpace(kvp.Value))
-            .ToDictionary(kvp => kvp.Key, kvp => kvp.Value!);
+            {
+                var parsed = ParseRecordKey(record.Key);
+                if (
+                    parsed is null
+                    || !IsManagedShortcutPath(parsed.Value.OriginalPath)
+                    || !IsShortcutFile(parsed.Value.OriginalPath)
+                    || string.IsNullOrWhiteSpace(record.Value)
+                    || !IsManagedShortcutPath(record.Value)
+                    || !IsShortcutFile(record.Value)
+                )
+                {
+                    // Settings can be imported or corrupted. Forget invalid records without
+                    // ever moving or deleting the files they refer to.
+                    Settings.RemoveDictionaryKey<string, string>(
+                        Settings.K.RelocatedStartMenuShortcuts,
+                        record.Key
+                    );
+                    continue;
+                }
+
+                records.Add(record.Key, record.Value);
+            }
+
+            return records;
+        }
     }
 
     private static bool IsClaimedByAnotherPackage(string packageId, string shortcutPath)
@@ -1295,7 +1346,7 @@ public static class StartMenuShortcutsDatabase
             if (roots.Any(root => AreSamePath(root, candidate)))
                 return;
 
-            if (!IsUnderUserPrograms(candidate) || IsReparsePoint(candidate))
+            if (!IsUnderUserPrograms(candidate) || !IsManagedShortcutPath(candidate))
                 return;
 
             string? parent = Path.GetDirectoryName(candidate);

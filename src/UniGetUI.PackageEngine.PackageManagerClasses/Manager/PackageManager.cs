@@ -46,6 +46,8 @@ namespace UniGetUI.PackageEngine.ManagerClasses.Manager
         public virtual Encoding OutputEncoding => Encoding.UTF8;
         public virtual bool InstallerUrlFollowsPackageVersion => false;
 
+        public virtual string? GetInstallerVersionOverride(IPackage package) => null;
+
         public virtual bool CommandLineIsShellInterpreted => false;
 
         public virtual bool IdentifiersAreQuotedOnCommandLine => false;

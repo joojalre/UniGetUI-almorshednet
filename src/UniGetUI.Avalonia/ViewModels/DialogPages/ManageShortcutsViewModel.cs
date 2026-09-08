@@ -62,6 +62,8 @@ public partial class ManageShortcutsViewModel : ObservableObject
         StringComparer.OrdinalIgnoreCase
     );
 
+    private readonly List<StartMenuFolderRuleViewModel> _removedStartMenuRules = [];
+
     public string ShowAllStartMenuShortcutsLabel =>
         CoreTools.Translate(
             "Show every Start Menu shortcut ({0})",
@@ -248,11 +250,8 @@ public partial class ManageShortcutsViewModel : ObservableObject
         if (sender is not StartMenuFolderRuleViewModel rule)
             return;
 
-        StartMenuShortcutsDatabase.RemoveRule(rule.PackageId);
-        foreach (var shortcut in rule.PendingShortcuts)
-            StartMenuShortcutsDatabase.RemoveFromPending(rule.PackageId, shortcut);
-
-        StartMenuRules.Remove(rule);
+        if (StartMenuRules.Remove(rule))
+            _removedStartMenuRules.Add(rule);
         OnPropertyChanged(nameof(HasStartMenuRules));
     }
 
@@ -316,6 +315,14 @@ public partial class ManageShortcutsViewModel : ObservableObject
         }
 
         _unsavedStartMenuVerdicts.Clear();
+
+        foreach (var rule in _removedStartMenuRules)
+        {
+            StartMenuShortcutsDatabase.RemoveRule(rule.PackageId);
+            foreach (var shortcut in rule.PendingShortcuts)
+                StartMenuShortcutsDatabase.RemoveFromPending(rule.PackageId, shortcut);
+        }
+        _removedStartMenuRules.Clear();
 
         foreach (var rule in StartMenuRules)
         {
