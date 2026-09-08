@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <TargetFrameworks></TargetFrameworks>
+    <OutputType>Library</OutputType>
+    <AssemblyName>Avalonia.Controls.DataGrid</AssemblyName>
+    <PackageId>Avalonia.Controls.DataGrid</PackageId>
+    <IsPackable>false</IsPackable>
+    <Product>Avalonia.Controls.DataGrid (UniGetUI maintained variant)</Product>
+    <Authors>Avalonia Team and the UniGetUI contributors</Authors>
+    <Company>AvaloniaUI Project</Company>
+    <Copyright>Copyright The AvaloniaUI Project and contributors; retained source notices apply.</Copyright>
+    <PublishReadyToRun>false</PublishReadyToRun>
+    <!-- Preserve upstream formatting; trim/AOT analysis remains enabled. -->
+    <EnforceCodeStyleInBuild>false</EnforceCodeStyleInBuild>
+    <RootNamespace>Avalonia.Controls</RootNamespace>
+    <Version>12.0.0</Version>
+    <AssemblyVersion>12.0.0.0</AssemblyVersion>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsAotCompatible>true</IsAotCompatible>
+    <UseSharedCompilation>false</UseSharedCompilation>
+    <PublicSign>false</PublicSign>
+    <DelaySign>true</DelaySign>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>provenance/avalonia.public.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+  <ItemGroup><AvaloniaXaml Include="Themes/**/*.xaml" /></ItemGroup>
+  <ItemGroup><PackageReference Include="Avalonia" Version="12.0.4" /></ItemGroup>
+  <Import Project="../DataGrid.AotContract.targets" />
+</Project>

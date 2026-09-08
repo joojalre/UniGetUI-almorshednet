@@ -1,0 +1,19 @@
+<Project>
+  <PropertyGroup>
+    <ILLinkTreatWarningsAsErrors>true</ILLinkTreatWarningsAsErrors>
+    <IlcTreatWarningsAsErrors>true</IlcTreatWarningsAsErrors>
+    <TrimmerSingleWarn>false</TrimmerSingleWarn>
+    <!-- ILLink otherwise adds IL2121 to NoWarn for trimmed projects. Keep that diagnostic visible too. -->
+    <_TrimmerShowRedundantSuppressions>true</_TrimmerShowRedundantSuppressions>
+    <SuppressTrimAnalysisWarnings>false</SuppressTrimAnalysisWarnings>
+    <SuppressAotAnalysisWarnings>false</SuppressAotAnalysisWarnings>
+  </PropertyGroup>
+  <Target Name="ValidateDataGridAotContract" BeforeTargets="CoreCompile;PrepareForILLink;IlcCompile">
+    <Error Condition="$([System.String]::Copy('$(DefineConstants)').Contains('DATAGRID_LEGACY_REFLECTION'))"
+           Text="DATAGRID_LEGACY_REFLECTION is not supported by the maintained DataGrid build. Use typed item metadata, compiled templates and explicit comparers." />
+    <Error Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('$(NoWarn);$(WarningsNotAsErrors)', '(?i)(^|[;,\s])IL'))"
+           Text="Trim and NativeAOT diagnostics must not be suppressed or downgraded." />
+    <Error Condition="'$(ILLinkTreatWarningsAsErrors)' != 'true' or '$(IlcTreatWarningsAsErrors)' != 'true' or '$(TrimmerSingleWarn)' != 'false' or '$(SuppressTrimAnalysisWarnings)' != 'false' or '$(SuppressAotAnalysisWarnings)' != 'false'"
+           Text="The maintained DataGrid contract requires unsuppressed trim and NativeAOT warnings as errors." />
+  </Target>
+</Project>

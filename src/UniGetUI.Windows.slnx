@@ -4,6 +4,10 @@
     <Platform Name="arm64" />
   </Configurations>
   <Folder Name="/ExternalLibraries/">
+    <Project Path="ExternalLibraries.Avalonia.DataGrid/ExternalLibraries.Avalonia.DataGrid.csproj">
+      <Platform Solution="*|arm64" Project="arm64" />
+      <Platform Solution="*|x64" Project="x64" />
+    </Project>
     <Project Path="ExternalLibraries.Clipboard/ExternalLibraries.Clipboard.csproj">
       <Platform Solution="*|arm64" Project="arm64" />
       <Platform Solution="*|x64" Project="x64" />
@@ -233,4 +237,10 @@
     <Platform Solution="*|arm64" Project="arm64" />
     <Platform Solution="*|x64" Project="x64" />
   </Project>
+  <Folder Name="/UniGetUI.Avalonia/Tests/">
+    <Project Path="UniGetUI.Avalonia.DataGrid.NativeAotTests/UniGetUI.Avalonia.DataGrid.NativeAotTests.csproj">
+      <Platform Solution="*|arm64" Project="arm64" />
+      <Platform Solution="*|x64" Project="x64" />
+    </Project>
+  </Folder>
 </Solution>

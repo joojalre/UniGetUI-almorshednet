@@ -11,6 +11,7 @@
                     <SolidColorBrush x:Key="AccentFillColorDefaultBrush"  Color="{DynamicResource SystemAccentColor}"/>
                     <SolidColorBrush x:Key="AccentFillColorSecondaryBrush" Color="{DynamicResource SystemAccentColorDark1}"/>
                     <SolidColorBrush x:Key="AccentFillColorTertiaryBrush"  Color="{DynamicResource SystemAccentColorDark2}"/>
+                    <SolidColorBrush x:Key="PackageActionHoverBackground" Color="{DynamicResource SystemAccentColorLight1}"/>
                     <SolidColorBrush x:Key="AccentFillColorDisabledBrush"  Color="#37000000"/>
                     <SolidColorBrush x:Key="AccentFillColorSelectedTextBackgroundBrush" Color="{DynamicResource SystemAccentColor}"/>
                     <!-- Bridge Avalonia's legacy Fluent accent aliases to the same palette. -->
@@ -138,12 +139,24 @@
                     <!-- Toast: failure-badge red and drop shadow (light) -->
                     <SolidColorBrush x:Key="ToastBadgeBrush"              Color="#C42B1C"/>
                     <BoxShadows x:Key="ToastShadow">0 4 16 0 #33000000</BoxShadows>
+                    <!-- Package-details-only surfaces live at the end of the theme dictionary
+                         so the independent global-theme PR can extend shared control tokens. -->
+                    <LinearGradientBrush x:Key="SearchFieldBorderBrush"
+                                         StartPoint="0%,0%" EndPoint="0%,100%">
+                        <GradientStop Offset="0" Color="#0F000000"/>
+                        <GradientStop Offset="1" Color="#29000000"/>
+                    </LinearGradientBrush>
+                    <Thickness x:Key="SearchFieldBorderThickness">1</Thickness>
+                    <SolidColorBrush x:Key="InstallOptionsSectionBackground" Color="#F2F2F2"/>
+                    <SolidColorBrush x:Key="InstallOptionsTabSelectedBackground" Color="#E0E0E0"/>
+                    <SolidColorBrush x:Key="InstallOptionsTabHoverBackground" Color="#E8E8E8"/>
                 </ResourceDictionary>
                 <ResourceDictionary x:Key="Dark">
                     <!-- Accent fills (lighter accents on dark bg) -->
                     <SolidColorBrush x:Key="AccentFillColorDefaultBrush"   Color="{DynamicResource SystemAccentColorLight2}"/>
                     <SolidColorBrush x:Key="AccentFillColorSecondaryBrush" Color="{DynamicResource SystemAccentColorLight1}"/>
                     <SolidColorBrush x:Key="AccentFillColorTertiaryBrush"  Color="{DynamicResource SystemAccentColor}"/>
+                    <SolidColorBrush x:Key="PackageActionHoverBackground" Color="{DynamicResource SystemAccentColorLight3}"/>
                     <SolidColorBrush x:Key="AccentFillColorDisabledBrush"  Color="#28FFFFFF"/>
                     <SolidColorBrush x:Key="AccentFillColorSelectedTextBackgroundBrush" Color="{DynamicResource SystemAccentColor}"/>
                     <!-- Avalonia's defaults keep the base accent in dark mode; WinUI uses Light2. -->
@@ -174,6 +187,12 @@
                     <SolidColorBrush x:Key="SearchBoxInactiveBackground"      Color="#0FFFFFFF"/>
                     <SolidColorBrush x:Key="SearchBoxFocusedBackground"       Color="#B31E1E1E"/>
                     <SolidColorBrush x:Key="SearchBoxFocusedBorderBrush"      Color="#12FFFFFF"/>
+                    <SolidColorBrush x:Key="SearchFieldBorderBrush"           Color="Transparent"/>
+                    <Thickness x:Key="SearchFieldBorderThickness">1</Thickness>
+                    <!-- Opaque package-details layers remain distinct even when the dialog uses Mica. -->
+                    <SolidColorBrush x:Key="InstallOptionsSectionBackground" Color="#393939"/>
+                    <SolidColorBrush x:Key="InstallOptionsTabSelectedBackground" Color="#4A4A4A"/>
+                    <SolidColorBrush x:Key="InstallOptionsTabHoverBackground" Color="#15FFFFFF"/>
                     <SolidColorBrush x:Key="TextFillColorDisabledBrush"  Color="#5DFFFFFF"/>
                     <SolidColorBrush x:Key="TextFillColorInverseBrush"   Color="#E4000000"/>
                     <!-- WinUI's dark flyout surface is an opaque #2C2C2C. -->
@@ -268,6 +287,10 @@
     </Styles.Resources>
 
     <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml"/>
+
+    <Style Selector="TextBlock">
+        <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+    </Style>
 
     <!-- Avalonia's Fluent controls still consume UWP-era accent resources, whose dark-theme
          defaults use the base accent and white foreground. Bind every filled accent control to
@@ -670,6 +693,27 @@
         <Setter Property="Foreground" Value="{DynamicResource SystemControlForegroundBaseHighBrush}"/>
     </Style>
 
+    <!-- Filter chip toggle: accent fill when active, so the on/off state reads at a glance -->
+    <Style Selector="ToggleButton.accent-toggle:checked /template/ ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource AccentFillColorDefaultBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentFillColorDefaultBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextOnAccentFillColorPrimaryBrush}"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+    <Style Selector="ToggleButton.accent-toggle:checked:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource AccentFillColorSecondaryBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentFillColorSecondaryBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextOnAccentFillColorPrimaryBrush}"/>
+    </Style>
+    <Style Selector="ToggleButton.accent-toggle:checked:pressed /template/ ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource AccentFillColorTertiaryBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentFillColorTertiaryBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextOnAccentFillColorSecondaryBrush}"/>
+    </Style>
+    <Style Selector="ToggleButton.accent-toggle:not(:checked) /template/ ContentPresenter">
+        <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}"/>
+    </Style>
+
     <!-- Filters toolbar toggle: card-like fill (matches SettingsCard) when checked -->
     <Style Selector="ToggleButton.filter-toggle">
         <Style.Resources>
@@ -748,6 +792,107 @@
                 </ResourceDictionary.ThemeDictionaries>
             </ResourceDictionary>
         </Style.Resources>
+    </Style>
+
+    <!-- Shared WinUI-style form-input underline. -->
+    <Style Selector="Border.search-field-underline">
+        <Setter Property="Opacity" Value="0"/>
+        <Setter Property="Background" Value="{DynamicResource TextFillColorSecondaryBrush}"/>
+        <Setter Property="Transitions">
+            <Transitions>
+                <DoubleTransition Property="Opacity" Duration="0:0:0.12"/>
+            </Transitions>
+        </Setter>
+    </Style>
+    <!-- Standalone form inputs use the search field's fill and underline treatment without
+         coupling the title-bar search control to this reusable template. -->
+    <Style Selector="TextBox.search-field-standalone">
+        <Setter Property="Background" Value="{DynamicResource SearchBoxInactiveBackground}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource SearchFieldBorderBrush}"/>
+        <Setter Property="BorderThickness" Value="{DynamicResource SearchFieldBorderThickness}"/>
+        <Setter Property="CornerRadius" Value="5"/>
+        <Setter Property="ClipToBounds" Value="True"/>
+        <Setter Property="FocusAdorner" Value="{x:Null}"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="PlaceholderForeground" Value="{DynamicResource SearchBoxPlaceholderForeground}"/>
+        <Setter Property="Template">
+            <ControlTemplate>
+                <DataValidationErrors>
+                    <Panel>
+                        <Border Name="SearchFieldStandaloneContainer"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="{TemplateBinding CornerRadius}"
+                                MinWidth="{TemplateBinding MinWidth}"
+                                MinHeight="{TemplateBinding MinHeight}"/>
+                        <Border Margin="{TemplateBinding BorderThickness}">
+                            <ScrollViewer Name="PART_ScrollViewer"
+                                          Margin="{TemplateBinding Padding}"
+                                          HorizontalScrollBarVisibility="{TemplateBinding (ScrollViewer.HorizontalScrollBarVisibility)}"
+                                          VerticalScrollBarVisibility="{TemplateBinding (ScrollViewer.VerticalScrollBarVisibility)}"
+                                          IsScrollChainingEnabled="{TemplateBinding (ScrollViewer.IsScrollChainingEnabled)}">
+                                <Panel>
+                                    <TextBlock Name="PART_Placeholder"
+                                               Foreground="{TemplateBinding PlaceholderForeground}"
+                                               Text="{TemplateBinding PlaceholderText}"
+                                               TextAlignment="{TemplateBinding TextAlignment}"
+                                               TextWrapping="{TemplateBinding TextWrapping}"
+                                               HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                               VerticalAlignment="{TemplateBinding VerticalContentAlignment}">
+                                        <TextBlock.IsVisible>
+                                            <MultiBinding Converter="{x:Static BoolConverters.And}">
+                                                <Binding ElementName="PART_TextPresenter" Path="PreeditText" Converter="{x:Static StringConverters.IsNullOrEmpty}"/>
+                                                <Binding RelativeSource="{RelativeSource TemplatedParent}" Path="Text" Converter="{x:Static StringConverters.IsNullOrEmpty}"/>
+                                            </MultiBinding>
+                                        </TextBlock.IsVisible>
+                                    </TextBlock>
+                                    <TextPresenter Name="PART_TextPresenter"
+                                                   Text="{TemplateBinding Text, Mode=TwoWay}"
+                                                   CaretBlinkInterval="{TemplateBinding CaretBlinkInterval}"
+                                                   CaretIndex="{TemplateBinding CaretIndex}"
+                                                   SelectionStart="{TemplateBinding SelectionStart}"
+                                                   SelectionEnd="{TemplateBinding SelectionEnd}"
+                                                   TextAlignment="{TemplateBinding TextAlignment}"
+                                                   TextWrapping="{TemplateBinding TextWrapping}"
+                                                   LineHeight="{TemplateBinding LineHeight}"
+                                                   LetterSpacing="{TemplateBinding LetterSpacing}"
+                                                   SelectionBrush="{TemplateBinding SelectionBrush}"
+                                                   SelectionForegroundBrush="{TemplateBinding SelectionForegroundBrush}"
+                                                   CaretBrush="{TemplateBinding CaretBrush}"
+                                                   HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                   VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                </Panel>
+                            </ScrollViewer>
+                        </Border>
+                        <Border Name="SearchFieldStandaloneUnderline"
+                                Classes="search-field-underline"
+                                Height="2" Margin="1,0,1,0"
+                                VerticalAlignment="Bottom"
+                                IsHitTestVisible="False"/>
+                    </Panel>
+                </DataValidationErrors>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+    <Style Selector="TextBox.search-field-standalone:pointerover /template/ Border#SearchFieldStandaloneUnderline">
+        <Setter Property="Opacity" Value="1"/>
+    </Style>
+    <Style Selector="TextBox.search-field-standalone:focus-within">
+        <Setter Property="Background" Value="{DynamicResource SearchBoxFocusedBackground}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource SearchBoxFocusedBorderBrush}"/>
+    </Style>
+    <Style Selector="TextBox.search-field-standalone:focus-within /template/ Border#SearchFieldStandaloneUnderline">
+        <Setter Property="Opacity" Value="1"/>
+        <Setter Property="Background" Value="{DynamicResource AccentFillColorDefaultBrush}"/>
+    </Style>
+    <Style Selector="TextBox.search-field-standalone.multiline">
+        <Setter Property="MinHeight" Value="32"/>
+        <Setter Property="VerticalAlignment" Value="Top"/>
+        <Setter Property="VerticalContentAlignment" Value="Top"/>
+        <Setter Property="TextWrapping" Value="Wrap"/>
+        <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled"/>
+        <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Disabled"/>
     </Style>
 
 </Styles>

@@ -1,0 +1,511 @@
+{
+  "UpstreamCommit": "3d2cf024d6f15d4e770f655246185ad417f93f51",
+  "ArchiveSha256": "66ca12d695432ea5af8509c7ffa920e6efb5c6cf8592da960d72def292a7e7ed",
+  "Scope": "Maintained source, build metadata, themes, notices and provenance; this manifest excludes itself and build output.",
+  "Files": [
+    {
+      "Path": "Automation/Peers/DataGridAutomationPeer.cs",
+      "Sha256": "25a773af346b0e6831296a6fe595d90a3a03c8050f6fa95b874e57436e44df80",
+      "Bytes": 451,
+      "UpstreamSha256": "25a773af346b0e6831296a6fe595d90a3a03c8050f6fa95b874e57436e44df80",
+      "ChangedFromUpstream": false
+    },
+    {
+      "Path": "Automation/Peers/DataGridCellAutomationPeer.cs",
+      "Sha256": "0f65b4725f400afbf70a26bbad70b41eca45685a6d903944f86da500e12660eb",
+      "Bytes": 598,
+      "UpstreamSha256": "0f65b4725f400afbf70a26bbad70b41eca45685a6d903944f86da500e12660eb",
+      "ChangedFromUpstream": false
+    },
+    {
+      "Path": "Automation/Peers/DataGridColumnHeaderAutomationPeer.cs",
+      "Sha256": "6a57de357d01fe5cf860c6a79cdbff7a7cf102623ed16a5fcd327cc6087ed94b",
+      "Bytes": 643,
+      "UpstreamSha256": "6a57de357d01fe5cf860c6a79cdbff7a7cf102623ed16a5fcd327cc6087ed94b",
+      "ChangedFromUpstream": false
+    },
+    {
+      "Path": "Automation/Peers/DataGridColumnHeadersPresenterAutomationPeer.cs",
+      "Sha256": "51db2a7acf28a3605f2058aeef48e4421ab8349dab69693a5db3d60c37273291",
+      "Bytes": 718,
+      "UpstreamSha256": "51db2a7acf28a3605f2058aeef48e4421ab8349dab69693a5db3d60c37273291",
+      "ChangedFromUpstream": false
+    },
+    {
+      "Path": "Automation/Peers/DataGridDetailsPresenterAutomationPeer.cs",
+      "Sha256": "2b6bba17df4f083cedd70879b8fc0c8b035b13614c6265613d51dc548d10d2c0",
+      "Bytes": 431,
+      "UpstreamSha256": "2b6bba17df4f083cedd70879b8fc0c8b035b13614c6265613d51dc548d10d2c0",
+      "ChangedFromUpstream": false
+    },
+    {
+      "Path": "Automation/Peers/DataGridRowAutomationPeer.cs",
+      "Sha256": "0df4de33d997997a31869cfba790ca8edc8707c521c5937c9c5cff1e5d1792b1",
+      "Bytes": 569,
+      "UpstreamSha256": "0df4de33d997997a31869cfba790ca8edc8707c521c5937c9c5cff1e5d1792b1",
+      "ChangedFromUpstream": false
+    },
+    {
+      "Path": "Collections/DataGridCollectionView.cs",
+      "Sha256": "3ea0ccc18ec41453ae294e3a24b15d8628020d1ca4af5ef604c8073d33c02ca6",
+      "Bytes": 169201,
+      "UpstreamSha256": "c1d5896c8d85c70a2ee984f08b8bca3e2cf4aae918bbb88c40f86b747e0d31b8",
+      "ChangedFromUpstream": true
+    },
+    {
+      "Path": "Collections/DataGridGroupDescription.cs",
+      "Sha256": "8b76a42278a1d2637414f9310bc340082c8879456e2f4f1618cdea70269a74ef",
+      "Bytes": 51345,
+      "UpstreamSha256": "9d28a47517ac0205bbe0bbe7e45e41c38e501551d3e350ca7bcd6280c8c64020",
+      "ChangedFromUpstream": true
+    },
+    {
+      "Path": "Collections/DataGridItemMetadata.cs",
+      "Sha256": "b4b40ce9ee8005be8a1f6ba3f2358743f3856b095ae45e55c97c129695685c54",
+      "Bytes": 900,
+      "UpstreamSha256": null,
+      "ChangedFromUpstream": null
+    },
+    {
+      "Path": "Collections/DataGridSortDescription.cs",
+      "Sha256": "9b160e3e007cbd78e96880fe50ccde44e9ac7fa4c537343a91e962f465803955",
+      "Bytes": 13832,
+      "UpstreamSha256": "8e89f508d9e1d2ebcc293d50e1a2263a695f7eb9c8de6e603214fad5c0308e2b",
+      "ChangedFromUpstream": true
+    },
+    {
+      "Path": "Collections/IDataGridCollectionView.cs",
+      "Sha256": "d1fa2bc8ab1364db67fd68e660f3d9a1623c75917cb4503318797603f5889c2b",
+      "Bytes": 14283,
+      "UpstreamSha256": "d1fa2bc8ab1364db67fd68e660f3d9a1623c75917cb4503318797603f5889c2b",
+      "ChangedFromUpstream": false
+    },
+    {
+      "Path": "DataGrid.cs",
+      "Sha256": "bb2d6206d0b501b923f9aadf0d7229e2abd294e1c821e06a5d1de04bf174ff22",
+      "Bytes": 241866,
+      "UpstreamSha256": "bb2d6206d0b501b923f9aadf0d7229e2abd294e1c821e06a5d1de04bf174ff22",
+      "ChangedFromUpstream": false
+    },
+    {
+      "Path": "DataGridBoundColumn.cs",
+      "Sha256": "5613b1dbcdc935e9a6ac587971e7c3058d25b7ab5a04b20e203848564d30fa51",
+      "Bytes": 5885,
+      "UpstreamSha256": "5613b1dbcdc935e9a6ac587971e7c3058d25b7ab5a04b20e203848564d30fa51",
+      "ChangedFromUpstream": false
+    },
+    {
+      "Path": "DataGridCell.cs",
+      "Sha256": "b1089dc027189c46dd9e78068c7d3ccfb234888e616a3f1a2ea12cd6422ec4fb",
+      "Bytes": 8993,
+      "UpstreamSha256": "b1089dc027189c46dd9e78068c7d3ccfb234888e616a3f1a2ea12cd6422ec4fb",
+      "ChangedFromUpstream": false
+    },
+    {
+      "Path": "DataGridCellCollection.cs",
+      "Sha256": "e6431e5618143e20675512d1734e6cea80694e10aef7b0d22c4546a0c146ceeb",
+      "Bytes": 1981,
+      "UpstreamSha256": "e6431e5618143e20675512d1734e6cea80694e10aef7b0d22c4546a0c146ceeb",
+      "ChangedFromUpstream": false
+    },
+    {
+      "Path": "DataGridCellCoordinates.cs",
+      "Sha256": "f767b433fbcd5c99241eae547d8f4f62f8a71ebc96e5a9e45a4c0ade66188231",
+      "Bytes": 1566,
+      "UpstreamSha256": "f767b433fbcd5c99241eae547d8f4f62f8a71ebc96e5a9e45a4c0ade66188231",
+      "ChangedFromUpstream": false
+    },
+    {
+      "Path": "DataGridCheckBoxColumn.cs",
+      "Sha256": "471e27ea96d58d7d8e93dac3f4a3aa63c81bb7947c73fb0b652520732e88537e",
+      "Bytes": 13369,
+      "UpstreamSha256": "471e27ea96d58d7d8e93dac3f4a3aa63c81bb7947c73fb0b652520732e88537e",
+      "ChangedFromUpstream": false
+    },
+    {
+      "Path": "DataGridClipboard.cs",
+      "Sha256": "82e7a97541cc9703278f7f2d6269e82296460bf52f206cd05269dd467be6baf2",
+      "Bytes": 7312,
+      "UpstreamSha256": "82e7a97541cc9703278f7f2d6269e82296460bf52f206cd05269dd467be6baf2",
+      "ChangedFromUpstream": false
+    },
+    {
+      "Path": "DataGridColumn.cs",
+      "Sha256": "6d482975cbddc77172846f5d935a431808c8a7a34fec58cd71b764581cdeea9e",
+      "Bytes": 45943,
+      "UpstreamSha256": "6d482975cbddc77172846f5d935a431808c8a7a34fec58cd71b764581cdeea9e",
+      "ChangedFromUpstream": false
+    },
+    {
+      "Path": "DataGridColumnCollection.cs",
+      "Sha256": "58ed9621f980152147bed7c4cc0f0b94f41fd8bcd218683394c46c8d082b0cb0",
+      "Bytes": 22434,
+      "UpstreamSha256": "58ed9621f980152147bed7c4cc0f0b94f41fd8bcd218683394c46c8d082b0cb0",
+      "ChangedFromUpstream": false
+    },
+    {
+      "Path": "DataGridColumnHeader.cs",
+      "Sha256": "fadf9d87daeca7dddb2e5e5aeeb70f58cb2507b2603e00fd7d6293b8b080b229",
+      "Bytes": 35475,
+      "UpstreamSha256": "fadf9d87daeca7dddb2e5e5aeeb70f58cb2507b2603e00fd7d6293b8b080b229",
+      "ChangedFromUpstream": false
+    },
+    {
+      "Path": "DataGridColumns.cs",
+      "Sha256": "949ec26113019acc7b111e87ef84f568a783e48020f996511522c9c480beb2dc",
+      "Bytes": 85067,
+      "UpstreamSha256": "3123ad3d3209692133add889a2bf3de5b8065c45c2c816df38bd4a6a4b9576e3",
+      "ChangedFromUpstream": true
+    },
+    {
+      "Path": "DataGridDataConnection.cs",
+      "Sha256": "de4195de12be18a527d24e53dea9e9630d9e2be692eaec5608477af39d7a52bb",
+      "Bytes": 27812,
+      "UpstreamSha256": "835891afd7ff40dea8614626ced11e13929d1eee3fd26d2a337d8b905699d8c9",
+      "ChangedFromUpstream": true
+    },
+    {
+      "Path": "DataGridDisplayData.cs",
+      "Sha256": "bcbe6f2f781e7df08d690f1c112cb0eed3858d8fcb0e54c67886bf6e4925ae3c",
+      "Bytes": 13116,
+      "UpstreamSha256": "bcbe6f2f781e7df08d690f1c112cb0eed3858d8fcb0e54c67886bf6e4925ae3c",
+      "ChangedFromUpstream": false
+    },
+    {
+      "Path": "DataGridEnumerations.cs",
+      "Sha256": "5371ff7b638c99bbb6855beb67d104326706c25874f9c622b456633b4504d680",
+      "Bytes": 2942,
+      "UpstreamSha256": "5371ff7b638c99bbb6855beb67d104326706c25874f9c622b456633b4504d680",
+      "ChangedFromUpstream": false
+    },
+    {
+      "Path": "DataGridError.cs",
+      "Sha256": "940542b95f8d1458c344902d484df42725c084ec62db1b3430ad2bc9311814d6",
+      "Bytes": 8219,
+      "UpstreamSha256": "940542b95f8d1458c344902d484df42725c084ec62db1b3430ad2bc9311814d6",
+      "ChangedFromUpstream": false
+    },
+    {
+      "Path": "DataGridFillerColumn.cs",
+      "Sha256": "e7710da2d7983e5782d04061fcecfe816f6c192e34cb77b322a6974d7d0bec14",
+      "Bytes": 1918,
+      "UpstreamSha256": "e7710da2d7983e5782d04061fcecfe816f6c192e34cb77b322a6974d7d0bec14",
+      "ChangedFromUpstream": false
+    },
+    {
+      "Path": "DataGridLength.cs",
+      "Sha256": "143fe7aa908690210386a04420cbd9c86fdab9c628bb3352a6e9bbe203a4604e",
+      "Bytes": 21283,
+      "UpstreamSha256": "143fe7aa908690210386a04420cbd9c86fdab9c628bb3352a6e9bbe203a4604e",
+      "ChangedFromUpstream": false
+    },
+    {
+      "Path": "DataGridReflectionFeatures.cs",
+      "Sha256": "d7203a928f18ea50bd4a8516ae58f5fc0ee83c1fed927c07014b524603676e98",
+      "Bytes": 825,
+      "UpstreamSha256": null,
+      "ChangedFromUpstream": null
+    },
+    {
+      "Path": "DataGridRow.cs",
+      "Sha256": "d6a5050173dfdbdd51fac8f7cfdc6e6847fdbe13ac2eae2b99a4759b6e079bdb",
+      "Bytes": 39365,
+      "UpstreamSha256": "d6a5050173dfdbdd51fac8f7cfdc6e6847fdbe13ac2eae2b99a4759b6e079bdb",
+      "ChangedFromUpstream": false
+    },
+    {
+      "Path": "DataGridRowGroupHeader.cs",
+      "Sha256": "25a630f97b08958296732d033d636b65928bb7cfb3cc5bec28e8251728ba0cb6",
+      "Bytes": 16854,
+      "UpstreamSha256": "25a630f97b08958296732d033d636b65928bb7cfb3cc5bec28e8251728ba0cb6",
+      "ChangedFromUpstream": false
+    },
+    {
+      "Path": "DataGridRowGroupInfo.cs",
+      "Sha256": "d3fe767d207f4c27c41634ee38f1d1ecdc03f267337067aa2bc03eea1eddc5fd",
+      "Bytes": 1209,
+      "UpstreamSha256": "d3fe767d207f4c27c41634ee38f1d1ecdc03f267337067aa2bc03eea1eddc5fd",
+      "ChangedFromUpstream": false
+    },
+    {
+      "Path": "DataGridRowHeader.cs",
+      "Sha256": "5e01fdc7e83b74aca2d73b1ea611e9ccca22d4e1aa95460b44d8d1ebf8d031de",
+      "Bytes": 8036,
+      "UpstreamSha256": "5e01fdc7e83b74aca2d73b1ea611e9ccca22d4e1aa95460b44d8d1ebf8d031de",
+      "ChangedFromUpstream": false
+    },
+    {
+      "Path": "DataGridRows.cs",
+      "Sha256": "a5cb84e090f739309777e303a2046a09330af446273c4ac78b9ce4b5e745f8df",
+      "Bytes": 132402,
+      "UpstreamSha256": "a5cb84e090f739309777e303a2046a09330af446273c4ac78b9ce4b5e745f8df",
+      "ChangedFromUpstream": false
+    },
+    {
+      "Path": "DataGridSelectedItemsCollection.cs",
+      "Sha256": "34625311f07af356e8b3af19ea247c49138a2df248178bf3080e504d1acca57d",
+      "Bytes": 16881,
+      "UpstreamSha256": "34625311f07af356e8b3af19ea247c49138a2df248178bf3080e504d1acca57d",
+      "ChangedFromUpstream": false
+    },
+    {
+      "Path": "DataGridTemplateColumn.cs",
+      "Sha256": "ec6622215821aef9ae9e5bd45d82594a31d4dade4b6b02004220d729984d0dda",
+      "Bytes": 5317,
+      "UpstreamSha256": "ec6622215821aef9ae9e5bd45d82594a31d4dade4b6b02004220d729984d0dda",
+      "ChangedFromUpstream": false
+    },
+    {
+      "Path": "DataGridTextColumn.cs",
+      "Sha256": "95634a09c7b6035a5ca1ad9a3ece220a967ad9d2432ed09375a8cc19dc7a5c41",
+      "Bytes": 11610,
+      "UpstreamSha256": "95634a09c7b6035a5ca1ad9a3ece220a967ad9d2432ed09375a8cc19dc7a5c41",
+      "ChangedFromUpstream": false
+    },
+    {
+      "Path": "DataGridValueConverter.cs",
+      "Sha256": "33e25ec772dbf041f36180239e2922fe329bf20e16da904729318a6b65015856",
+      "Bytes": 3008,
+      "UpstreamSha256": "536c9ff44104023b904a5dc6bc7ae4d01b6616d27bb293c00b24b13e512f82db",
+      "ChangedFromUpstream": true
+    },
+    {
+      "Path": "EventArgs.cs",
+      "Sha256": "9a8ec9abc59187b0e197f2f64bf6a4da0cd9583c354d113b0455ca05c5fc0ab5",
+      "Bytes": 18779,
+      "UpstreamSha256": "9a8ec9abc59187b0e197f2f64bf6a4da0cd9583c354d113b0455ca05c5fc0ab5",
+      "ChangedFromUpstream": false
+    },
+    {
+      "Path": "Extensions.cs",
+      "Sha256": "34f73f10df71627e7378b04f9cb73ad63437cb1d4b0ae1bb3027cd9a40647280",
+      "Bytes": 658,
+      "UpstreamSha256": "34f73f10df71627e7378b04f9cb73ad63437cb1d4b0ae1bb3027cd9a40647280",
+      "ChangedFromUpstream": false
+    },
+    {
+      "Path": "ExternalLibraries.Avalonia.DataGrid.csproj",
+      "Sha256": "8c8ea7afe22665fecdbb61285f3791d9a59255634f5a83c8cd55265d4f75eb7a",
+      "Bytes": 1604,
+      "UpstreamSha256": "90bf37114474a47e71ebd819f13d0da7b3e4f30abb57a14a7db0c5372c0fadc6",
+      "ChangedFromUpstream": true
+    },
+    {
+      "Path": "IndexToValueTable.cs",
+      "Sha256": "038792230b74673708fa4ca73f46e77ffc0bc1fac7084197643b570a75f1a8a9",
+      "Bytes": 30423,
+      "UpstreamSha256": "038792230b74673708fa4ca73f46e77ffc0bc1fac7084197643b570a75f1a8a9",
+      "ChangedFromUpstream": false
+    },
+    {
+      "Path": "Primitives/DataGridCellsPresenter.cs",
+      "Sha256": "b505e177e01bfa4946ead53afdb170e35a6f8b205223024661ec589b76483fe8",
+      "Bytes": 15280,
+      "UpstreamSha256": "b505e177e01bfa4946ead53afdb170e35a6f8b205223024661ec589b76483fe8",
+      "ChangedFromUpstream": false
+    },
+    {
+      "Path": "Primitives/DataGridColumnHeadersPresenter.cs",
+      "Sha256": "ee10878388375b96144db1a328663d6115d7bca424770fd7268a30eb2a64becd",
+      "Bytes": 19026,
+      "UpstreamSha256": "ee10878388375b96144db1a328663d6115d7bca424770fd7268a30eb2a64becd",
+      "ChangedFromUpstream": false
+    },
+    {
+      "Path": "Primitives/DataGridDetailsPresenter.cs",
+      "Sha256": "4fc3f69e74c690a5f858ab6db6830cff91d139a2d1d56f7c6b04cadd61211c7d",
+      "Bytes": 5563,
+      "UpstreamSha256": "4fc3f69e74c690a5f858ab6db6830cff91d139a2d1d56f7c6b04cadd61211c7d",
+      "ChangedFromUpstream": false
+    },
+    {
+      "Path": "Primitives/DataGridFrozenGrid.cs",
+      "Sha256": "d42f5be115de95c6ed758cf69575d66107b183d17ddf407ffe7e14be32fdfd46",
+      "Bytes": 1867,
+      "UpstreamSha256": "d42f5be115de95c6ed758cf69575d66107b183d17ddf407ffe7e14be32fdfd46",
+      "ChangedFromUpstream": false
+    },
+    {
+      "Path": "Primitives/DataGridRowsPresenter.cs",
+      "Sha256": "522ae82b78101ba0f23654ca5f3d1500fd8d7a0e208d61b57877f54e1b6b8866",
+      "Bytes": 9137,
+      "UpstreamSha256": "522ae82b78101ba0f23654ca5f3d1500fd8d7a0e208d61b57877f54e1b6b8866",
+      "ChangedFromUpstream": false
+    },
+    {
+      "Path": "Properties/AssemblyInfo.cs",
+      "Sha256": "390b8505d074ff558a8b077afe5411779bf361bea2fbf0906b943c36170188d6",
+      "Bytes": 295,
+      "UpstreamSha256": "390b8505d074ff558a8b077afe5411779bf361bea2fbf0906b943c36170188d6",
+      "ChangedFromUpstream": false
+    },
+    {
+      "Path": "provenance/additional-license-source.json",
+      "Sha256": "b737bf9c3ca09a14f6b12eccc24ca5cf9eabc108dca30dd92e804878bbdfbf91",
+      "Bytes": 222,
+      "UpstreamSha256": null,
+      "ChangedFromUpstream": null
+    },
+    {
+      "Path": "provenance/avalonia.public.snk",
+      "Sha256": "34d062cd8b0bbdf600f86c7857ec9c1a776bea9be9b94665ef9b6a939de4f518",
+      "Bytes": 160,
+      "UpstreamSha256": null,
+      "ChangedFromUpstream": null
+    },
+    {
+      "Path": "provenance/Directory.Build.props",
+      "Sha256": "10ea157cc8feb217dd330529b1a75e675f48755f86714af569e42c634800af13",
+      "Bytes": 687,
+      "UpstreamSha256": null,
+      "ChangedFromUpstream": null
+    },
+    {
+      "Path": "provenance/licence.md",
+      "Sha256": "213814d306090074d234d760239ff0f67eb9b8d20eefb4d5631bb39dbe0b769b",
+      "Bytes": 1096,
+      "UpstreamSha256": null,
+      "ChangedFromUpstream": null
+    },
+    {
+      "Path": "provenance/Microsoft-Public-License.txt",
+      "Sha256": "975ea92d0726d0b5ee02c1d55dfd697cb2d100af24d8c0e5b837bdbc31ff55b3",
+      "Bytes": 2713,
+      "UpstreamSha256": null,
+      "ChangedFromUpstream": null
+    },
+    {
+      "Path": "provenance/SharedVersion.props",
+      "Sha256": "1e09d16f11efb265b43d7516c5c71e54e6c6c12f6a3f84dc4aa2d3cbb2bbfae6",
+      "Bytes": 1745,
+      "UpstreamSha256": null,
+      "ChangedFromUpstream": null
+    },
+    {
+      "Path": "provenance/tag-reference.json",
+      "Sha256": "ad42f577c99f29b6766e8689f3fa4e94631dbd66bfba94c92acde33dcfd37321",
+      "Bytes": 430,
+      "UpstreamSha256": null,
+      "ChangedFromUpstream": null
+    },
+    {
+      "Path": "provenance/upstream-manifest.json",
+      "Sha256": "f529c44ad9d614b9a2be949d41d715c55003b13a6fc951cb31bd98d9e3661fac",
+      "Bytes": 10344,
+      "UpstreamSha256": null,
+      "ChangedFromUpstream": null
+    },
+    {
+      "Path": "PROVENANCE.md",
+      "Sha256": "c8a08ea0696e8387c7dc4440a561bc14a3265f00ed0aa69220778aea86055df5",
+      "Bytes": 3370,
+      "UpstreamSha256": null,
+      "ChangedFromUpstream": null
+    },
+    {
+      "Path": "Range.cs",
+      "Sha256": "5f5c1c350734c47c0774b3e30f6b1cea8893f3412cbea6254804e7d157858480",
+      "Bytes": 1430,
+      "UpstreamSha256": "5f5c1c350734c47c0774b3e30f6b1cea8893f3412cbea6254804e7d157858480",
+      "ChangedFromUpstream": false
+    },
+    {
+      "Path": "review/reflection-free-datagrid.patch",
+      "Sha256": "a01ac8f57e02d7a358f54142b6bc78af519de1136957bfeb7f885a70946c7ad5",
+      "Bytes": 27419,
+      "UpstreamSha256": null,
+      "ChangedFromUpstream": null
+    },
+    {
+      "Path": "Themes/Fluent.xaml",
+      "Sha256": "c5ec62bac49b1e78a288af2207058da0387be2b8d31ed4dfbfc0f196f953a659",
+      "Bytes": 33223,
+      "UpstreamSha256": "c5ec62bac49b1e78a288af2207058da0387be2b8d31ed4dfbfc0f196f953a659",
+      "ChangedFromUpstream": false
+    },
+    {
+      "Path": "Themes/Simple.xaml",
+      "Sha256": "61bab9c979bbe0c6f80995f60a2d27942bb7286384b2670f9e333c3d52b17af0",
+      "Bytes": 17211,
+      "UpstreamSha256": "61bab9c979bbe0c6f80995f60a2d27942bb7286384b2670f9e333c3d52b17af0",
+      "ChangedFromUpstream": false
+    },
+    {
+      "Path": "THIRD_PARTY_NOTICES.md",
+      "Sha256": "64feb3d5c0909d48821aa332ce836a1e03bf11a1362e91981775656c0dc34409",
+      "Bytes": 1445,
+      "UpstreamSha256": null,
+      "ChangedFromUpstream": null
+    },
+    {
+      "Path": "Utils/ActionDisposable.cs",
+      "Sha256": "78743e6649ae4b1103a6cac7d6bddd0a113c506d78fbb401d3d36bfda819f5d7",
+      "Bytes": 281,
+      "UpstreamSha256": "78743e6649ae4b1103a6cac7d6bddd0a113c506d78fbb401d3d36bfda819f5d7",
+      "ChangedFromUpstream": false
+    },
+    {
+      "Path": "Utils/AnonymousObserver.cs",
+      "Sha256": "56608a0c3e9538a29a8a24c427759938efe315b801b76f7585fb6452289ae881",
+      "Bytes": 466,
+      "UpstreamSha256": "56608a0c3e9538a29a8a24c427759938efe315b801b76f7585fb6452289ae881",
+      "ChangedFromUpstream": false
+    },
+    {
+      "Path": "Utils/CompositeDisposable.cs",
+      "Sha256": "56223e342a06111a7bf5ca4073f3376c4d0343725de582ce298f1a965b8afedb",
+      "Bytes": 446,
+      "UpstreamSha256": "56223e342a06111a7bf5ca4073f3376c4d0343725de582ce298f1a965b8afedb",
+      "ChangedFromUpstream": false
+    },
+    {
+      "Path": "Utils/DataGridHelper.cs",
+      "Sha256": "68c4690644cc1b1682f504433eba5fc33f25342efdb67fa1087665213dfac132",
+      "Bytes": 754,
+      "UpstreamSha256": "68c4690644cc1b1682f504433eba5fc33f25342efdb67fa1087665213dfac132",
+      "ChangedFromUpstream": false
+    },
+    {
+      "Path": "Utils/KeyboardHelper.cs",
+      "Sha256": "13c3eee090b89fa3696379012571aa5d808395123a4fb8bf36d7c1cd1ca441b6",
+      "Bytes": 1267,
+      "UpstreamSha256": "13c3eee090b89fa3696379012571aa5d808395123a4fb8bf36d7c1cd1ca441b6",
+      "ChangedFromUpstream": false
+    },
+    {
+      "Path": "Utils/ObservableExtensions.cs",
+      "Sha256": "325287a94eccbcd174077d88c3b9c828ba42da34d5d8757fc8a7fab474aa0d06",
+      "Bytes": 403,
+      "UpstreamSha256": "325287a94eccbcd174077d88c3b9c828ba42da34d5d8757fc8a7fab474aa0d06",
+      "ChangedFromUpstream": false
+    },
+    {
+      "Path": "Utils/ReflectionHelper.cs",
+      "Sha256": "4ea27723e7bb5388f0b3419444b8918ff04ddef87f97413329e17c0cf7fb515d",
+      "Bytes": 29205,
+      "UpstreamSha256": "2378783d82220a8d35a6e3a38c75f30cb9d9a2ce1d2f266beee6b453da032388",
+      "ChangedFromUpstream": true
+    },
+    {
+      "Path": "Utils/SkipObservable.cs",
+      "Sha256": "1fe9e22fd5f8071a7475d23ec834fe85be9b9e3ba73b5195d1a73e1abe5f8455",
+      "Bytes": 565,
+      "UpstreamSha256": "1fe9e22fd5f8071a7475d23ec834fe85be9b9e3ba73b5195d1a73e1abe5f8455",
+      "ChangedFromUpstream": false
+    },
+    {
+      "Path": "Utils/TreeHelper.cs",
+      "Sha256": "502ba58e6849b016176a046fabb11c8d8ee64a5c6217898523417475cce4c1f2",
+      "Bytes": 2420,
+      "UpstreamSha256": "502ba58e6849b016176a046fabb11c8d8ee64a5c6217898523417475cce4c1f2",
+      "ChangedFromUpstream": false
+    },
+    {
+      "Path": "Utils/ValidationUtil.cs",
+      "Sha256": "d6565268471862a056e74b5b49c384053faa9b7911a2f42aadf07a50b55d14ad",
+      "Bytes": 6579,
+      "UpstreamSha256": "d6565268471862a056e74b5b49c384053faa9b7911a2f42aadf07a50b55d14ad",
+      "ChangedFromUpstream": false
+    }
+  ]
+}

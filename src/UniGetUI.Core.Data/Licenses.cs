@@ -6,6 +6,7 @@ namespace UniGetUI.Core.Data
         {
             { "UniGetUI", "MIT" },
             // C# Libraries
+            { "Avalonia.Controls.DataGrid (maintained variant)", "MIT; retained Ms-PL source notices" },
             { "Pickers", "MIT" },
             { "Community Toolkit", "MIT" },
             { "H.NotifyIcon", "MIT" },
@@ -37,6 +38,7 @@ namespace UniGetUI.Core.Data
         {
             { "UniGetUI", new Uri("https://github.com/Devolutions/UniGetUI/blob/main/LICENSE") },
             // C# Libraries
+            { "Avalonia.Controls.DataGrid (maintained variant)", new Uri("https://github.com/AvaloniaUI/Avalonia.Controls.DataGrid/blob/3d2cf024d6f15d4e770f655246185ad417f93f51/licence.md") },
             { "Pickers", new Uri("https://github.com/PavlikBender/Pickers/blob/master/LICENSE") },
             {
                 "Community Toolkit",
@@ -102,6 +104,7 @@ namespace UniGetUI.Core.Data
         {
             { "UniGetUI", new Uri("https://devolutions.net/unigetui") },
             // C# Libraries
+            { "Avalonia.Controls.DataGrid (maintained variant)", new Uri("https://github.com/AvaloniaUI/Avalonia.Controls.DataGrid") },
             { "Pickers", new Uri("https://github.com/PavlikBender/Pickers/") },
             { "Community Toolkit", new Uri("https://github.com/CommunityToolkit/Windows/") },
             { "H.NotifyIcon", new Uri("https://github.com/HavenDV/H.NotifyIcon/") },
