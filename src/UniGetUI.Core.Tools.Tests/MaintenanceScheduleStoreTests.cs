@@ -17,10 +17,15 @@ public class MaintenanceScheduleStoreTests : IDisposable
         Directory.CreateDirectory(_testRoot);
         CoreData.TEST_DataDirectoryOverride = Path.Combine(_testRoot, "Data");
         Directory.CreateDirectory(CoreData.UniGetUIUserConfigurationDirectory);
+        // Settings dictionaries stay cached when the test data directory changes.
+        Settings.ClearDictionary(Settings.K.MaintenanceTaskLastRun);
+        Settings.ClearDictionary(Settings.K.MaintenanceTaskLastFailure);
     }
 
     public void Dispose()
     {
+        Settings.ClearDictionary(Settings.K.MaintenanceTaskLastRun);
+        Settings.ClearDictionary(Settings.K.MaintenanceTaskLastFailure);
         CoreData.TEST_DataDirectoryOverride = null;
         Directory.Delete(_testRoot, true);
         GC.SuppressFinalize(this);
