@@ -207,15 +207,16 @@ internal static class Program
         Check("keyboard-down-selection", grid.IsFocused && ReferenceEquals(grid.SelectedItem, order[1]));
         Key(window, PhysicalKey.ArrowUp);
         Check("keyboard-up-selection", grid.IsFocused && ReferenceEquals(grid.SelectedItem, order[0]));
-        // Unmodified Home/End move the current column; Control also moves the row.
+        // Unmodified Home/End move the current column; the platform command modifier also moves the row.
+        var commandModifiers = (RawInputModifiers)window.GetPlatformSettings()!.HotkeyConfiguration.CommandModifiers;
         Key(window, PhysicalKey.End);
         Check("keyboard-end-column", grid.IsFocused && ReferenceEquals(grid.CurrentColumn, grid.Columns.Last()) && ReferenceEquals(grid.SelectedItem, order[0]));
         Key(window, PhysicalKey.Home);
         Check("keyboard-home-column", grid.IsFocused && ReferenceEquals(grid.CurrentColumn, grid.Columns.First()) && ReferenceEquals(grid.SelectedItem, order[0]));
-        Key(window, PhysicalKey.End, RawInputModifiers.Control);
-        Check("keyboard-control-end", grid.IsFocused && ReferenceEquals(grid.SelectedItem, order[^1]) && ReferenceEquals(grid.CurrentColumn, grid.Columns.Last()));
-        Key(window, PhysicalKey.Home, RawInputModifiers.Control);
-        Check("keyboard-control-home", grid.IsFocused && ReferenceEquals(grid.SelectedItem, order[0]) && ReferenceEquals(grid.CurrentColumn, grid.Columns.First()));
+        Key(window, PhysicalKey.End, commandModifiers);
+        Check("keyboard-command-end", grid.IsFocused && ReferenceEquals(grid.SelectedItem, order[^1]) && ReferenceEquals(grid.CurrentColumn, grid.Columns.Last()));
+        Key(window, PhysicalKey.Home, commandModifiers);
+        Check("keyboard-command-home", grid.IsFocused && ReferenceEquals(grid.SelectedItem, order[0]) && ReferenceEquals(grid.CurrentColumn, grid.Columns.First()));
         // All four rows fit on one page, so page movement must clamp to the endpoints.
         Key(window, PhysicalKey.PageDown);
         Check("keyboard-page-down-clamps-last", grid.IsFocused && ReferenceEquals(grid.SelectedItem, order[^1]) && ReferenceEquals(grid.CurrentColumn, grid.Columns.First()));
