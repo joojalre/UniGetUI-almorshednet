@@ -117,17 +117,22 @@ internal sealed class TestHttpServer : IDisposable
                 }
 
                 if (_handleConcurrently)
-                    _ = Task.Run(async () =>
-                    {
-                        try
+                    _ = Task.Factory.StartNew(
+                        async () =>
                         {
-                            await RespondAsync(context);
-                        }
-                        catch
-                        {
-                            // a detached response must never surface as an unobserved exception
-                        }
-                    });
+                            try
+                            {
+                                await RespondAsync(context);
+                            }
+                            catch
+                            {
+                                // a detached response must never surface as an unobserved exception
+                            }
+                        },
+                        CancellationToken.None,
+                        TaskCreationOptions.LongRunning,
+                        TaskScheduler.Default
+                    ).Unwrap();
                 else
                     await RespondAsync(context);
             }
