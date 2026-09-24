@@ -95,7 +95,6 @@ internal static class Program
         _scenario = kind;
         var model = new GridModel(); var high = High(); var low = Low(); var equal = Low("equal");
         high.ExistsOnDisk = false; high.CanStopTracking = false;
-        model.Rows.Add(high); model.Rows.Add(low); model.Rows.Add(equal); model.Rows.Add(Nulls());
         UserControl view = kind switch { "Packages" => new PackagesView(), "History" => new HistoryView(model), "Desktop" => new DesktopView(model), _ => new StartMenuView(model) };
         if (kind == "Packages") view.DataContext = model;
         var grid = view.FindControl<DataGrid>("RowsGrid") ?? throw new InvalidOperationException("missing grid");
@@ -107,6 +106,13 @@ internal static class Program
         }
         var window = new Window { Width = 1300, Height = 450, Content = view };
         window.Show(); Flush(window);
+        Check("initial-empty-items", Items(grid).Count == 0);
+        Check("initial-empty-rows", Rows(window).Length == 0);
+        Check("initial-empty-selection", grid.SelectedItem is null && grid.SelectedItems.Count == 0);
+        model.Rows.Add(high); Flush(window);
+        Check("first-add-identity", ReferenceEquals(Items(grid).Single(), high) && ReferenceEquals(Rows(window).Single().DataContext, high));
+        Check("first-add-compiled-binding", TextFor(window, high, "Name").Text == high.Name);
+        model.Rows.Add(low); model.Rows.Add(equal); model.Rows.Add(Nulls()); Flush(window);
         Check("realized-four", Rows(window).Length == 4);
         Check("explicit-template-columns", !grid.AutoGenerateColumns && grid.Columns.All(c => c is DataGridTemplateColumn));
         Check("template-no-edit-mode", grid.Columns.All(c => c.IsReadOnly));
@@ -114,6 +120,9 @@ internal static class Program
         Check("null-binding-rendered", Rows(window).Any(r => ReferenceEquals(r.DataContext, model.Rows[3])));
         var disabled = Cell<Button>(window, high, "row-open"); Click(window, disabled); Flush(window);
         Check("disabled-command-inert", !disabled.IsEnabled && high.Actions.Count == 0);
+        // Tab follows visual children. Test the fresh display before sorting can
+        // recycle rows into a different visual order than the collection order.
+        TabNavigation(window, grid, model, low, equal);
         foreach (var col in grid.Columns.Where(c => c.Tag is string))
         {
             col.Sort(ListSortDirection.Ascending); Flush(window);
@@ -136,8 +145,7 @@ internal static class Program
         Click(window, TextFor(window, first, "Name")); Flush(window);
         Check("pointer-selection", ReferenceEquals(grid.SelectedItem, first));
         Check("template-edit-transaction-rejected", !grid.BeginEdit());
-        grid.Focus(); window.KeyPressQwerty(PhysicalKey.ArrowDown, RawInputModifiers.None); window.KeyReleaseQwerty(PhysicalKey.ArrowDown, RawInputModifiers.None); Flush(window);
-        Check("keyboard-down-selection", grid.SelectedItem is FixtureRow next && !ReferenceEquals(next, first));
+        Navigation(window, grid);
         if (kind == "Packages")
         {
             grid.SelectedItems.Clear(); grid.SelectedItems.Add(high); grid.SelectedItems.Add(low); Flush(window);
@@ -182,10 +190,60 @@ internal static class Program
         var old = model.Rows; model.Rows = new MetadataRows { Low("replacement") }; Flush(window);
         Check("items-source-replacement", Items(grid).Single().Identity == "replacement");
         old.Add(High("detached")); Flush(window); Check("old-source-detached", Items(grid).Count == 1);
+        grid.SelectedItem = model.Rows[0]; Flush(window);
         model.Rows.Clear(); Flush(window); Check("empty-reset", Items(grid).Count == 0 && Rows(window).Length == 0);
+        Check("empty-reset-selection", grid.SelectedItem is null && grid.SelectedItems.Count == 0);
         model.Rows.Add(Low("restored")); Flush(window); Check("repopulate", Rows(window).Single().DataContext == model.Rows[0]);
+        Check("repopulate-compiled-binding", TextFor(window, model.Rows[0], "Name").Text == model.Rows[0].Name);
         Virtualization(window, grid, model);
         window.Close(); Dispatcher.UIThread.RunJobs();
+    }
+
+    private static void Navigation(Window window, DataGrid grid)
+    {
+        var order = Items(grid);
+        grid.Focus();
+        Key(window, PhysicalKey.ArrowDown);
+        Check("keyboard-down-selection", grid.IsFocused && ReferenceEquals(grid.SelectedItem, order[1]));
+        Key(window, PhysicalKey.ArrowUp);
+        Check("keyboard-up-selection", grid.IsFocused && ReferenceEquals(grid.SelectedItem, order[0]));
+        // Unmodified Home/End move the current column; the platform command modifier also moves the row.
+        var commandModifiers = (RawInputModifiers)window.GetPlatformSettings()!.HotkeyConfiguration.CommandModifiers;
+        Key(window, PhysicalKey.End);
+        Check("keyboard-end-column", grid.IsFocused && ReferenceEquals(grid.CurrentColumn, grid.Columns.Last()) && ReferenceEquals(grid.SelectedItem, order[0]));
+        Key(window, PhysicalKey.Home);
+        Check("keyboard-home-column", grid.IsFocused && ReferenceEquals(grid.CurrentColumn, grid.Columns.First()) && ReferenceEquals(grid.SelectedItem, order[0]));
+        Key(window, PhysicalKey.End, commandModifiers);
+        Check("keyboard-command-end", grid.IsFocused && ReferenceEquals(grid.SelectedItem, order[^1]) && ReferenceEquals(grid.CurrentColumn, grid.Columns.Last()));
+        Key(window, PhysicalKey.Home, commandModifiers);
+        Check("keyboard-command-home", grid.IsFocused && ReferenceEquals(grid.SelectedItem, order[0]) && ReferenceEquals(grid.CurrentColumn, grid.Columns.First()));
+        // All four rows fit on one page, so page movement must clamp to the endpoints.
+        Key(window, PhysicalKey.PageDown);
+        Check("keyboard-page-down-clamps-last", grid.IsFocused && ReferenceEquals(grid.SelectedItem, order[^1]) && ReferenceEquals(grid.CurrentColumn, grid.Columns.First()));
+        Key(window, PhysicalKey.PageUp);
+        Check("keyboard-page-up-clamps-first", grid.IsFocused && ReferenceEquals(grid.SelectedItem, order[0]) && ReferenceEquals(grid.CurrentColumn, grid.Columns.First()));
+    }
+
+    private static void TabNavigation(Window window, DataGrid grid, GridModel model, FixtureRow row, FixtureRow nextRow)
+    {
+        grid.ScrollIntoView(row, grid.Columns[0]); Flush(window);
+        // These template columns do not enter an edit transaction. Tab traverses
+        // actual template controls, not invented editable text cells.
+        Control start = _scenario == "History" ? Cell<Button>(window, row, "row-open") : Cell<CheckBox>(window, row, "row-check");
+        Control next = Cell<Button>(window, _scenario == "History" ? nextRow : row, "row-open");
+        start.Focus(); Flush(window);
+        var selected = grid.SelectedItem;
+        Check("tab-start-focus", ReferenceEquals(window.FocusManager?.GetFocusedElement(), start));
+        Key(window, PhysicalKey.Tab);
+        if (!ReferenceEquals(window.FocusManager?.GetFocusedElement(), next))
+        {
+            var actual = window.FocusManager?.GetFocusedElement() as Control;
+            Console.WriteLine($"TAB-FOCUS\t{_scenario}\ttype={actual?.GetType().Name}\tclasses={string.Join(',', actual?.Classes ?? [])}\trow={(actual?.DataContext as FixtureRow)?.Identity}\tgrid={ReferenceEquals(actual, grid)}");
+        }
+        Check("tab-next-control", ReferenceEquals(window.FocusManager?.GetFocusedElement(), next) && ReferenceEquals(grid.SelectedItem, selected));
+        Key(window, PhysicalKey.Tab, RawInputModifiers.Shift);
+        Check("tab-previous-control", ReferenceEquals(window.FocusManager?.GetFocusedElement(), start) && ReferenceEquals(grid.SelectedItem, selected));
+        Check("tab-no-command-or-toggle", model.Rows.All(r => r.Actions.Count == 0 && !r.IsChecked));
     }
 
     private static void Virtualization(Window window, DataGrid grid, GridModel model)
@@ -193,6 +251,16 @@ internal static class Program
         var many = new MetadataRows(); for (int i = 0; i < 400; i++) many.Add(new FixtureRow("row" + i, "Name" + i, "id" + i, "source" + i, i, i + 1));
         model.Rows = many; Flush(window);
         var initial = Rows(window); Check("virtualization-bounded-initial", initial.Length > 0 && initial.Length < 50);
+        Click(window, TextFor(window, many[0], "Name")); grid.Focus(); Flush(window);
+        var presenter = window.GetVisualDescendants().OfType<Avalonia.Controls.Primitives.DataGridRowsPresenter>().Single();
+        int pageRows = (int)Math.Floor(presenter.Bounds.Height / grid.RowHeight);
+        var currentColumn = grid.CurrentColumn;
+        Check("keyboard-page-size", pageRows > 1 && pageRows < many.Count - 1);
+        Key(window, PhysicalKey.PageDown);
+        Check("keyboard-page-down-exact-row", grid.IsFocused && ReferenceEquals(grid.SelectedItem, many[pageRows]) && ReferenceEquals(grid.CurrentColumn, currentColumn));
+        Key(window, PhysicalKey.PageUp);
+        Check("keyboard-page-up-exact-first", grid.IsFocused && ReferenceEquals(grid.SelectedItem, many[0]) && ReferenceEquals(grid.CurrentColumn, currentColumn));
+        Check("keyboard-pages-preserve-identities", Items(grid).SequenceEqual(many));
         var target = many[350]; grid.ScrollIntoView(target, grid.Columns[0]); Flush(window);
         var far = Rows(window); Check("scroll-far-row", far.Any(r => ReferenceEquals(r.DataContext, target)));
         Check("virtualization-bounded-far", far.Length > 0 && far.Length < 50);
@@ -218,6 +286,7 @@ internal static class Program
     private static T Cell<T>(Window window, FixtureRow row, string cls) where T : Control => window.GetVisualDescendants().OfType<T>().Single(c => c.IsEffectivelyVisible && c.Classes.Contains(cls) && ReferenceEquals(c.DataContext, row));
     private static TextBlock TextFor(Window window, FixtureRow row, string key) => Cell<TextBlock>(window, row, "value-" + key);
     private static void Click(Window window, Control control) { var p = control.TranslatePoint(new Point(control.Bounds.Width / 2, control.Bounds.Height / 2), window) ?? throw new InvalidOperationException("detached control"); window.MouseMove(p); window.MouseDown(p, MouseButton.Left); window.MouseUp(p, MouseButton.Left); }
+    private static void Key(Window window, PhysicalKey key, RawInputModifiers modifiers = RawInputModifiers.None) { window.KeyPressQwerty(key, modifiers); window.KeyReleaseQwerty(key, modifiers); Flush(window); }
     private static void Flush(Window window) { Dispatcher.UIThread.RunJobs(); window.UpdateLayout(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Dispatcher.UIThread.RunJobs(); window.UpdateLayout(); }
     private static void Check(string name, bool value) { if (!value) throw new InvalidOperationException(name); _checks++; Console.WriteLine($"CHECK\tPASS\t{_scenario}\t{name}"); }
 }
