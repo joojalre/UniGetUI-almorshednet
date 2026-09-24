@@ -118,12 +118,12 @@ function Get-Inputs {
 function Read-Run([string]$Path, [string]$Scenario, [bool]$Native) {
     $text = [IO.File]::ReadAllText($Path).Replace("`r`n", "`n").TrimEnd([char[]]"`r`n")
     if ($text -match '\bIL\d{4}\b') { throw "IL diagnostic in runtime log $Path" }
-    $expected = if ($Scenario -eq 'boundaries') { 38 } else { 228 }
+    $expected = if ($Scenario -eq 'boundaries') { 38 } else { 316 }
     $pattern = if ($Scenario -eq 'boundaries') { '(?m)^CHECK\tPASS\t[^\t\r\n]+$' } else { '(?m)^CHECK\tPASS\t[^\t\r\n]+\t[^\t\r\n]+$' }
     $checks = @([regex]::Matches($text, $pattern) | ForEach-Object Value)
     $allChecks = @([regex]::Matches($text, '(?m)^CHECK\t[^\r\n]*$'))
     $summary = @([regex]::Matches($text, '(?m)^RESULT\t[^\r\n]*$') | ForEach-Object Value)
-    $expectedSummary = if ($Scenario -eq 'boundaries') { "RESULT`tPASS`tchecks=38`tbackend=headless-fake-drawing`tinput=programmatic-control-properties" } else { "RESULT`tPASS`tchecks=228`tbackend=headless`tproduction-logic=exact-extracts" }
+    $expectedSummary = if ($Scenario -eq 'boundaries') { "RESULT`tPASS`tchecks=38`tbackend=headless-fake-drawing`tinput=programmatic-control-properties" } else { "RESULT`tPASS`tchecks=316`tbackend=headless`tproduction-logic=exact-extracts" }
     if ($checks.Count -ne $expected -or $allChecks.Count -ne $expected -or $summary.Count -ne 1 -or $summary[0] -cne $expectedSummary) { throw "Invalid $Scenario checks or summary in $Path" }
     if (@($checks | Where-Object { $_ -match '\truntime-mode$' }).Count -ne 1) { throw "Missing unique runtime-mode assertion in $Path" }
     if ($Scenario -eq 'boundaries') {
