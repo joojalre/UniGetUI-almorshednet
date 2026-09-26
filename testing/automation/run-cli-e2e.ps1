@@ -84,7 +84,28 @@ if (-not $runningOnWindows) {
     $env:HOME = $daemonRoot
     $env:USERPROFILE = $daemonRoot
     $env:XDG_DATA_HOME = $localDataRoot
+    # Configure the isolated user's Desktop before the daemon resolves special folders.
+    $env:XDG_CONFIG_HOME = Join-Path $daemonRoot '.config'
+    New-Item -ItemType Directory -Path $env:XDG_CONFIG_HOME -Force | Out-Null
+    Set-Content -LiteralPath (Join-Path $env:XDG_CONFIG_HOME 'user-dirs.dirs') `
+        -Value 'XDG_DESKTOP_DIR="$HOME/Desktop"' -Encoding UTF8
 }
+
+$shortcutDesktopRoot = if ($runningOnWindows) {
+    [Environment]::GetFolderPath(
+        [Environment+SpecialFolder]::DesktopDirectory,
+        [Environment+SpecialFolderOption]::DoNotVerify
+    )
+}
+else {
+    Join-Path $daemonRoot 'Desktop'
+}
+if ([string]::IsNullOrWhiteSpace($shortcutDesktopRoot)) {
+    throw 'Could not resolve a managed Desktop for the shortcut fixture.'
+}
+$shortcutDesktopRoot = [IO.Path]::GetFullPath($shortcutDesktopRoot)
+$shortcutFixtureRoot = $null
+$syntheticShortcut = $null
 
 $coverage = [ordered]@{
     manifest = $manifest.name
@@ -538,6 +559,12 @@ function Write-EnvironmentInventory {
 Write-EnvironmentInventory
 
 try {
+    # A unique child of a real managed root exercises the production deletion guard.
+    New-Item -ItemType Directory -Path $shortcutDesktopRoot -Force | Out-Null
+    $shortcutFixtureRoot = Join-Path $shortcutDesktopRoot ("UniGetUI-CI-" + [Guid]::NewGuid().ToString('N'))
+    New-Item -ItemType Directory -Path $shortcutFixtureRoot | Out-Null
+    $syntheticShortcut = Join-Path $shortcutFixtureRoot 'SyntheticShortcut.lnk'
+
     $daemonArguments = @()
     if ($daemonCommand.ContainsKey('PrefixArguments')) {
         $daemonArguments += $daemonCommand.PrefixArguments
@@ -785,7 +812,21 @@ try {
     }
 
     Write-Stage 'Shortcut and backup'
-    $syntheticShortcut = Join-Path $daemonRoot 'SyntheticShortcut.lnk'
+    $outsideShortcut = Join-Path $daemonRoot 'OutsideManagedRoots.lnk'
+    $outsideMarker = 'CLI E2E outside-root file must be preserved'
+    Set-Content -LiteralPath $outsideShortcut -Value $outsideMarker -NoNewline -Encoding UTF8
+    $rejectedShortcut = Invoke-CliJson -Arguments @('shortcut', 'set', '--path', $outsideShortcut, '--status', 'delete')
+    if ($rejectedShortcut.shortcut.status -ne 'delete' -or
+        -not (Test-Path -LiteralPath $outsideShortcut -PathType Leaf) -or
+        (Get-Content -LiteralPath $outsideShortcut -Raw) -ne $outsideMarker) {
+        throw 'shortcut set must preserve files outside managed shortcut roots'
+    }
+    Add-Tested 'shortcut set' -Mode 'outside-root-preserved'
+    $resetOutsideShortcut = Invoke-CliJson -Arguments @('shortcut', 'reset', '--path', $outsideShortcut)
+    if ($resetOutsideShortcut.shortcut.status -ne 'unknown') {
+        throw 'shortcut reset did not clear the rejected shortcut verdict'
+    }
+
     New-Item -ItemType File -Path $syntheticShortcut | Out-Null
 
     $keepShortcut = Invoke-CliJson -Arguments @('shortcut', 'set', '--path', $syntheticShortcut, '--status', 'keep')
@@ -1156,12 +1197,37 @@ try {
     $gracefulShutdown = $true
 }
 finally {
-    $coverage.status = if ($gracefulShutdown) { 'success' } else { 'failed' }
+    # A cleanup failure must not leave a successful coverage receipt behind.
+    $coverage.status = 'failed'
     Set-Content -Path $coveragePath -Value ($coverage | ConvertTo-Json -Depth 12) -Encoding UTF8
 
     if (-not $gracefulShutdown) {
         Stop-Daemon
     }
+
+    # Remove only this run's exact file and empty directory, never the Desktop tree.
+    if ($null -ne $shortcutFixtureRoot -and (Test-Path -LiteralPath $shortcutFixtureRoot)) {
+        $fixtureDirectory = Get-Item -LiteralPath $shortcutFixtureRoot -Force
+        if ($fixtureDirectory.Parent.FullName -ne $shortcutDesktopRoot -or
+            $fixtureDirectory.Name -notmatch '^UniGetUI-CI-[a-f0-9]{32}$' -or
+            ($fixtureDirectory.Attributes -band [IO.FileAttributes]::ReparsePoint)) {
+            throw 'Refusing shortcut fixture cleanup after a path ownership change.'
+        }
+        if ($null -ne $syntheticShortcut -and (Test-Path -LiteralPath $syntheticShortcut)) {
+            $fixtureFile = Get-Item -LiteralPath $syntheticShortcut -Force
+            if ($fixtureFile.DirectoryName -ne $fixtureDirectory.FullName -or
+                $fixtureFile.Name -ne 'SyntheticShortcut.lnk' -or
+                ($fixtureFile.Attributes -band [IO.FileAttributes]::ReparsePoint)) {
+                throw 'Refusing shortcut file cleanup after a path ownership change.'
+            }
+            [IO.File]::Delete($fixtureFile.FullName)
+        }
+        [IO.Directory]::Delete($fixtureDirectory.FullName, $false)
+    }
+
+    # Cleanup finished without widening deletion beyond the owned fixture.
+    $coverage.status = if ($gracefulShutdown) { 'success' } else { 'failed' }
+    Set-Content -Path $coveragePath -Value ($coverage | ConvertTo-Json -Depth 12) -Encoding UTF8
 
     $daemonLog = Get-DaemonLog
     if (-not [string]::IsNullOrWhiteSpace($daemonLog)) {
