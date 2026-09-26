@@ -50,6 +50,13 @@ public sealed class PythonVersionSpecifierTests
     [InlineData("~=3.11.0.post1", "3.11.0", false)]
     [InlineData("~=3.11.0.post1", "3.11.2", true)]
     [InlineData("~=3.11.0.post1", "3.12.0", false)]
+    [InlineData("==2147483648.*", "2147483648.1", true)]
+    [InlineData("==2147483648.*", "2147483649.1", false)]
+    [InlineData("!=2147483648.*", "2147483648.1", false)]
+    [InlineData("~=2147483648.1", "2147483648.2", true)]
+    [InlineData("~=2147483648.1", "2147483649.0", false)]
+    [InlineData("==999999999999999999999999999999.0.*", "999999999999999999999999999999", true)]
+    [InlineData("~=1.999999999999999999999999999999.1", "1.999999999999999999999999999999.2", true)]
     public void SpecifierSetsMatchThePackagingLibrary(
         string specifier,
         string version,

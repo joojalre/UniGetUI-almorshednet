@@ -1,3 +1,5 @@
+using System.Globalization;
+using System.Numerics;
 using System.Text.RegularExpressions;
 
 namespace UniGetUI.Core.Tools
@@ -19,7 +21,7 @@ namespace UniGetUI.Core.Tools
             string RawVersion,
             bool Wildcard,
             PythonVersion Version,
-            int[]? Release
+            BigInteger[]? Release
         );
 
         [GeneratedRegex(
@@ -78,7 +80,7 @@ namespace UniGetUI.Core.Tools
             if (wildcard && op is not ("==" or "!="))
                 return false;
 
-            int[]? release = op is "~=" ? ParseLeadingRelease(bareVersion) : ParseRelease(bareVersion);
+            BigInteger[]? release = op is "~=" ? ParseLeadingRelease(bareVersion) : ParseRelease(bareVersion);
 
             if (wildcard && release is null)
                 return false;
@@ -99,24 +101,24 @@ namespace UniGetUI.Core.Tools
             return true;
         }
 
-        private static int[]? ParseLeadingRelease(string value)
+        private static BigInteger[]? ParseLeadingRelease(string value)
         {
             Match match = LeadingReleasePattern().Match(value);
             return match.Success ? ParseReleaseParts(match.Groups["release"].Value) : null;
         }
 
-        private static int[]? ParseRelease(string value)
+        private static BigInteger[]? ParseRelease(string value)
         {
             return PlainReleasePattern().IsMatch(value) ? ParseReleaseParts(value) : null;
         }
 
-        private static int[]? ParseReleaseParts(string value)
+        private static BigInteger[]? ParseReleaseParts(string value)
         {
             string[] parts = value.Split('.');
-            int[] release = new int[parts.Length];
+            BigInteger[] release = new BigInteger[parts.Length];
             for (int i = 0; i < parts.Length; i++)
             {
-                if (!int.TryParse(parts[i], out release[i]))
+                if (!BigInteger.TryParse(parts[i], NumberStyles.None, CultureInfo.InvariantCulture, out release[i]))
                     return null;
             }
 
@@ -160,12 +162,12 @@ namespace UniGetUI.Core.Tools
                 _ => false,
             };
 
-        private static bool StartsWithRelease(PythonVersion version, int[] prefix)
+        private static bool StartsWithRelease(PythonVersion version, BigInteger[] prefix)
         {
-            IReadOnlyList<int> release = version.ReleaseComponents;
+            IReadOnlyList<BigInteger> release = version.ReleaseComponents;
             for (int i = 0; i < prefix.Length; i++)
             {
-                int component = i < release.Count ? release[i] : 0;
+                BigInteger component = i < release.Count ? release[i] : BigInteger.Zero;
                 if (component != prefix[i])
                     return false;
             }
