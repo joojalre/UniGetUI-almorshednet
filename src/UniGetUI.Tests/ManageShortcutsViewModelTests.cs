@@ -1,6 +1,7 @@
 using UniGetUI.Avalonia.ViewModels;
 using UniGetUI.Core.Data;
 using UniGetUI.Core.SettingsEngine;
+using UniGetUI.Core.Tools;
 using UniGetUI.PackageEngine.Classes.Packages.Classes;
 
 namespace UniGetUI.Tests;
@@ -27,6 +28,7 @@ public sealed class ManageShortcutsViewModelTests : IDisposable
         Settings.ResetSettings();
         StartMenuShortcutsDatabase.TEST_UserProgramsOverride = userPrograms;
         StartMenuShortcutsDatabase.TEST_CommonProgramsOverride = commonPrograms;
+        ShortcutFileRemover.TEST_ShortcutRootsOverride = [userPrograms, commonPrograms];
 
         _shortcut = Path.Combine(userPrograms, "Contoso Tool.lnk");
         File.WriteAllText(_shortcut, "shortcut");
@@ -35,6 +37,7 @@ public sealed class ManageShortcutsViewModelTests : IDisposable
 
     public void Dispose()
     {
+        ShortcutFileRemover.TEST_ShortcutRootsOverride = null;
         Settings.ResetSettings();
         StartMenuShortcutsDatabase.TEST_UserProgramsOverride = null;
         StartMenuShortcutsDatabase.TEST_CommonProgramsOverride = null;

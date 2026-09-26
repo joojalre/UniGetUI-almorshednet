@@ -1,5 +1,6 @@
 using UniGetUI.Core.Data;
 using UniGetUI.Core.SettingsEngine;
+using UniGetUI.Core.Tools;
 using UniGetUI.PackageEngine.Classes.Packages.Classes;
 using UniGetUI.PackageEngine.Interfaces;
 using UniGetUI.PackageEngine.Tests.Infrastructure.Builders;
@@ -32,11 +33,13 @@ public sealed class StartMenuShortcutsDatabaseTests : IDisposable
 
         StartMenuShortcutsDatabase.TEST_UserProgramsOverride = _userPrograms;
         StartMenuShortcutsDatabase.TEST_CommonProgramsOverride = _commonPrograms;
+        ShortcutFileRemover.TEST_ShortcutRootsOverride = [_userPrograms, _commonPrograms];
         StartMenuShortcutsDatabase.ResetDatabase();
     }
 
     public void Dispose()
     {
+        ShortcutFileRemover.TEST_ShortcutRootsOverride = null;
         StartMenuShortcutsDatabase.ResetDatabase();
         StartMenuShortcutsDatabase.TEST_UserProgramsOverride = null;
         StartMenuShortcutsDatabase.TEST_CommonProgramsOverride = null;
@@ -1265,6 +1268,21 @@ public sealed class StartMenuShortcutsDatabaseTests : IDisposable
     }
 
     [Fact]
+    public void BatchDeletionKeepsUnmanagedPathsAndDeletesOnlyManagedShortcuts()
+    {
+        string valid = CreateShortcut(_userPrograms, "Valid.lnk");
+        string outside = CreateShortcut(Path.Combine(_testRoot, "Outside"), "Important.lnk");
+        string nonShortcut = CreateShortcut(_userPrograms, "Important.txt");
+
+        StartMenuShortcutsDatabase.DeleteFromDisk([outside, valid, nonShortcut]);
+
+        Assert.False(File.Exists(valid));
+        Assert.Equal("shortcut", File.ReadAllText(outside));
+        Assert.Equal("shortcut", File.ReadAllText(nonShortcut));
+        Assert.True(Directory.Exists(_userPrograms));
+    }
+
+    [Fact]
     public void MutationHelpersNeverRelocateSharedShortcuts()
     {
         string shared = CreateShortcut(_commonPrograms, "Shared.lnk");
@@ -1296,6 +1314,7 @@ public sealed class StartMenuShortcutsDatabaseTests : IDisposable
             string valid = CreateShortcut(_userPrograms, "Valid.lnk");
             Assert.False(StartMenuShortcutsDatabase.IsManagedShortcutPath(link));
             Assert.False(StartMenuShortcutsDatabase.DeleteFromDisk(link));
+            StartMenuShortcutsDatabase.DeleteFromDisk([link]);
             Assert.Null(StartMenuShortcutsDatabase.MoveShortcut(link, valid, overwrite: true));
             Assert.Null(StartMenuShortcutsDatabase.MoveShortcut(valid, link, overwrite: true));
             Assert.Equal("shortcut", File.ReadAllText(target));

@@ -188,4 +188,106 @@ public sealed class PackageLoaderPipelineTests
         Assert.True(changeEvents[1].ProceduralChange);
         Assert.Equal(["Contoso.Accepted"], changeEvents[1].AddedPackages.Select(package => package.Id).Distinct());
     }
+
+    [Fact]
+    public async Task ReloadPackages_KeepsTheCheckedStateOfPackagesAlreadyOnTheList()
+    {
+        var manager = new PackageManagerBuilder()
+            .WithInstalledPackages(testManager =>
+            [
+                new PackageBuilder()
+                    .WithManager(testManager)
+                    .WithId("Contoso.Kept")
+                    .WithVersion("1.0.0")
+                    .Build(),
+                new PackageBuilder()
+                    .WithManager(testManager)
+                    .WithId("Contoso.Untouched")
+                    .WithVersion("1.0.0")
+                    .Build(),
+            ])
+            .Build();
+        var loader = new TestPackageLoader([manager], checkedByDefault: true);
+
+        await loader.ReloadPackages();
+        loader.GetPackageForId("Contoso.Kept")!.IsChecked = false;
+        await loader.ReloadPackages();
+
+        Assert.False(loader.GetPackageForId("Contoso.Kept")!.IsChecked);
+        Assert.True(loader.GetPackageForId("Contoso.Untouched")!.IsChecked);
+    }
+
+    [Fact]
+    public async Task ReloadPackages_AppliesTheDefaultCheckedState_ToPackagesThatWereNotOnTheList()
+    {
+        var ids = new List<string> { "Contoso.First" };
+        var manager = new PackageManagerBuilder()
+            .WithInstalledPackages(testManager => ids
+                .Select(id => new PackageBuilder()
+                    .WithManager(testManager)
+                    .WithId(id)
+                    .WithVersion("1.0.0")
+                    .Build())
+                .ToArray())
+            .Build();
+        var loader = new TestPackageLoader([manager], checkedByDefault: true);
+
+        await loader.ReloadPackages();
+        loader.GetPackageForId("Contoso.First")!.IsChecked = false;
+        ids.Add("Contoso.Second");
+        await loader.ReloadPackages();
+
+        Assert.False(loader.GetPackageForId("Contoso.First")!.IsChecked);
+        Assert.True(loader.GetPackageForId("Contoso.Second")!.IsChecked);
+    }
+
+    [Fact]
+    public async Task AddForeign_AppliesTheDefaultCheckedState_WhenAPreviousStateIsStillRemembered()
+    {
+        var ids = new List<string> { "Contoso.Tool" };
+        var manager = new PackageManagerBuilder()
+            .WithInstalledPackages(testManager => ids
+                .Select(id => new PackageBuilder()
+                    .WithManager(testManager)
+                    .WithId(id)
+                    .WithVersion("1.0.0")
+                    .Build())
+                .ToArray())
+            .Build();
+        var loader = new TestPackageLoader([manager], checkedByDefault: true);
+
+        await loader.ReloadPackages();
+        loader.GetPackageForId("Contoso.Tool")!.IsChecked = false;
+        ids.Clear();
+        await loader.ReloadPackages();
+
+        var readded = new PackageBuilder()
+            .WithManager(manager)
+            .WithId("Contoso.Tool")
+            .WithVersion("1.0.0")
+            .Build();
+        await loader.AddForeign(readded);
+
+        Assert.True(readded.IsChecked);
+    }
+
+    [Fact]
+    public async Task ReloadPackages_ReportsSettledLoadState_WhenFinishedLoadingIsRaised()
+    {
+        var manager = new PackageManagerBuilder().Build();
+        var loader = new TestPackageLoader([manager], loadPackages: _ => []);
+
+        bool? isLoadingWhenFinished = null;
+        bool? isLoadedWhenFinished = null;
+        loader.FinishedLoading += (_, _) =>
+        {
+            isLoadingWhenFinished = loader.IsLoading;
+            isLoadedWhenFinished = loader.IsLoaded;
+        };
+
+        await loader.ReloadPackages();
+
+        Assert.False(isLoadingWhenFinished);
+        Assert.True(isLoadedWhenFinished);
+    }
 }

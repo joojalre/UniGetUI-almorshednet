@@ -16,6 +16,7 @@ public sealed class ObservablePackageCollection : AvaloniaList<PackageWrapper>
         Version,
         NewVersion,
         Source,
+        DownloadSize,
     }
 
     public Sorter CurrentSorter { get; private set; } = Sorter.Name;
@@ -79,6 +80,15 @@ public sealed class ObservablePackageCollection : AvaloniaList<PackageWrapper>
     public IEnumerable<PackageWrapper> ApplyToList(IEnumerable<PackageWrapper> items)
     {
         var comparer = Comparer<PackageWrapper>.Create((a, b) => Compare(a, b, CurrentSorter));
+
+        if (CurrentSorter is Sorter.DownloadSize)
+        {
+            var resolvedFirst = items.OrderBy(w => w.DownloadSizeBytes > 0 ? 0 : 1);
+            return _ascending
+                ? resolvedFirst.ThenBy(w => w, comparer)
+                : resolvedFirst.ThenByDescending(w => w, comparer);
+        }
+
         return _ascending ? items.OrderBy(w => w, comparer) : items.OrderByDescending(w => w, comparer);
     }
 
@@ -89,9 +99,13 @@ public sealed class ObservablePackageCollection : AvaloniaList<PackageWrapper>
     private static int Compare(PackageWrapper a, PackageWrapper b, Sorter sorter) => sorter switch
     {
         Sorter.Version => a.Package.NormalizedVersion.CompareTo(b.Package.NormalizedVersion),
+        Sorter.DownloadSize => DownloadSizeSortKey(a).CompareTo(DownloadSizeSortKey(b)),
         Sorter.NewVersion => a.Package.NormalizedNewVersion.CompareTo(b.Package.NormalizedNewVersion),
         _ => string.Compare(GetSortKey(a, sorter), GetSortKey(b, sorter), StringComparison.OrdinalIgnoreCase),
     };
+
+    private static long DownloadSizeSortKey(PackageWrapper wrapper)
+        => wrapper.DownloadSizeBytes > 0 ? wrapper.DownloadSizeBytes : long.MaxValue;
 
     private static string GetSortKey(PackageWrapper w, Sorter sorter) => sorter switch
     {
