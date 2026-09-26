@@ -57,6 +57,7 @@ public sealed class FixtureRow : Observable
     public string Name => Package.Name;
     public string TargetName => Package.Name;
     public string KindLabel { get; }
+    public long DownloadSizeBytes { get; set; }
     public string VersionChange { get; set; }
     public string SourceLabel { get; set; }
     public string StatusLabel { get; }

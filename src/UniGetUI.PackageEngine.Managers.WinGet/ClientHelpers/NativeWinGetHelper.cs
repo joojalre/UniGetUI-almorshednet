@@ -349,9 +349,10 @@ internal sealed class NativeWinGetHelper : IWinGetManagerHelper
                     nativePackage.DefaultInstallVersion.PackageCatalog.Info.Name
                 );
 
+                string? reportedVersion = nativePackage.InstalledVersion.Version;
                 string version = WinGetPkgOperationHelper.ResolveReportedInstalledVersion(
                     nativePackage.Id,
-                    nativePackage.InstalledVersion.Version
+                    reportedVersion
                 );
 
                 var UniGetUIPackage = new Package(
@@ -361,7 +362,12 @@ internal sealed class NativeWinGetHelper : IWinGetManagerHelper
                     nativePackage.DefaultInstallVersion.Version,
                     source,
                     Manager
-                );
+                )
+                {
+                    InstalledVersionIsUnverified = WinGetPkgOperationHelper.IsUnknownVersion(
+                        reportedVersion
+                    ),
+                };
 
                 // Suppress an update that repeatedly fails to stick (#5158); the COM path still avoids
                 // the one-shot "already upgraded" cache (#5042).
@@ -369,6 +375,10 @@ internal sealed class NativeWinGetHelper : IWinGetManagerHelper
                     continue;
 
                 NativePackageHandler.AddPackage(UniGetUIPackage, nativePackage);
+                NativePackageHandler.AddLocalIdentifier(
+                    UniGetUIPackage,
+                    nativePackage.InstalledVersion?.Id
+                );
                 packages.Add(UniGetUIPackage);
                 logger.Log(
                     $"Found package {nativePackage.Name} {nativePackage.Id} on source {source.Name}, from version {version} to version {nativePackage.DefaultInstallVersion.Version}"
@@ -419,9 +429,10 @@ internal sealed class NativeWinGetHelper : IWinGetManagerHelper
                     source = Manager.GetLocalSource(nativePackage.Id);
                 }
 
+                string? reportedVersion = nativePackage.InstalledVersion.Version;
                 string version = WinGetPkgOperationHelper.ResolveReportedInstalledVersion(
                     nativePackage.Id,
-                    nativePackage.InstalledVersion.Version
+                    reportedVersion
                 );
 
                 logger.Log(
@@ -433,8 +444,17 @@ internal sealed class NativeWinGetHelper : IWinGetManagerHelper
                     version,
                     source,
                     Manager
-                );
+                )
+                {
+                    InstalledVersionIsUnverified = WinGetPkgOperationHelper.IsUnknownVersion(
+                        reportedVersion
+                    ),
+                };
                 NativePackageHandler.AddPackage(UniGetUIPackage, nativePackage);
+                NativePackageHandler.AddLocalIdentifier(
+                    UniGetUIPackage,
+                    nativePackage.InstalledVersion?.Id
+                );
                 packages.Add(UniGetUIPackage);
             }
             catch (Exception ex)
@@ -448,17 +468,25 @@ internal sealed class NativeWinGetHelper : IWinGetManagerHelper
 
     private IReadOnlyList<CatalogPackage> GetCachedLocalWinGetPackages(int? cacheSeconds = null)
     {
-        if (_localPackagesProvider is not null)
-        {
-            return _localPackagesProvider();
-        }
+        long sourceIndexGeneration = WinGet.SourceIndexGeneration;
 
         return cacheSeconds is null
-            ? TaskRecycler<IReadOnlyList<CatalogPackage>>.RunOrAttach(GetLocalWinGetPackages)
+            ? TaskRecycler<IReadOnlyList<CatalogPackage>>.RunOrAttach(
+                EnumerateLocalWinGetPackages,
+                sourceIndexGeneration
+            )
             : TaskRecycler<IReadOnlyList<CatalogPackage>>.RunOrAttach(
-                GetLocalWinGetPackages,
+                EnumerateLocalWinGetPackages,
+                sourceIndexGeneration,
                 cacheSeconds.Value
             );
+    }
+
+    private IReadOnlyList<CatalogPackage> EnumerateLocalWinGetPackages(long sourceIndexGeneration)
+    {
+        return _localPackagesProvider is not null
+            ? _localPackagesProvider()
+            : GetLocalWinGetPackages();
     }
 
     private IReadOnlyList<Package> GetAvailableUpdatesFromSystemCli(Exception ex)

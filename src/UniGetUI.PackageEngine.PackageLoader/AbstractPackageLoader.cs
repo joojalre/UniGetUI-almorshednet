@@ -56,6 +56,8 @@ namespace UniGetUI.PackageEngine.PackageLoader
 
         protected readonly ConcurrentDictionary<long, IPackage> PackageReference;
 
+        private readonly ConcurrentDictionary<long, bool> _rememberedSelection = new();
+
         /// <summary>
         /// Fires when a block of packages (one package or more) is added or removed to the loader
         /// </summary>
@@ -112,6 +114,12 @@ namespace UniGetUI.PackageEngine.PackageLoader
         private void CompleteCurrentLoad()
             => Interlocked.Exchange(ref _loadCompletion, null)?.TrySetResult();
 
+        private void CompleteLoad(TaskCompletionSource completion)
+        {
+            Interlocked.CompareExchange(ref _loadCompletion, null, completion);
+            completion.TrySetResult();
+        }
+
         protected virtual bool DidManagerReportFailure(IPackageManager manager) => false;
 
         public void StopLoading(bool emitFinishSignal = true)
@@ -148,6 +156,7 @@ namespace UniGetUI.PackageEngine.PackageLoader
         /// </summary>
         public virtual async Task ReloadPackages()
         {
+            TaskCompletionSource? completion = null;
             try
             {
                 if (DISABLE_RELOAD)
@@ -164,13 +173,15 @@ namespace UniGetUI.PackageEngine.PackageLoader
 
                 LoadOperationIdentifier = new Random().Next();
                 int current_identifier = LoadOperationIdentifier;
-                Volatile.Write(
-                    ref _loadCompletion,
-                    new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously)
+                completion = new TaskCompletionSource(
+                    TaskCreationOptions.RunContinuationsAsynchronously
                 );
+                Volatile.Write(ref _loadCompletion, completion);
                 IsLoading = true;
                 LastLoadReportedFailures = false;
                 StartedLoading?.Invoke(this, EventArgs.Empty);
+
+                RememberSelectionState();
 
                 // Clear packages only after signaling the load started, so the UI shows the
                 // loading state instead of briefly flashing the "no packages found" message.
@@ -224,7 +235,7 @@ namespace UniGetUI.PackageEngine.PackageLoader
                                     }
 
                                     toAdd.Add(package);
-                                    await AddPackage(package);
+                                    await AddPackage(package, restoreSelection: true);
                                 }
 
                                 InvokePackagesChangedEvent(true, toAdd, []);
@@ -241,14 +252,14 @@ namespace UniGetUI.PackageEngine.PackageLoader
                         LastLoadReportedFailures = true;
                 }
 
+                IsLoading = false;
+
                 if (LoadOperationIdentifier == current_identifier)
                 {
                     LastLoadFinishedUtc = DateTime.UtcNow;
-                    InvokeFinishedLoadingEvent();
                     IsLoaded = true;
+                    InvokeFinishedLoadingEvent();
                 }
-
-                IsLoading = false;
             }
             catch (Exception ex)
             {
@@ -258,7 +269,8 @@ namespace UniGetUI.PackageEngine.PackageLoader
             }
             finally
             {
-                CompleteCurrentLoad();
+                if (completion is not null)
+                    CompleteLoad(completion);
             }
         }
 
@@ -313,12 +325,25 @@ namespace UniGetUI.PackageEngine.PackageLoader
             return ALLOW_MULTIPLE_PACKAGE_VERSIONS ? package.GetVersionedHash() : package.GetHash();
         }
 
-        protected async Task AddPackage(IPackage package)
+        private void RememberSelectionState()
+        {
+            _rememberedSelection.Clear();
+            foreach (var entry in PackageReference)
+            {
+                _rememberedSelection[entry.Key] = entry.Value.IsChecked;
+            }
+        }
+
+        protected async Task AddPackage(IPackage package, bool restoreSelection = false)
         {
             if (Contains(package))
                 return;
 
-            package.IsChecked = PACKAGES_CHECKED_BY_DEFAULT;
+            package.IsChecked =
+                restoreSelection
+                && _rememberedSelection.TryGetValue(HashPackage(package), out bool wasChecked)
+                    ? wasChecked
+                    : PACKAGES_CHECKED_BY_DEFAULT;
             await WhenAddingPackage(package);
             PackageReference.TryAdd(HashPackage(package), package);
         }

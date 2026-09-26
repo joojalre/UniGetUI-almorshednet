@@ -27,6 +27,8 @@ using UniGetUI.PackageEngine.PackageLoader;
 
 namespace UniGetUI.Avalonia.ViewModels.Pages;
 
+public sealed record ToolbarEntry(Control Control, string IconName, string Label, Action? Invoke);
+
 public enum SearchMode { Both, Name, Id, Exact, Similar }
 
 public enum PackageViewMode { List = 0, Grid = 1, Icons = 2 }
@@ -147,6 +149,7 @@ public partial class PackagesPageViewModel : ViewModelBase
     public readonly bool RoleIsUpdateLike;
     public bool SimilarSearchEnabled { get; private set; }
     public bool InstallerHostColumnVisible { get; }
+    public bool DownloadSizeColumnVisible { get; }
     public readonly string NoPackagesText;
     public readonly string NoMatchesText;
     public readonly string SearchBoxPlaceholder;
@@ -192,11 +195,12 @@ public partial class PackagesPageViewModel : ViewModelBase
     [ObservableProperty] private string _newVersionHeaderText = "";
     [ObservableProperty] private string _sourceHeaderText = "";
     [ObservableProperty] private string _installerHostHeaderText = "";
+    [ObservableProperty] private string _downloadSizeHeaderText = "";
 
     // ─── Collections ──────────────────────────────────────────────────────────
     public ObservablePackageCollection FilteredPackages { get; } = new();
     public AvaloniaList<SourceTreeNode> SourceNodes { get; } = new();
-    public AvaloniaList<object> ToolBarItems { get; } = new();
+    public List<ToolbarEntry> ToolbarEntries { get; } = new();
 
     // Labels of toolbar buttons that can be hidden to collapse the menu bar to icon-only
     // on narrow windows (buttons created with showLabel: false are never tracked here).
@@ -209,6 +213,7 @@ public partial class PackagesPageViewModel : ViewModelBase
 
     private readonly ObservableCollection<PackageWrapper> _wrappedPackages = new();
     private CancellationTokenSource? _iconPreloadCts;
+    private CancellationTokenSource? _downloadSizePreloadCts;
     protected List<IPackageManager> UsedManagers = [];
     protected ConcurrentDictionary<IPackageManager, List<IManagerSource>> UsedSourcesForManager = new();
     protected ConcurrentDictionary<IPackageManager, SourceTreeNode> RootNodeForManager = new();
@@ -254,6 +259,8 @@ public partial class PackagesPageViewModel : ViewModelBase
         NewVersionHeaderVisible = RoleIsUpdateLike;
         InstallerHostColumnVisible = Settings.Get(Settings.K.ShowInstallerHostColumn)
             && data.PageRole != OperationType.Uninstall;
+        DownloadSizeColumnVisible = Settings.Get(Settings.K.ShowDownloadSizeColumn)
+            && data.PageRole != OperationType.Uninstall;
         ReloadButtonVisible = !DisableReload;
         SearchBoxPlaceholder = CoreTools.Translate("Search for packages");
         // Pages that load their contents automatically (Updates, Installed) never require the
@@ -290,7 +297,9 @@ public partial class PackagesPageViewModel : ViewModelBase
 
         // Restore per-page sort preferences (default: Name, ascending).
         int savedSortField = Settings.GetDictionaryItem<string, int>(Settings.K.PackageListSortFieldIndex, PageName);
-        if (savedSortField is < 0 or > 4 || (savedSortField is 3 && !RoleIsUpdateLike))
+        if (savedSortField is < 0 or > 5
+            || (savedSortField is 3 && !RoleIsUpdateLike)
+            || (savedSortField is 5 && !DownloadSizeColumnVisible))
             savedSortField = 0;
         SortFieldIndex = savedSortField;
         SortAscending = !Settings.GetDictionaryItem<string, bool>(Settings.K.PackageListSortDescending, PageName);
@@ -352,7 +361,7 @@ public partial class PackagesPageViewModel : ViewModelBase
         ToolTip.SetTip(btn, label);
         AutomationProperties.SetName(btn, label);
         btn.Click += (_, _) => onClick();
-        ToolBarItems.Add(btn);
+        ToolbarEntries.Add(new ToolbarEntry(btn, svgName, label, onClick));
         return btn;
     }
 
@@ -386,7 +395,7 @@ public partial class PackagesPageViewModel : ViewModelBase
                          ?? new SolidColorBrush(Color.FromArgb(80, 128, 128, 128)),
         };
         AutomationProperties.SetAccessibilityView(sep, AccessibilityView.Raw);
-        ToolBarItems.Add(sep);
+        ToolbarEntries.Add(new ToolbarEntry(sep, "", "", null));
     }
 
     public async Task ShowInfoDialog(Window owner, string title, string message)
@@ -483,7 +492,7 @@ public partial class PackagesPageViewModel : ViewModelBase
             Dispatcher.UIThread.Post(() => Loader_FinishedLoading(sender, e));
             return;
         }
-        IsLoading = false;
+        IsLoading = Loader.IsLoading;
         _lastLoadTime = DateTime.Now;
         ReloadButtonTooltip = CoreTools.Translate("Last checked: {0}", _lastLoadTime.ToString(CultureInfo.CurrentCulture));
         FilterPackages();
@@ -493,7 +502,52 @@ public partial class PackagesPageViewModel : ViewModelBase
         _ = PreloadPackageIconsAsync(
             FilteredPackages.Take(MaximumPreloadedIcons).ToArray(),
             _iconPreloadCts.Token);
+        if (FilteredPackages.CurrentSorter is ObservablePackageCollection.Sorter.DownloadSize)
+            StartDownloadSizePreload();
         PackagesLoaded?.Invoke(ReloadReason.External);
+    }
+
+    private void StartDownloadSizePreload()
+    {
+        if (!DownloadSizeColumnVisible) return;
+
+        _downloadSizePreloadCts?.Cancel();
+        _downloadSizePreloadCts?.Dispose();
+        _downloadSizePreloadCts = new CancellationTokenSource();
+        _ = PreloadDownloadSizesAsync(
+            FilteredPackages.ToArray(),
+            _downloadSizePreloadCts.Token);
+    }
+
+    private async Task PreloadDownloadSizesAsync(
+        PackageWrapper[] wrappers,
+        CancellationToken cancellationToken)
+    {
+        if (wrappers.Length == 0) return;
+
+        try
+        {
+            const int batchSize = 4;
+            for (int start = 0; start < wrappers.Length; start += batchSize)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                int count = Math.Min(batchSize, wrappers.Length - start);
+                var tasks = new Task[count];
+                for (int index = 0; index < count; index++)
+                    tasks[index] = wrappers[start + index].EnsureDownloadSizeLoadedAsync();
+
+                await Task.WhenAll(tasks).WaitAsync(cancellationToken).ConfigureAwait(false);
+            }
+        }
+        catch (OperationCanceledException) { return; }
+
+        if (cancellationToken.IsCancellationRequested) return;
+        if (FilteredPackages.CurrentSorter is not ObservablePackageCollection.Sorter.DownloadSize) return;
+
+        await Dispatcher.UIThread.InvokeAsync(() =>
+        {
+            if (!cancellationToken.IsCancellationRequested) FilterPackages();
+        });
     }
 
     private static async Task PreloadPackageIconsAsync(
@@ -527,6 +581,7 @@ public partial class PackagesPageViewModel : ViewModelBase
         }
         IsLoading = true;
         _iconPreloadCts?.Cancel();
+        _downloadSizePreloadCts?.Cancel();
         UpdateSubtitle();
     }
 
@@ -660,6 +715,7 @@ public partial class PackagesPageViewModel : ViewModelBase
         2 => "Version",
         3 => "New version",
         4 => "Source",
+        5 => "Download size",
         _ => "Name",
     });
 
@@ -671,10 +727,12 @@ public partial class PackagesPageViewModel : ViewModelBase
             2 => ObservablePackageCollection.Sorter.Version,
             3 => ObservablePackageCollection.Sorter.NewVersion,
             4 => ObservablePackageCollection.Sorter.Source,
+            5 => ObservablePackageCollection.Sorter.DownloadSize,
             _ => ObservablePackageCollection.Sorter.Name,
         });
         OnPropertyChanged(nameof(SortFieldName));
         FilterPackages();
+        if (value is 5) StartDownloadSizePreload();
         Settings.SetDictionaryItem(Settings.K.PackageListSortFieldIndex, PageName, value);
     }
 
@@ -914,6 +972,7 @@ public partial class PackagesPageViewModel : ViewModelBase
         NewVersionHeaderText = isList ? CoreTools.Translate("New version") : "";
         SourceHeaderText = isList ? CoreTools.Translate("Source") : "";
         InstallerHostHeaderText = isList ? CoreTools.Translate("Installer host") : "";
+        DownloadSizeHeaderText = isList ? CoreTools.Translate("Download size") : "";
     }
 
     public bool IsListViewMode => ViewMode == PackageViewMode.List;
@@ -997,6 +1056,7 @@ public partial class PackagesPageViewModel : ViewModelBase
     [RelayCommand] private void SortByVersion() => SortFieldIndex = 2;
     [RelayCommand] private void SortByNewVersion() => SortFieldIndex = 3;
     [RelayCommand] private void SortBySource() => SortFieldIndex = 4;
+    [RelayCommand] private void SortByDownloadSize() => SortFieldIndex = 5;
     [RelayCommand] private void SetSortAscending() => SortAscending = true;
     [RelayCommand] private void SetSortDescending() => SortAscending = false;
 

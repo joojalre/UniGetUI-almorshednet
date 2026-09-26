@@ -1,5 +1,6 @@
 using UniGetUI.Core.Data;
 using UniGetUI.Core.SettingsEngine;
+using UniGetUI.Core.Tools;
 using UniGetUI.PackageEngine.Classes.Packages.Classes;
 
 namespace UniGetUI.PackageEngine.Tests;
@@ -15,6 +16,7 @@ public sealed class DesktopShortcutsDatabaseTests : IDisposable
     public DesktopShortcutsDatabaseTests()
     {
         Directory.CreateDirectory(_testRoot);
+        ShortcutFileRemover.TEST_ShortcutRootsOverride = [_testRoot];
         CoreData.TEST_DataDirectoryOverride = Path.Combine(_testRoot, "Data");
         Directory.CreateDirectory(CoreData.UniGetUIUserConfigurationDirectory);
         Settings.ResetSettings();
@@ -24,6 +26,7 @@ public sealed class DesktopShortcutsDatabaseTests : IDisposable
 
     public void Dispose()
     {
+        ShortcutFileRemover.TEST_ShortcutRootsOverride = null;
         DesktopShortcutsDatabase.ResetDatabase();
         DesktopShortcutsDatabase.ClearUnknownShortcuts();
         Settings.ResetSettings();

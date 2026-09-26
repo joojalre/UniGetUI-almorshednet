@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text;
 using UniGetUI.Core.Classes;
 using UniGetUI.Core.Data;
@@ -16,7 +17,6 @@ using UniGetUI.PackageOperations;
 using BrokerClient = Devolutions.Now.Policy.Client.BrokerClient;
 using BrokerClientErrorKind = Devolutions.Now.Policy.Client.BrokerClientErrorKind;
 using BrokerClientException = Devolutions.Now.Policy.Client.BrokerClientException;
-using BrokerClientOptions = Devolutions.Now.Policy.Client.BrokerClientOptions;
 using BrokerDecision = Devolutions.Now.Policy.Api.Decision;
 using BrokerElevation = Devolutions.Now.Policy.Api.Elevation;
 using BrokerEventFrame = Devolutions.Now.Policy.Api.EventFrame;
@@ -76,6 +76,9 @@ namespace UniGetUI.PackageEngine.Operations
         public readonly IPackage Package;
         public readonly InstallOptions Options;
         public readonly OperationType Role;
+        public bool FailedBecauseApplicationRunning { get; private set; }
+        private IReadOnlyList<string> _closeRunningAppProcessNames = [];
+        private readonly List<string> _brokerKillBeforeOperationAdded = [];
 
         protected abstract Task HandleSuccess();
         protected abstract Task HandleFailure();
@@ -149,8 +152,46 @@ namespace UniGetUI.PackageEngine.Operations
             !Settings.Get(Settings.K.ProhibitElevation)
             && (Package.OverridenOptions.RunAsAdministrator is true || Options.RunAsAdministrator);
 
+        private volatile int _ranElevated = -1;
+
+        public virtual bool WillRunElevated =>
+            _ranElevated switch
+            {
+                1 => true,
+                0 => false,
+                _ => CoreTools.IsAdministrator() || RequiresAdminRights(),
+            };
+
+        public static bool CanRetrySkippingIntegrityChecks(
+            IPackageManager manager,
+            InstallOptions options,
+            OperationType role,
+            bool willRunElevated
+        )
+        {
+            if (!manager.Capabilities.CanSkipIntegrityChecks || options.SkipHashCheck)
+                return false;
+
+            return IntegrityCheckSkipIsHonored(manager, role, willRunElevated);
+        }
+
+        private static bool IntegrityCheckSkipIsHonored(
+            IPackageManager manager,
+            OperationType role,
+            bool willRunElevated
+        )
+        {
+#if WINDOWS
+            if (manager is WinGet winget)
+                return role is not OperationType.Uninstall
+                    && (!willRunElevated || winget.HonorsIntegrityCheckSkipWhenElevated);
+#endif
+            return true;
+        }
+
         protected override void ApplyRetryAction(string retryMode)
         {
+            ClearCloseRunningAppAttempt();
             switch (retryMode)
             {
                 case RetryMode.Retry_AsAdmin:
@@ -161,6 +202,9 @@ namespace UniGetUI.PackageEngine.Operations
                     break;
                 case RetryMode.Retry_SkipIntegrity:
                     Options.SkipHashCheck = true;
+                    break;
+                case RetryMode.Retry_CloseRunningApp:
+                    QueueCloseRunningAppAttempt();
                     break;
                 case RetryMode.Retry:
                     break;
@@ -243,6 +287,8 @@ namespace UniGetUI.PackageEngine.Operations
             process.StartInfo.StandardOutputEncoding = Package.Manager.OutputEncoding;
             process.StartInfo.StandardErrorEncoding = Package.Manager.OutputEncoding;
 
+            _ranElevated = IsAdmin ? 1 : 0;
+
             ApplyCapabilities(
                 IsAdmin,
                 Options.InteractiveInstallation,
@@ -258,6 +304,26 @@ namespace UniGetUI.PackageEngine.Operations
         /// </summary>
         protected override async Task<OperationVeredict> PerformOperation()
         {
+            // Observational stage marker only: structured progress starts as indeterminate
+            // with the role's stage label (e.g. "Installing..."). Re-reported on every
+            // attempt, so AutoRetry restarts also reset any previous speed. This changes
+            // nothing about execution, retries, elevation, proxy, or result handling.
+            ReportProgress(
+                Role switch
+                {
+                    OperationType.Install => OperationProgress.ForStage(
+                        OperationProgressStage.Installing
+                    ),
+                    OperationType.Update => OperationProgress.ForStage(
+                        OperationProgressStage.Updating
+                    ),
+                    OperationType.Uninstall => OperationProgress.ForStage(
+                        OperationProgressStage.Uninstalling
+                    ),
+                    _ => OperationProgress.Unknown,
+                }
+            );
+
             if (!ShouldUseAgentBroker())
             {
                 return await base.PerformOperation();
@@ -312,6 +378,7 @@ namespace UniGetUI.PackageEngine.Operations
             Package.Manager.OperationHelper.ApplyElevationRequirements(Package, Options, Role);
 
             bool requestElevated = RequiresAdminRights();
+            _ranElevated = requestElevated ? 1 : 0;
             using var client = CreateBrokerClient(requestElevated);
 
             // Check broker availability. Brokered operations must not fall back to local
@@ -852,23 +919,9 @@ namespace UniGetUI.PackageEngine.Operations
         }
 
         private static BrokerClient CreateBrokerClient(bool requestedElevation) =>
-            new(
-                new BrokerClientOptions
-                {
-                    Transport = BrokerTransportFactory?.Invoke(),
-                    RequestedElevation = requestedElevation
-                        ? BrokerElevation.Elevated
-                        : BrokerElevation.Standard,
-                    EffectiveUser = GetEffectiveUser(),
-                    ClientExecutablePath = Environment.ProcessPath,
-                    ClientVersion =
-                        System.Reflection.Assembly.GetEntryAssembly()?.GetName().Version?.ToString()
-                        ?? "0.0.0",
-                }
-            )
-            {
-                Trace = message => Logger.Info($"[AgentBroker] {message}"),
-            };
+            BrokerClientFactory.Create(
+                requestedElevation ? BrokerElevation.Elevated : BrokerElevation.Standard,
+                BrokerTransportFactory?.Invoke());
 
         private static string GetEffectiveUser()
         {
@@ -901,10 +954,150 @@ namespace UniGetUI.PackageEngine.Operations
                 ReturnCode
             );
 
-            if (veredict is OperationVeredict.Failure && Role is OperationType.Update)
-                ExplainNotApplicableUpdate(Output, ReturnCode);
+            FailedBecauseApplicationRunning = false;
+            if (veredict is OperationVeredict.Failure)
+            {
+                if (Role is OperationType.Update)
+                    ExplainNotApplicableUpdate(Output, ReturnCode);
+                ExplainInstallerHashMismatch(ReturnCode);
+                ExplainApplicationCurrentlyRunning(Output, ReturnCode);
+            }
 
             return Task.FromResult(veredict);
+        }
+
+        public static bool CanRetryClosingRunningApp(PackageOperation operation)
+        {
+            if (!operation.FailedBecauseApplicationRunning)
+                return false;
+            return GetRunningCloseProcessNames(operation.Package).Count > 0;
+        }
+
+        internal static IReadOnlyList<string> GuessCloseProcessNames(IPackage package)
+        {
+            var names = new List<string>();
+            AddProcessName(names, package.Name);
+            int separator = package.Id.LastIndexOf('.');
+            string idTail = separator >= 0 ? package.Id[(separator + 1)..] : package.Id;
+            AddProcessName(names, idTail);
+            return names;
+        }
+
+        internal static IReadOnlyList<string> GetRunningCloseProcessNames(IPackage package)
+        {
+            var running = new List<string>();
+            foreach (var name in GuessCloseProcessNames(package))
+            {
+                if (HasRunningProcess(name))
+                    running.Add(name);
+            }
+            return running;
+        }
+
+        private static void AddProcessName(List<string> names, string? candidate)
+        {
+            if (string.IsNullOrWhiteSpace(candidate))
+                return;
+            string name = candidate.Trim();
+            if (name.IndexOfAny([' ', '\\', '/', ':']) >= 0)
+                return;
+            if (name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+                name = name[..^4];
+            if (IsCurrentProcessName(name))
+                return;
+            if (names.Exists(existing => existing.Equals(name, StringComparison.OrdinalIgnoreCase)))
+                return;
+            names.Add(name);
+        }
+
+        private static bool IsCurrentProcessName(string name)
+        {
+            using Process currentProcess = Process.GetCurrentProcess();
+            return name.Equals(currentProcess.ProcessName, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool HasRunningProcess(string name)
+        {
+            var processes = Process.GetProcessesByName(name);
+            try
+            {
+                return processes.Length > 0;
+            }
+            finally
+            {
+                foreach (var process in processes)
+                    process.Dispose();
+            }
+        }
+
+        private void QueueCloseRunningAppAttempt()
+        {
+            var names = GetRunningCloseProcessNames(Package);
+            if (names.Count == 0)
+                return;
+
+            if (IsBrokerEligible(Package))
+            {
+                AddBrokerKillBeforeOperation(names);
+                return;
+            }
+
+            _closeRunningAppProcessNames = names;
+        }
+
+        private void AddBrokerKillBeforeOperation(IReadOnlyList<string> names)
+        {
+            foreach (var processName in names)
+            {
+                if (
+                    Options.KillBeforeOperation.Exists(existing =>
+                        existing.Equals(processName, StringComparison.OrdinalIgnoreCase)
+                    )
+                )
+                    continue;
+
+                Options.KillBeforeOperation.Add(processName);
+                _brokerKillBeforeOperationAdded.Add(processName);
+            }
+        }
+
+        private void ClearCloseRunningAppAttempt()
+        {
+            _closeRunningAppProcessNames = [];
+            foreach (var processName in _brokerKillBeforeOperationAdded)
+                Options.KillBeforeOperation.Remove(processName);
+            _brokerKillBeforeOperationAdded.Clear();
+        }
+
+        protected override IReadOnlyList<InnerOperation> GetAttemptPreOperations()
+        {
+            var ops = new List<InnerOperation>(_closeRunningAppProcessNames.Count);
+            foreach (var processName in _closeRunningAppProcessNames)
+            {
+                ops.Add(
+                    new InnerOperation(
+                        new KillProcessOperation(processName, forceKill: true),
+                        mustSucceed: false
+                    )
+                );
+            }
+            return ops;
+        }
+
+        private void ExplainApplicationCurrentlyRunning(List<string> output, int returnCode)
+        {
+#if WINDOWS
+            if (Package.Manager is not WinGet winget)
+                return;
+            if (!winget.ReportedApplicationCurrentlyRunning(returnCode))
+                return;
+
+            FailedBecauseApplicationRunning = true;
+            Metadata.FailureMessage = CoreTools.Translate(
+                "{package} is currently running. Close it and try again",
+                new Dictionary<string, object?> { { "package", Package.Name } }
+            );
+#endif
         }
 
         private void ExplainNotApplicableUpdate(List<string> output, int returnCode)
@@ -919,6 +1112,33 @@ namespace UniGetUI.PackageEngine.Operations
             Metadata.FailureMessage = CoreTools.Translate(
                 "{package} may already be up to date, or no installer matches this system",
                 new Dictionary<string, object?> { { "package", Package.Name } }
+            );
+#endif
+        }
+
+        private void ExplainInstallerHashMismatch(int returnCode)
+        {
+#if WINDOWS
+            if (Package.Manager is not WinGet winget)
+                return;
+
+            if (!winget.ReportedInstallerHashMismatch(returnCode))
+                return;
+
+            Metadata.FailureMessage = CoreTools.Translate(
+                "The installer for {package} does not match the hash in its manifest",
+                new Dictionary<string, object?> { { "package", Package.Name } }
+            );
+
+            Line(
+                WillRunElevated && !winget.HonorsIntegrityCheckSkipWhenElevated
+                    ? CoreTools.Translate(
+                        "The package manifest is likely out of date. WinGet cannot skip this check while running as administrator."
+                    )
+                    : CoreTools.Translate(
+                        "The package manifest is likely out of date. Skipping this check requires WinGet's InstallerHashOverride administrator setting."
+                    ),
+                LineType.Error
             );
 #endif
         }

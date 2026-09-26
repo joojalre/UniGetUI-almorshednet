@@ -1,6 +1,7 @@
 using System.Text;
 using UniGetUI.Core.Logging;
 using UniGetUI.Core.SettingsEngine;
+using UniGetUI.Core.Tools;
 using UniGetUI.PackageEngine.Interfaces;
 
 namespace UniGetUI.PackageEngine.Classes.Packages.Classes;
@@ -616,6 +617,9 @@ public static class StartMenuShortcutsDatabase
 
     public static int HandleNewShortcuts(IPackage package, IReadOnlyList<string> previousShortcuts)
     {
+        List<string> shortcutsToDelete = [];
+        int handled;
+
         lock (DatabaseLock)
         {
             if (!OperatingSystem.IsWindows())
@@ -637,7 +641,7 @@ public static class StartMenuShortcutsDatabase
 
             // Recorded destinations are only replayed while the package still has a folder:
             // dropping the folder has to stop the relocations, not just the new ones.
-            int handled = rule is null ? 0 : ReplayRelocations(packageId);
+            handled = rule is null ? 0 : ReplayRelocations(packageId);
             HashSet<string> previous = new(previousShortcuts, StringComparer.OrdinalIgnoreCase);
 
             foreach (string shortcut in GetShortcutsOnDisk())
@@ -646,8 +650,7 @@ public static class StartMenuShortcutsDatabase
 
                 if (status is Status.Delete)
                 {
-                    if (DeleteFromDisk(shortcut))
-                        handled++;
+                    shortcutsToDelete.Add(shortcut);
                     continue;
                 }
 
@@ -695,9 +698,15 @@ public static class StartMenuShortcutsDatabase
                 if (askAboutNewShortcuts && status is Status.Unknown)
                     MarkPending(packageId, shortcut);
             }
-
-            return handled;
         }
+
+        if (shortcutsToDelete.Count > 0)
+        {
+            DeleteFromDisk(shortcutsToDelete);
+            handled += shortcutsToDelete.Count(shortcut => !File.Exists(shortcut));
+        }
+
+        return handled;
     }
 
     public static IReadOnlyList<string> FindRelocatableShortcuts(
@@ -956,7 +965,9 @@ public static class StartMenuShortcutsDatabase
                 return false;
 
             Logger.Info("Deleting Start Menu shortcut " + shortcutPath);
-            File.Delete(shortcutPath);
+            if (!ShortcutFileRemover.Delete(shortcutPath))
+                return false;
+
             PruneEmptyDirectories(Path.GetDirectoryName(shortcutPath));
             return true;
         }
@@ -966,6 +977,24 @@ public static class StartMenuShortcutsDatabase
                 $"Failed to delete the Start Menu shortcut {{shortcutPath={shortcutPath}}}: {e.Message}"
             );
             return false;
+        }
+    }
+
+    public static void DeleteFromDisk(IReadOnlyList<string> shortcutPaths)
+    {
+        // Validate every path before passing the batch to the elevation-capable remover.
+        var managedShortcuts = shortcutPaths
+            .Where(path => IsManagedShortcutPath(path) && IsShortcutFile(path))
+            .ToList();
+        foreach (string shortcutPath in managedShortcuts)
+            Logger.Info("Deleting Start Menu shortcut " + shortcutPath);
+
+        ShortcutFileRemover.Delete(managedShortcuts);
+
+        foreach (string shortcutPath in managedShortcuts)
+        {
+            if (!File.Exists(shortcutPath))
+                PruneEmptyDirectories(Path.GetDirectoryName(shortcutPath));
         }
     }
 

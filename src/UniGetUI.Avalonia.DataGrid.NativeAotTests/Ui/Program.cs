@@ -75,6 +75,18 @@ internal static class Program
             if (sorter != Sorter.Checked) Check($"package-{sorter}-null-value", compare.Compare(nulls, low) < 0);
             Check($"package-{sorter}-null-row", compare.Compare(null, low) < 0 && compare.Compare(low, null) > 0 && compare.Compare(null, null) == 0);
         }
+        var smallDownload = Low("small-download"); smallDownload.DownloadSizeBytes = 1024;
+        var largeDownload = High("large-download"); largeDownload.DownloadSizeBytes = 4096;
+        var unknownDownload = Low("unknown-download");
+        var downloadComparer = ObservablePackageCollection.GetColumnComparer(Sorter.DownloadSize);
+        Check("download-size-numeric-order", downloadComparer.Compare(smallDownload, largeDownload) < 0);
+        Check("download-size-unknown-after-known", downloadComparer.Compare(unknownDownload, largeDownload) > 0);
+        var downloads = new ObservablePackageCollection();
+        downloads.SortBy(Sorter.DownloadSize);
+        FixtureRow[] downloadRows = [unknownDownload, largeDownload, smallDownload];
+        Check("download-size-menu-ascending", downloads.ApplyToList(downloadRows).SequenceEqual(new[] { smallDownload, largeDownload, unknownDownload }));
+        downloads.SetSortDirection(false);
+        Check("download-size-menu-descending-unknown-last", downloads.ApplyToList(downloadRows).SequenceEqual(new[] { largeDownload, smallDownload, unknownDownload }));
         foreach (var key in new[] { "kind", "package", "version", "source", "status", "date" })
         {
             var compare = new OperationHistoryRowComparer(key);

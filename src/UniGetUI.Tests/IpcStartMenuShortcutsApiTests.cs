@@ -1,5 +1,6 @@
 using UniGetUI.Core.Data;
 using UniGetUI.Core.SettingsEngine;
+using UniGetUI.Core.Tools;
 using UniGetUI.Interface;
 using UniGetUI.PackageEngine.Classes.Packages.Classes;
 
@@ -32,10 +33,12 @@ public sealed class IpcStartMenuShortcutsApiTests : IDisposable
             "Programs"
         );
         StartMenuShortcutsDatabase.ResetDatabase();
+        ShortcutFileRemover.TEST_ShortcutRootsOverride = [_userPrograms, Path.Combine(_testRoot, "Common", "Programs")];
     }
 
     public void Dispose()
     {
+        ShortcutFileRemover.TEST_ShortcutRootsOverride = null;
         StartMenuShortcutsDatabase.ResetDatabase();
         StartMenuShortcutsDatabase.TEST_UserProgramsOverride = null;
         StartMenuShortcutsDatabase.TEST_CommonProgramsOverride = null;

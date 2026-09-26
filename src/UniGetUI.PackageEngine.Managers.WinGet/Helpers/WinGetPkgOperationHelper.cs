@@ -25,6 +25,31 @@ internal sealed class WinGetPkgOperationHelper : BasePkgOperationHelper
         return $"--id {Selector(package.Id.TrimEnd('…'), "identifier")}";
     }
 
+    private static string GetSelectorPiece(IPackage package)
+    {
+        if (
+            package.OverridenOptions.WinGet_UseLocalIdentifier
+            && GetFallbackIdentifier(package) is { } localIdentifier
+        )
+            return $"--id {Selector(localIdentifier, "local identifier")} --exact";
+
+        return GetIdNamePiece(package);
+    }
+
+    private static bool OperationIsBrokered(IPackage package) =>
+        Settings.Get(Settings.K.UseAgentBroker) && !package.Source.IsVirtualManager;
+
+    private static string? GetFallbackIdentifier(IPackage package)
+    {
+        string? localIdentifier = NativePackageHandler.GetLocalIdentifier(package);
+        if (localIdentifier is null || localIdentifier == package.Id)
+            return null;
+
+        return CoreTools.IsOptionSafeIdentifier(localIdentifier, quotedByTheSink: true)
+            ? localIdentifier
+            : null;
+    }
+
     private static string Selector(string value, string description)
     {
         if (!CoreTools.IsOptionSafeIdentifier(value, quotedByTheSink: true))
@@ -61,7 +86,7 @@ internal sealed class WinGetPkgOperationHelper : BasePkgOperationHelper
             },
         ];
 
-        parameters.AddRange(GetIdNamePiece(package).Split(" "));
+        parameters.AddRange(GetSelectorPiece(package).Split(" "));
         if (!package.Source.IsVirtualManager)
         {
             parameters.AddRange(["--source", package.Source.Name]);
@@ -292,8 +317,8 @@ internal sealed class WinGetPkgOperationHelper : BasePkgOperationHelper
             return OperationVeredict.AutoRetry;
         }
 
-        if (uintCode is 0x8A150011)
-        { // TODO: Integrity failed
+        if (ReportedInstallerHashMismatch(returnCode))
+        {
             return OperationVeredict.Failure;
         }
 
@@ -376,6 +401,22 @@ internal sealed class WinGetPkgOperationHelper : BasePkgOperationHelper
             return OperationVeredict.AutoRetry;
         }
 
+        if (
+            uintCode is 0x8A150014
+            && operation is OperationType.Update or OperationType.Uninstall
+            && !package.OverridenOptions.WinGet_UseLocalIdentifier
+            && !OperationIsBrokered(package)
+            && GetFallbackIdentifier(package) is { } localIdentifier
+        )
+        {
+            Logger.Warn(
+                $"WinGet found no installed package matching {package.Id}; retrying the {operation} "
+                + $"against the local identifier {localIdentifier} (issue #5413)"
+            );
+            package.OverridenOptions.WinGet_UseLocalIdentifier = true;
+            return OperationVeredict.AutoRetry;
+        }
+
         return OperationVeredict.Failure;
     }
 
@@ -429,6 +470,12 @@ internal sealed class WinGetPkgOperationHelper : BasePkgOperationHelper
             $"{count}{AttemptSeparator}{version}"
         );
     }
+
+    internal static bool ReportedInstallerHashMismatch(int returnCode) =>
+        (uint)returnCode is 0x8A150011;
+
+    internal static bool ReportedApplicationCurrentlyRunning(int returnCode) =>
+        (uint)returnCode is 0x8A150101 or 0x8A150103 or 0x8A150111;
 
     internal bool ReportedUpdateNotApplicable(
         IReadOnlyList<string> processOutput,

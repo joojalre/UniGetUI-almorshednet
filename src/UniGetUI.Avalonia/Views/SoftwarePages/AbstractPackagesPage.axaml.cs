@@ -41,6 +41,7 @@ public abstract partial class AbstractPackagesPage : UserControl,
     private double? _overlayRestingOffsetX;
     private static readonly SplineEasing FluentEntranceEasing = new(0.1, 0.9, 0.2, 1.0);
     private static readonly TimeSpan FilterAnimationDuration = TimeSpan.FromMilliseconds(300);
+    private readonly MenuFlyout _toolbarOverflowFlyout = new();
 
     protected AbstractPackagesPage(PackagesPageData data)
     {
@@ -66,6 +67,7 @@ public abstract partial class AbstractPackagesPage : UserControl,
 
         // "New version" sort option is only relevant on the updates page
         OrderByNewVersion_Menu.IsVisible = ViewModel.RoleIsUpdateLike;
+        OrderByDownloadSize_Menu.IsVisible = ViewModel.DownloadSizeColumnVisible;
 
         // Stamp initial checkmarks, then keep them in sync with sort-property changes
         UpdateSortMenuChecks();
@@ -96,6 +98,7 @@ public abstract partial class AbstractPackagesPage : UserControl,
 
         // Build the toolbar now that both AXAML controls and the ViewModel are ready
         GenerateToolBar(ViewModel);
+        InitializeToolbarOverflow();
 
         // Double-click a list row → show details
         PackageList.DoubleTapped += (_, e) =>
@@ -161,14 +164,6 @@ public abstract partial class AbstractPackagesPage : UserControl,
         // Responsive: switch between inline and overlay modes based on content width.
         FilteringPanel.GetObservable(BoundsProperty)
             .SubscribeValue(bounds => OnFilteringPanelWidthChanged(bounds.Width));
-
-        // Responsive: collapse the menu bar to icon-only on narrow windows so the
-        // toolbar buttons stay reachable instead of overflowing (mirrors WinUI).
-        this.GetObservable(BoundsProperty)
-            .SubscribeValue(bounds => UpdateToolbarLayout(bounds.Width));
-        Loaded += (_, _) => Dispatcher.UIThread.Post(
-            () => UpdateToolbarLayout(Bounds.Width),
-            DispatcherPriority.Loaded);
 
         // Grid/icons views: stretch cards to fill each row then reflow (mirrors WinUI's
         // UniformGridLayout) instead of leaving wasted space to the right.
@@ -238,10 +233,43 @@ public abstract partial class AbstractPackagesPage : UserControl,
         ViewModel.IconCardWidth = Math.Floor(availableWidth / columns);
     }
 
-    private void UpdateToolbarLayout(double availableWidth)
+    private void InitializeToolbarOverflow()
     {
-        if (availableWidth <= 0) return;
-        ViewModel.SetToolbarLabelsCollapsed(availableWidth < 900);
+        ToolBar.OverflowControl = ToolbarOverflowButton;
+        ToolBar.LabelCollapseRequested = ViewModel.SetToolbarLabelsCollapsed;
+
+        ToolBar.Children.Remove(ToolbarOverflowButton);
+        foreach (var entry in ViewModel.ToolbarEntries)
+            ToolBar.Children.Add(entry.Control);
+        ToolBar.Children.Add(ToolbarOverflowButton);
+
+        _toolbarOverflowFlyout.Opening += (_, _) => PopulateToolbarOverflowFlyout();
+        ToolbarOverflowButton.Flyout = _toolbarOverflowFlyout;
+    }
+
+    private void PopulateToolbarOverflowFlyout()
+    {
+        var items = new List<object>();
+        foreach (var control in ToolBar.OverflowedItems)
+        {
+            var entry = ViewModel.ToolbarEntries.FirstOrDefault(e => ReferenceEquals(e.Control, control));
+            if (entry is null) continue;
+
+            if (entry.Invoke is not { } invoke)
+            {
+                if (items.Count > 0 && items[^1] is not Separator) items.Add(new Separator());
+                continue;
+            }
+
+            var item = new MenuItem { Header = entry.Label, Icon = LoadMenuIcon(entry.IconName) };
+            item.Click += (_, _) => invoke();
+            items.Add(item);
+        }
+
+        while (items.Count > 0 && items[^1] is Separator) items.RemoveAt(items.Count - 1);
+
+        _toolbarOverflowFlyout.Items.Clear();
+        foreach (var item in items) _toolbarOverflowFlyout.Items.Add(item);
     }
 
     // ─── UI-only: focus the package list ─────────────────────────────────────
@@ -366,6 +394,7 @@ public abstract partial class AbstractPackagesPage : UserControl,
         OrderByVersion_Menu.Icon = Check(ViewModel.SortFieldIndex == 2);
         OrderByNewVersion_Menu.Icon = Check(ViewModel.SortFieldIndex == 3);
         OrderBySource_Menu.Icon = Check(ViewModel.SortFieldIndex == 4);
+        OrderByDownloadSize_Menu.Icon = Check(ViewModel.SortFieldIndex == 5);
         OrderByAscending_Menu.Icon = Check(ViewModel.SortAscending);
         OrderByDescending_Menu.Icon = Check(!ViewModel.SortAscending);
     }
@@ -503,7 +532,7 @@ public abstract partial class AbstractPackagesPage : UserControl,
                 InlineSidePanel.IsVisible = open;
                 SetInlineSidePanelTransformInstant(open ? 0 : -_savedFilterPaneWidth);
                 FilteringPanel.ColumnDefinitions[0].Width = open ? new GridLength(_savedFilterPaneWidth) : new GridLength(0);
-                FilteringPanel.ColumnDefinitions[1].Width = open ? new GridLength(4) : new GridLength(0);
+                FilteringPanel.ColumnDefinitions[1].Width = open ? new GridLength(12) : new GridLength(0);
             }
         }
     }
@@ -641,7 +670,7 @@ public abstract partial class AbstractPackagesPage : UserControl,
         {
             // Reserve the column (one reflow), then slide the pane in from -width to 0.
             col0.Width = new GridLength(_savedFilterPaneWidth);
-            col1.Width = new GridLength(4);
+            col1.Width = new GridLength(12);
             InlineSidePanel.IsVisible = true;
             InlineSidePanel.RenderTransform = TranslateX(0);
         }
