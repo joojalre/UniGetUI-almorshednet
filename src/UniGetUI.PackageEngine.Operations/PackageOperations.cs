@@ -10,6 +10,7 @@ using UniGetUI.PackageEngine.AgentBroker;
 using UniGetUI.PackageEngine.Classes.Packages.Classes;
 using UniGetUI.PackageEngine.Enums;
 using UniGetUI.PackageEngine.Interfaces;
+using UniGetUI.PackageEngine.Operations.Reboot;
 using UniGetUI.PackageEngine.PackageClasses;
 using UniGetUI.PackageEngine.PackageLoader;
 using UniGetUI.PackageEngine.Serializable;
@@ -132,10 +133,28 @@ namespace UniGetUI.PackageEngine.Operations
                 if (status is OperationStatus.Canceled)
                     Package.SetTag(PackageTag.Default);
             };
+            // Runs from the OperationSucceeded event, after SystemRestartRequired is set.
+            OperationSucceeded += (_, _) => RecordPendingRebootState();
             OperationFailed += (_, _) => HandleFailure();
         }
 
         protected override Task OnOperationSucceededAsync() => HandleSuccess();
+
+        private void RecordPendingRebootState()
+        {
+            try
+            {
+                if (SystemRestartRequired)
+                    PendingRebootStore.Record(Package, Role);
+                else if (Role is OperationType.Uninstall)
+                    PendingRebootStore.Clear(Package.Manager.Id, Package.Id);
+            }
+            catch (Exception ex)
+            {
+                Logger.Warn("Failed to update the pending-reboot store");
+                Logger.Warn(ex);
+            }
+        }
 
         public static bool HasPendingOperation(IPackage package, OperationType role)
         {
@@ -790,7 +809,7 @@ namespace UniGetUI.PackageEngine.Operations
                 // the manager's result parser, like the local process path does. Only
                 // real process output is passed; internal informational lines are not.
                 var veredict = await GetProcessVeredict(status.ExitCode ?? -1, _brokerStreamedOutput ?? []);
-                if (veredict is OperationVeredict.Success)
+                if (veredict is OperationVeredict.Success or OperationVeredict.RestartRequired)
                 {
                     Line("Operation completed successfully via agent broker.", LineType.Information);
                 }

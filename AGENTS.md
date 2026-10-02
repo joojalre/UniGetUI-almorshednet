@@ -43,11 +43,32 @@ The constructor sets `Capabilities`, `Properties`, and wires the helpers. See `s
 These four managers share `BaseNuGet` / `BaseNuGetDetailsHelper`, which talk to a NuGet feed
 over HTTP. Each source picks its protocol independently, in `NuGetV3ServiceIndex.GetServiceIndexUrl`:
 
+- A source URL with the `file` scheme - what `new Uri()` produces for a local folder or a UNC
+  share such as `C:\packages` or `\\server\share` - is a **local folder feed**, served by
+  `NuGetLocalFeed`. There is no HTTP endpoint to call, so search, details, icons, versions and
+  updates read the `.nupkg` files and their embedded `.nuspec` straight from disk. This check
+  runs before the V3 one, everywhere.
 - A source URL whose path ends in `index.json`, or whose last path segment is `v3`, is a
   **NuGet V3** feed. Its service index is fetched once per session and cached.
 - Every other source URL is treated as a **V2/OData** feed and keeps the legacy code path.
 
 Detection is purely by URL shape, so it costs no probe request and no V2 feed changes behaviour.
+
+A local folder feed is scanned at most three directories deep, which covers both the flat layout
+and the `<id>/<version>/<id>.<version>.nupkg` layout, and each parsed manifest is cached against
+its file's size and write time. Installers on such a feed are copied from disk instead of being
+downloaded (`DownloadOperation`), which refuses a destination that is the package file itself.
+
+Every `.nupkg` in the folder is opened during a search, so its contents are treated as untrusted:
+a manifest is rejected above 4 MiB (checked against the declared size *and* while decompressing,
+since the declared one can lie) and parsed with DTD processing prohibited, and an embedded
+`<icon>` is extracted under the same bounds into the package's icon cache directory, named from
+the package version, a digest of the archive's path, write time and size, and an allow-listed
+extension - never from the entry path, so a crafted entry name cannot escape that directory, and
+two feeds carrying the same id and version keep their own icons. Note that `GetIconLocal` re-reads
+a replaced archive whichever way its timestamp moved, but `Package.GetIconUrlIfAny` caches the
+resolved address for the process against the package's versioned hash, so a package replaced in
+place under the same version keeps showing the icon it had until a restart.
 
 ### V3 resources used
 
@@ -74,11 +95,15 @@ retried against a fabricated V2 endpoint. V2-only feeds never enter the V3 path 
 - **.NET Tool** — `https://api.nuget.org/v3/index.json`. Safe to repoint because the manager
   does not support custom sources and never passes the source URL to the `dotnet` CLI. Also
   filters search on `packageType=DotnetTool`.
-- **PowerShell / PowerShell 7** — sources are enumerated from `Get-PSRepository`, so the URL is
-  CLI-owned identity (`PowerShellSourceHelper` compares it literally to choose
-  `Register-PSRepository -Default`) and must not be rewritten. The PowerShell Gallery serves no
-  V3 service index, so it stays on V2; a V3-capable custom repository (Azure Artifacts, GitHub
-  Packages, JFrog, MyGet) is picked up automatically.
+- **PowerShell / PowerShell 7** — sources are enumerated from `Get-PSRepository` (or
+  `Get-PSResourceRepository` on PowerShell 7), so the URL is CLI-owned identity
+  (`PowerShellSourceHelper` compares it literally to choose `Register-PSRepository -Default`)
+  and must not be rewritten. Both helpers ask for an untruncated two-column table and read it by
+  column position (`ManagerTable`), because a repository name or path containing a space breaks
+  whitespace splitting and a long location is otherwise cut by `Format-Table`; a location that
+  is not an http URL - a folder or a UNC share - is kept rather than discarded. The PowerShell
+  Gallery serves no V3 service index, so it stays on V2; a V3-capable custom repository (Azure
+  Artifacts, GitHub Packages, JFrog, MyGet) is picked up automatically.
 - **Chocolatey** — sources come from `choco source list` and `community.chocolatey.org` serves no
   `index.json`, so it stays on V2. Note that only its updates and version listing are CLI-driven;
   its search, details and icons run through the shared `BaseNuGet` HTTP path.
