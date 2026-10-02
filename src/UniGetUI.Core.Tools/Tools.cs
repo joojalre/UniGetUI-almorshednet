@@ -1,6 +1,7 @@
 using System.Buffers;
 using System.Collections;
 using System.Collections.Concurrent;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.Net;
@@ -157,28 +158,114 @@ namespace UniGetUI.Core.Tools
         public static void RelaunchProcess()
         {
             Logger.Debug("Launching process: " + CoreData.UniGetUIExecutableFile);
-            ScheduleRelaunchAfterExit();
+            if (!TryScheduleRelaunchAfterExit())
+            {
+                return;
+            }
+
             Logger.Warn("About to kill process");
             Environment.Exit(0);
         }
 
-        public static void ScheduleRelaunchAfterExit(string? executablePath = null)
+        /// <summary>
+        /// Starts the helper that relaunches UniGetUI once this process exits. Returns false, and
+        /// logs why, when the helper could not be started; the caller should then keep running.
+        /// </summary>
+        public static bool TryScheduleRelaunchAfterExit(string? executablePath = null)
         {
             executablePath ??= CoreData.UniGetUIExecutableFile;
-            int currentProcessId = Environment.ProcessId;
-            string escapedExecutablePath = executablePath.Replace("'", "''");
-            string command =
-                $"Wait-Process -Id {currentProcessId}; Start-Process -FilePath '{escapedExecutablePath}'";
+            ProcessStartInfo startInfo = CreateRelaunchStartInfo(Environment.ProcessId, executablePath);
+            Logger.Debug($"Scheduling a relaunch of {executablePath} through {startInfo.FileName}");
+            return TryStartRelaunchHelper(startInfo);
+        }
 
-            using var process = Process.Start(
-                new ProcessStartInfo
+        internal static bool TryStartRelaunchHelper(ProcessStartInfo startInfo)
+        {
+            try
+            {
+                using var process = Process.Start(startInfo);
+                return process is not null;
+            }
+            catch (Exception ex) when (ex is Win32Exception or InvalidOperationException or PlatformNotSupportedException)
+            {
+                Logger.Error($"Could not start the relaunch helper {startInfo.FileName}:");
+                Logger.Error(ex);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Builds the detached process that waits for <paramref name="currentProcessId"/> to exit and
+        /// then starts <paramref name="executablePath"/>: PowerShell on Windows, a /bin/sh helper
+        /// elsewhere (the same shape the self-updater uses), which opens the .app bundle on macOS.
+        /// </summary>
+        internal static ProcessStartInfo CreateRelaunchStartInfo(int currentProcessId, string executablePath)
+        {
+            if (OperatingSystem.IsWindows())
+            {
+                string escapedExecutablePath = executablePath.Replace("'", "''");
+                string command =
+                    $"Wait-Process -Id {currentProcessId}; Start-Process -FilePath '{escapedExecutablePath}'";
+
+                return new ProcessStartInfo
                 {
                     FileName = "powershell.exe",
                     Arguments = $"-NoProfile -WindowStyle Hidden -Command \"{command}\"",
                     UseShellExecute = false,
                     CreateNoWindow = true,
-                }
+                };
+            }
+
+            // Positional arguments ($1=pid, $2=executable, $3=bundle or empty) keep the paths out of
+            // the script text. The wait has no cap, like Wait-Process on Windows: launching while the
+            // old process is alive would hand off to it through the single-instance guard and exit.
+            // If open rejects the bundle, the executable is started directly.
+            const string script = """
+                pid="$1"; exe="$2"; bundle="$3"
+                while kill -0 "$pid" 2>/dev/null; do sleep 0.2; done
+                if [ -n "$bundle" ]; then
+                  /usr/bin/open -na "$bundle" || "$exe" >/dev/null 2>&1 &
+                else
+                  "$exe" >/dev/null 2>&1 &
+                fi
+                """;
+
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = "/bin/sh",
+                UseShellExecute = false,
+                CreateNoWindow = true,
+            };
+            startInfo.ArgumentList.Add("-c");
+            startInfo.ArgumentList.Add(script);
+            startInfo.ArgumentList.Add("sh");
+            startInfo.ArgumentList.Add(currentProcessId.ToString(CultureInfo.InvariantCulture));
+            startInfo.ArgumentList.Add(executablePath);
+            startInfo.ArgumentList.Add(
+                OperatingSystem.IsMacOS() ? FindAppBundle(executablePath) ?? "" : ""
             );
+            return startInfo;
+        }
+
+        /// <summary>
+        /// Returns the .app bundle that contains <paramref name="executablePath"/>, or null when the
+        /// executable is not inside one.
+        /// </summary>
+        internal static string? FindAppBundle(string executablePath)
+        {
+            for (
+                string? directory = Path.GetDirectoryName(executablePath);
+                directory is not null;
+                directory = Path.GetDirectoryName(directory)
+            )
+            {
+                if (Path.GetFileName(directory).EndsWith(".app", StringComparison.OrdinalIgnoreCase))
+                {
+                    return directory;
+                }
+            }
+
+            return null;
         }
 
         /// <summary>
@@ -374,6 +461,16 @@ namespace UniGetUI.Core.Tools
             if (url is null)
                 return 0;
 
+            if (url.IsFile)
+            {
+                Logger.Warn(
+                    $"Refusing to measure the file system address {url}: this helper answers "
+                        + "for network addresses only, and its callers take the address from "
+                        + "package metadata"
+                );
+                return 0;
+            }
+
             try
             {
                 using HttpClient client = new(CoreTools.GenericHttpClientParameters);
@@ -394,6 +491,9 @@ namespace UniGetUI.Core.Tools
         {
             try
             {
+                if (url.IsFile)
+                    return Path.GetFileName(url.LocalPath);
+
                 var handler = CoreTools.GenericHttpClientParameters;
                 handler.AllowAutoRedirect = false;
                 using HttpClient client = new(handler);
@@ -770,7 +870,13 @@ namespace UniGetUI.Core.Tools
         /// <summary>
         /// Enables GSudo cache for the current process
         /// </summary>
-        private static bool _isCaching;
+        private static readonly SemaphoreSlim _uacCacheLock = new(1, 1);
+
+        private static bool _uacCacheHeld;
+
+        private static long _uacCacheGeneration;
+
+        public static long UACCacheGeneration => Interlocked.Read(ref _uacCacheGeneration);
 
         public static async Task CacheUACForCurrentProcess()
         {
@@ -782,22 +888,21 @@ namespace UniGetUI.Core.Tools
                 return;
             }
 
-            while (_isCaching)
-                await Task.Delay(100);
+            var elevatorName = Path.GetFileName(CoreData.ElevatorPath);
 
+            // pkexec prompts on every invocation and has no caching protocol.
+            if (elevatorName == "pkexec")
+                return;
+
+            bool isSessionCache = elevatorName != "sudo";
+
+            await _uacCacheLock.WaitAsync();
             try
             {
-                _isCaching = true;
-                Logger.Info("Caching admin rights for process id " + Environment.ProcessId);
-
-                var elevatorName = Path.GetFileName(CoreData.ElevatorPath);
-
-                // pkexec prompts on every invocation and has no caching protocol.
-                if (elevatorName == "pkexec")
-                {
-                    _isCaching = false;
+                if (isSessionCache && _uacCacheHeld)
                     return;
-                }
+
+                Logger.Info("Caching admin rights for process id " + Environment.ProcessId);
 
                 // sudo: -v validates/extends the cached timestamp.
                 // Prepend -A only when the SUDO_ASKPASS helper is configured.
@@ -818,6 +923,7 @@ namespace UniGetUI.Core.Tools
                         RedirectStandardInput = true,
                         CreateNoWindow = true,
                         StandardOutputEncoding = Encoding.UTF8,
+                        StandardErrorEncoding = Encoding.UTF8,
                     },
                 };
 
@@ -826,39 +932,96 @@ namespace UniGetUI.Core.Tools
                 PrepareForegroundForElevation();
 
                 p.Start();
+
+                Task<string> stdout = p.StandardOutput.ReadToEndAsync();
+                Task<string> stderr = p.StandardError.ReadToEndAsync();
+                await Task.WhenAll(stdout, stderr);
                 await p.WaitForExitAsync();
-                _isCaching = false;
+
+                string output = string
+                    .Join(
+                        Environment.NewLine,
+                        new[] { stdout.Result, stderr.Result }.Where(line =>
+                            !string.IsNullOrWhiteSpace(line)
+                        )
+                    )
+                    .Trim();
+
+                if (p.ExitCode == 0)
+                {
+                    _uacCacheHeld = true;
+                    Interlocked.Increment(ref _uacCacheGeneration);
+
+                    Logger.Info(
+                        $"The elevator cached administrator rights for process id {Environment.ProcessId}"
+                    );
+                    if (output.Length > 0)
+                        Logger.Info(output);
+                }
+                else
+                {
+                    Logger.Error(
+                        $"The elevator could not cache administrator rights (exit code {p.ExitCode}). "
+                            + "Every operation that requires elevation will ask for consent separately."
+                    );
+                    if (output.Length > 0)
+                        Logger.Error(output);
+                }
             }
             catch (Exception ex)
             {
+                Logger.Error("Failed to cache administrator rights for the current process");
                 Logger.Error(ex);
-                _isCaching = false;
+            }
+            finally
+            {
+                _uacCacheLock.Release();
+            }
+        }
+
+        /// <summary>
+        /// Forgets that an elevation cache is held, without releasing it. The next operation
+        /// that needs elevation will ask the elevator again; that request is free and silent
+        /// when the session is still alive, and re-establishes it when it is not.
+        /// </summary>
+        public static async Task<bool> InvalidateUACCacheState(long? expectedGeneration = null)
+        {
+            await _uacCacheLock.WaitAsync();
+            try
+            {
+                if (expectedGeneration is long expected
+                    && (expected != _uacCacheGeneration || !_uacCacheHeld))
+                    return false;
+
+                _uacCacheHeld = false;
+                Interlocked.Increment(ref _uacCacheGeneration);
+                return true;
+            }
+            finally
+            {
+                _uacCacheLock.Release();
             }
         }
 
         /// <summary>
         /// Reset UAC cache for the current process
         /// </summary>
-        public static async Task ResetUACForCurrentProcess()
+        public static async Task<bool> ResetUACForCurrentProcess(long? expectedGeneration = null)
         {
             if (Settings.Get(Settings.K.ProhibitElevation))
             {
                 Logger.Error(
                     "Elevation is prohibited, ResetUACForCurrentProcess() call will be ignored"
                 );
-                return;
+                return false;
             }
-
-            Logger.Info(
-                "Resetting administrator rights cache for process id " + Environment.ProcessId
-            );
 
             var elevatorName = Path.GetFileName(CoreData.ElevatorPath);
 
             // pkexec prompts on every invocation and has no caching protocol.
             if (elevatorName == "pkexec")
             {
-                return;
+                return false;
             }
 
             // sudo: -K removes all cached timestamps.
@@ -867,22 +1030,72 @@ namespace UniGetUI.Core.Tools
                 ? "-K"
                 : "cache off --pid " + Environment.ProcessId;
 
-            using Process p = new()
+            await _uacCacheLock.WaitAsync();
+            try
             {
-                StartInfo = new ProcessStartInfo
+                if (expectedGeneration is long expected
+                    && (expected != _uacCacheGeneration || !_uacCacheHeld))
+                    return false;
+
+                _uacCacheHeld = false;
+                Interlocked.Increment(ref _uacCacheGeneration);
+
+                Logger.Info(
+                    "Resetting administrator rights cache for process id " + Environment.ProcessId
+                );
+
+                using Process p = new()
                 {
-                    FileName = CoreData.ElevatorPath,
-                    Arguments = resetArgs,
-                    UseShellExecute = false,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    RedirectStandardInput = true,
-                    CreateNoWindow = true,
-                    StandardOutputEncoding = Encoding.UTF8,
-                },
-            };
-            p.Start();
-            await p.WaitForExitAsync();
+                    StartInfo = new ProcessStartInfo
+                    {
+                        FileName = CoreData.ElevatorPath,
+                        Arguments = resetArgs,
+                        UseShellExecute = false,
+                        RedirectStandardOutput = true,
+                        RedirectStandardError = true,
+                        RedirectStandardInput = true,
+                        CreateNoWindow = true,
+                        StandardOutputEncoding = Encoding.UTF8,
+                        StandardErrorEncoding = Encoding.UTF8,
+                    },
+                };
+
+                p.Start();
+
+                Task<string> stdout = p.StandardOutput.ReadToEndAsync();
+                Task<string> stderr = p.StandardError.ReadToEndAsync();
+                await Task.WhenAll(stdout, stderr);
+                await p.WaitForExitAsync();
+
+                if (p.ExitCode != 0)
+                {
+                    Logger.Warn(
+                        $"The elevator could not release the administrator rights cache (exit code {p.ExitCode})"
+                    );
+                    string output = string
+                        .Join(
+                            Environment.NewLine,
+                            new[] { stdout.Result, stderr.Result }.Where(line =>
+                                !string.IsNullOrWhiteSpace(line)
+                            )
+                        )
+                        .Trim();
+                    if (output.Length > 0)
+                        Logger.Warn(output);
+                }
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("Failed to release the administrator rights cache");
+                Logger.Error(ex);
+                return true;
+            }
+            finally
+            {
+                _uacCacheLock.Release();
+            }
         }
 
         /// <summary>

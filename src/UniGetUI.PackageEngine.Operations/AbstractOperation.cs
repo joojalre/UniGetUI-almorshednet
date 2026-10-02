@@ -45,6 +45,8 @@ public abstract partial class AbstractOperation : IDisposable
         }
     }
 
+    public bool SystemRestartRequired { get; private set; }
+
     public void ApplyCapabilities(bool admin, bool interactive, bool skiphash, string? scope)
     {
         BadgesChanged?.Invoke(this, new BadgeCollection(admin, interactive, skiphash, scope));
@@ -340,7 +342,7 @@ public abstract partial class AbstractOperation : IDisposable
             try
             {
                 result = await _runOperation();
-                if (result is OperationVeredict.Success)
+                if (result is OperationVeredict.Success or OperationVeredict.RestartRequired)
                     await OnOperationSucceededAsync();
             }
             finally
@@ -350,12 +352,21 @@ public abstract partial class AbstractOperation : IDisposable
             while (OperationQueue.Remove(this))
                 ;
 
-            if (result == OperationVeredict.Success)
+            SystemRestartRequired = result is OperationVeredict.RestartRequired;
+
+            if (result is OperationVeredict.Success or OperationVeredict.RestartRequired)
             {
                 Status = OperationStatus.Succeeded;
                 OperationSucceeded?.Invoke(this, EventArgs.Empty);
                 OperationFinished?.Invoke(this, EventArgs.Empty);
                 Line(Metadata.SuccessMessage, LineType.Information);
+                if (SystemRestartRequired)
+                    Line(
+                        CoreTools.Translate(
+                            "This operation finished, but the computer must be restarted before the changes take effect"
+                        ),
+                        LineType.Information
+                    );
             }
             else if (result == OperationVeredict.Failure)
             {
@@ -543,7 +554,7 @@ public abstract partial class AbstractOperation : IDisposable
             }
         } while (result is OperationVeredict.AutoRetry);
 
-        if (result is not OperationVeredict.Success)
+        if (result is not (OperationVeredict.Success or OperationVeredict.RestartRequired))
             return result;
 
         // Process postoperations

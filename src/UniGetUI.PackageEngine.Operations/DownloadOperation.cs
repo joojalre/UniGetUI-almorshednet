@@ -54,6 +54,47 @@ public class DownloadOperation : AbstractOperation
     protected virtual HttpClient CreateHttpClient() =>
         new(CoreTools.GenericHttpClientParameters);
 
+    internal static bool ComesFromTheSourceFolder(Uri installerUrl, IManagerSource source)
+    {
+        if (source.Url is not { IsAbsoluteUri: true, IsFile: true } sourceUrl)
+            return false;
+
+        try
+        {
+            string root = Path.GetFullPath(sourceUrl.LocalPath);
+            if (!root.EndsWith(Path.DirectorySeparatorChar))
+                root += Path.DirectorySeparatorChar;
+
+            return Path.GetFullPath(installerUrl.LocalPath)
+                .StartsWith(
+                    root,
+                    OperatingSystem.IsWindows()
+                        ? StringComparison.OrdinalIgnoreCase
+                        : StringComparison.Ordinal
+                );
+        }
+        catch (Exception)
+        {
+            return false;
+        }
+    }
+
+    internal static bool IsSameFile(string source, string destination)
+    {
+        try
+        {
+            return string.Equals(
+                Path.GetFullPath(source),
+                Path.GetFullPath(destination),
+                OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal
+            );
+        }
+        catch (Exception)
+        {
+            return false;
+        }
+    }
+
     protected override async Task<OperationVeredict> PerformOperation()
     {
         bool downloadFileCreated = false;
@@ -93,18 +134,55 @@ public class DownloadOperation : AbstractOperation
                 downloadLocation = Path.Join(downloadLocation, fileName);
             }
 
-            Line($"Download URL found at {downloadUrl} ", LineType.Information);
-            using var httpClient = CreateHttpClient();
-            using var response = await httpClient.GetAsync(
-                downloadUrl,
-                HttpCompletionOption.ResponseHeadersRead,
-                CancellationToken
-            );
-            response.EnsureSuccessStatusCode();
+            if (downloadUrl.IsFile && !ComesFromTheSourceFolder(downloadUrl, _package.Source))
+            {
+                Line(
+                    $"The installer address {downloadUrl} points at the file system, but the "
+                        + $"source {_package.Source.Name} is not a local folder holding it. "
+                        + "Refusing to read it",
+                    LineType.Error
+                );
+                return OperationVeredict.Failure;
+            }
 
-            var totalBytes = response.Content.Headers.ContentLength ?? -1L;
+            if (downloadUrl.IsFile && IsSameFile(downloadUrl.LocalPath, downloadLocation))
+            {
+                Line(
+                    $"The chosen location {downloadLocation} is the package file itself, "
+                        + "please choose a different destination",
+                    LineType.Error
+                );
+                return OperationVeredict.Failure;
+            }
+
+            Line($"Download URL found at {downloadUrl} ", LineType.Information);
+            using HttpClient? httpClient = downloadUrl.IsFile ? null : CreateHttpClient();
+            using HttpResponseMessage? response =
+                httpClient is null
+                    ? null
+                    : await httpClient.GetAsync(
+                        downloadUrl,
+                        HttpCompletionOption.ResponseHeadersRead,
+                        CancellationToken
+                    );
+            response?.EnsureSuccessStatusCode();
+
+            long totalBytes;
+            Stream sourceStream;
+            if (response is null)
+            {
+                FileInfo sourceFile = new(downloadUrl.LocalPath);
+                totalBytes = sourceFile.Length;
+                sourceStream = sourceFile.OpenRead();
+            }
+            else
+            {
+                totalBytes = response.Content.Headers.ContentLength ?? -1L;
+                sourceStream = await response.Content.ReadAsStreamAsync(CancellationToken);
+            }
+
             var canReportProgress = totalBytes > 0;
-            await using (var contentStream = await response.Content.ReadAsStreamAsync(CancellationToken))
+            await using (var contentStream = sourceStream)
             await using (var fileStream = new FileStream(
                 downloadLocation,
                 FileMode.Create,

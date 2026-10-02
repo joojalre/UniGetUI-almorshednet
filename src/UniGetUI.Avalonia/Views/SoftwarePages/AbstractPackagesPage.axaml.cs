@@ -100,11 +100,16 @@ public abstract partial class AbstractPackagesPage : UserControl,
         GenerateToolBar(ViewModel);
         InitializeToolbarOverflow();
 
-        // Double-click a list row → show details
+        // Double-click a package row → show details. DataGrid-level gestures also receive
+        // header double-clicks, so require an actual row ancestor rather than blacklisting headers.
         PackageList.DoubleTapped += (_, e) =>
         {
-            if (e.Source is Visual source
-                && (source is CheckBox || source.GetVisualAncestors().Any(control => control is CheckBox)))
+            if (e.Source is not Visual source)
+                return;
+
+            var ancestors = source.GetVisualAncestors().ToList();
+            if ((source is CheckBox || ancestors.Any(control => control is CheckBox))
+                || (source is not DataGridRow && !ancestors.Any(control => control is DataGridRow)))
             {
                 return;
             }
@@ -255,14 +260,16 @@ public abstract partial class AbstractPackagesPage : UserControl,
             var entry = ViewModel.ToolbarEntries.FirstOrDefault(e => ReferenceEquals(e.Control, control));
             if (entry is null) continue;
 
-            if (entry.Invoke is not { } invoke)
+            if (entry.Invoke is null && entry.InvokeAt is null)
             {
                 if (items.Count > 0 && items[^1] is not Separator) items.Add(new Separator());
                 continue;
             }
 
             var item = new MenuItem { Header = entry.Label, Icon = LoadMenuIcon(entry.IconName) };
-            item.Click += (_, _) => invoke();
+            if (entry.InvokeAt is { } invokeAt)
+                item.Click += (_, _) => Dispatcher.UIThread.Post(() => invokeAt(ToolbarOverflowButton));
+            else if (entry.Invoke is { } invoke) item.Click += (_, _) => invoke();
             items.Add(item);
         }
 
