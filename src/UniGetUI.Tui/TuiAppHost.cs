@@ -84,6 +84,7 @@ public static class TuiAppHost
             try
             {
                 WindowsConsoleHost.PrepareInteractiveIO();
+                EnsureInteractiveStreams(Console.IsInputRedirected, Console.IsOutputRedirected);
             }
             catch (Exception ex) when (ex is IOException or Win32Exception)
             {
@@ -132,6 +133,12 @@ public static class TuiAppHost
             return 1;
         }
         return app.StartWithConsoleLifetime(commandLine.RemainingArgs);
+    }
+
+    internal static void EnsureInteractiveStreams(bool inputRedirected, bool outputRedirected)
+    {
+        if (inputRedirected || outputRedirected)
+            throw new IOException("The terminal UI requires console input and output. Remove stdin/stdout redirection or use a headless command.");
     }
 
     private static void ReportConsoleStartupFailure(Exception exception)

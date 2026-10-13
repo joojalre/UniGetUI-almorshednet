@@ -14,3 +14,5 @@ src/UniGetUI.Tui/Views/Pages/OperationsPage.cs text eol=crlf
 src/UniGetUI.Avalonia.DataGrid.NativeAotTests/Ui/TuiGrids/ProductionPackageGrid.cs -text
 src/UniGetUI.Avalonia.DataGrid.NativeAotTests/Ui/TuiGrids/ProductionHistoryGrid.cs -text
 src/UniGetUI.Avalonia.DataGrid.NativeAotTests/Ui/TuiGrids/ProductionOperationsGrid.cs -text
+# Preserve the reviewed patch hash across checkouts.
+docs/third-party/tui-nativeaot/review-clipboard.patch -text

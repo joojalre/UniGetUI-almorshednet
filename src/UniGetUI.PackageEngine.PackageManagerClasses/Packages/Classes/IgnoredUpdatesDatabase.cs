@@ -112,6 +112,21 @@ public static class IgnoredUpdatesDatabase
         Settings.SetDictionaryItem(Settings.K.IgnoredPackageUpdates, ignoredId, version);
     }
 
+    public static void AddOrThrow(string ignoredId, string version = "*")
+    {
+        var updated = Settings.GetDictionaryOrThrow<string, string>(Settings.K.IgnoredPackageUpdates);
+        updated[ignoredId] = version;
+        Settings.SetDictionaryOrThrow(Settings.K.IgnoredPackageUpdates, updated);
+    }
+
+    public static bool RemoveOrThrow(string ignoredId)
+    {
+        var updated = Settings.GetDictionaryOrThrow<string, string>(Settings.K.IgnoredPackageUpdates);
+        if (!updated.Remove(ignoredId, out var previous)) return false;
+        Settings.SetDictionaryOrThrow(Settings.K.IgnoredPackageUpdates, updated);
+        return previous is not null;
+    }
+
     /// <summary>
     /// Attempts to remove the given package from the database
     /// </summary>

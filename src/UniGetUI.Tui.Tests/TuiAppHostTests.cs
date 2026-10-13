@@ -137,7 +137,6 @@ public class TuiAppHostTests
     [Fact]
     public async Task RedirectedInteractiveStartupFailsBeforeActivatingFakeData()
     {
-        if (!OperatingSystem.IsWindows()) return;
         var (code, output, error) = await RunHost("--fake-data");
         Assert.Equal(1, code);
         Assert.Contains("requires console input and output", error);

@@ -27,6 +27,21 @@ public static class AutoUpdatesDatabase
         Settings.SetDictionaryItem(Settings.K.AutoUpdatedPackages, autoUpdateId, AllVersions);
     }
 
+    public static void AddOrThrow(string autoUpdateId)
+    {
+        var updated = Settings.GetDictionaryOrThrow<string, string>(Settings.K.AutoUpdatedPackages);
+        updated[autoUpdateId] = AllVersions;
+        Settings.SetDictionaryOrThrow(Settings.K.AutoUpdatedPackages, updated);
+    }
+
+    public static bool RemoveOrThrow(string autoUpdateId)
+    {
+        var updated = Settings.GetDictionaryOrThrow<string, string>(Settings.K.AutoUpdatedPackages);
+        if (!updated.Remove(autoUpdateId, out var previous)) return false;
+        Settings.SetDictionaryOrThrow(Settings.K.AutoUpdatedPackages, updated);
+        return previous is not null;
+    }
+
     public static bool Remove(string autoUpdateId)
     {
         if (

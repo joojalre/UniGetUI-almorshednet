@@ -1,0 +1,32 @@
+{
+  "baseCommit": "cf88625ad026d49f9ee925f0c74e5ac0fc5d97e7",
+  "patch": "review-clipboard.patch",
+  "patchSha256": "4214e59a0b670c084de2deecd4c5060e2c859276ceebecd08ce8294f6f1867ef",
+  "files": [
+    {
+      "path": "src/ExternalLibraries.Consolonia.PlatformSupport/Assembly.cs",
+      "baseGitBlobSha256": "27ebc69fb4b95633eae1d2df4d3a2f45299a0a79df06836b930a6609aff3b69b",
+      "workingBytesSha256": "f247137b1ae6a2612800644414173d738f3db2e1bb51c705e11c0c9827a59049"
+    },
+    {
+      "path": "src/ExternalLibraries.Consolonia.PlatformSupport/PlatformSupportExtensions.cs",
+      "baseGitBlobSha256": "fef97cd15b85240e5afa9c768ae9564270edfe58cfae8a8c5244e275e7813958",
+      "workingBytesSha256": "ff19368a7c6e047c7e6127b1e7bc49938470b0315d11529e1ffa3f19bf004ed8"
+    },
+    {
+      "path": "src/ExternalLibraries.Consolonia.PlatformSupport/Clipboard/ClipboardProcessRunner.cs",
+      "baseGitBlobSha256": "5dc9708f3531babdec711b46689b6475f40ed2a83943845feb4e0cb0124f4cf8",
+      "workingBytesSha256": "356af748e1e2b6bc4f2753777c69d3e0a9ff466924b31027063c030651fad3ee"
+    },
+    {
+      "path": "src/ExternalLibraries.Consolonia.PlatformSupport/Clipboard/WslClipboard.cs",
+      "baseGitBlobSha256": "2986861fd67750fb6ea7418dbfbc27c0b6ca8832817352474e968b531d76b5da",
+      "workingBytesSha256": "fc431191651183ba27972dc7cf23fd01ca2b1e4a8355e9ad043aa1ad51465717"
+    },
+    {
+      "path": "src/ExternalLibraries.Consolonia.PlatformSupport/Clipboard/MacClipboard.cs",
+      "baseGitBlobSha256": "2e0780f6e0ca8c23fa5914586f2a9066da75aecee2bdf098136c15c563eadb04",
+      "workingBytesSha256": "116472a0285dfedc018e0d9f113a9e3e19177bbb83ca2d3abb39d0ae10155c43"
+    }
+  ]
+}

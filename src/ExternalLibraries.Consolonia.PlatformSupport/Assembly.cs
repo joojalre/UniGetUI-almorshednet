@@ -3,6 +3,7 @@ using System.Runtime.CompilerServices;
 using Avalonia.Metadata;
 
 [assembly: InternalsVisibleTo("Consolonia.Core.Tests")]
+[assembly: InternalsVisibleTo("UniGetUI.Tui.Tests")]
 
 [assembly: CLSCompliant(false)] //todo: should we make it compliant?
 

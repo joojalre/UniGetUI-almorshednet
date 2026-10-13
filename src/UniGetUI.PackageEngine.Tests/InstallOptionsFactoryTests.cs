@@ -85,6 +85,33 @@ public sealed class InstallOptionsFactoryTests : IDisposable
         }
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task StrictSave_PropagatesWriteFailureWithoutReplacingCachedOptions(bool managerOptions)
+    {
+        var manager = new PackageManagerBuilder().WithName("StrictSave" + Guid.NewGuid().ToString("N")).Build();
+        var package = new PackageBuilder().WithManager(manager).WithId("Contoso.Tool").Build();
+        var original = new InstallOptions { CustomInstallLocation = "original" };
+        if (managerOptions) await InstallOptionsFactory.SaveForManagerOrThrowAsync(original, manager);
+        else await InstallOptionsFactory.SaveForPackageOrThrowAsync(original, package);
+        string path = Directory.GetFiles(CoreData.UniGetUIInstallationOptionsDirectory, "*.json").Single();
+        File.Delete(path);
+        Directory.CreateDirectory(path);
+        var changed = new InstallOptions { CustomInstallLocation = "must-not-enter-cache" };
+        Exception? error = await Record.ExceptionAsync(() => managerOptions
+            ? InstallOptionsFactory.SaveForManagerOrThrowAsync(changed, manager)
+            : InstallOptionsFactory.SaveForPackageOrThrowAsync(changed, package));
+        Assert.True(error is IOException or UnauthorizedAccessException);
+        Assert.Equal("original", (managerOptions
+            ? InstallOptionsFactory.LoadForManager(manager)
+            : InstallOptionsFactory.LoadForPackage(package)).CustomInstallLocation);
+        Directory.Delete(path);
+        if (managerOptions) await InstallOptionsFactory.SaveForManagerOrThrowAsync(changed, manager);
+        else await InstallOptionsFactory.SaveForPackageOrThrowAsync(changed, package);
+        Assert.Contains("must-not-enter-cache", await File.ReadAllTextAsync(path));
+    }
+
     [Fact]
     public void SaveForPackage_StillRoundTripsAnOrdinaryPackageId()
     {

@@ -49,7 +49,7 @@ namespace Consolonia.PlatformSupport.Clipboard
             nint ptr = objc_msgSend(_generalPasteboard, _stringForTypeRegister, _nsStringPboardType);
             nint charArray = objc_msgSend(ptr, _utf8Register);
 
-            return Task.FromResult(Marshal.PtrToStringAnsi(charArray));
+            return Task.FromResult(Marshal.PtrToStringUTF8(charArray));
         }
 
         public override Task SetTextAsync(string text)
@@ -81,14 +81,14 @@ namespace Consolonia.PlatformSupport.Clipboard
             return exitCode == 0 && result.FileExists();
         }
 
-        [DllImport("/System/Library/Frameworks/AppKit.framework/AppKit", CharSet = CharSet.Unicode)]
-        private static extern nint objc_getClass(string className);
+        [DllImport("/System/Library/Frameworks/AppKit.framework/AppKit", ExactSpelling = true)]
+        private static extern nint objc_getClass([MarshalAs(UnmanagedType.LPUTF8Str)] string className);
 
         [DllImport("/System/Library/Frameworks/AppKit.framework/AppKit")]
         private static extern nint objc_msgSend(nint receiver, nint selector);
 
-        [DllImport("/System/Library/Frameworks/AppKit.framework/AppKit", CharSet = CharSet.Unicode)]
-        private static extern nint objc_msgSend(nint receiver, nint selector, string arg1);
+        [DllImport("/System/Library/Frameworks/AppKit.framework/AppKit", ExactSpelling = true)]
+        private static extern nint objc_msgSend(nint receiver, nint selector, [MarshalAs(UnmanagedType.LPUTF8Str)] string arg1);
 
         [DllImport("/System/Library/Frameworks/AppKit.framework/AppKit")]
         private static extern nint objc_msgSend(nint receiver, nint selector, nint arg1);
@@ -96,7 +96,7 @@ namespace Consolonia.PlatformSupport.Clipboard
         [DllImport("/System/Library/Frameworks/AppKit.framework/AppKit")]
         private static extern nint objc_msgSend(nint receiver, nint selector, nint arg1, nint arg2);
 
-        [DllImport("/System/Library/Frameworks/AppKit.framework/AppKit", CharSet = CharSet.Unicode)]
-        private static extern nint sel_registerName(string selectorName);
+        [DllImport("/System/Library/Frameworks/AppKit.framework/AppKit", ExactSpelling = true)]
+        private static extern nint sel_registerName([MarshalAs(UnmanagedType.LPUTF8Str)] string selectorName);
     }
 }

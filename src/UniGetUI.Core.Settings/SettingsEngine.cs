@@ -63,6 +63,27 @@ namespace UniGetUI.Core.SettingsEngine
             }
         }
 
+        /// <summary>Persists a boolean setting or propagates the failure, before updating its cache.</summary>
+        public static void SetOrThrow(K key, bool value)
+        {
+            string file = Path.Join(CoreData.UniGetUIUserConfigurationDirectory, ResolveKey(key));
+            if (Directory.Exists(file))
+                throw new IOException("A directory occupies the setting file path");
+
+            if (value)
+            {
+                if (!File.Exists(file)) File.WriteAllText(file, "");
+            }
+            else
+            {
+                // File.Delete is a no-op for an absent file, but propagates other failures.
+                File.Delete(file);
+            }
+
+            booleanSettings[key] = value;
+            if (!value) valueSettings[key] = "";
+        }
+
         public static string GetValue(K key)
         {
             string setting = ResolveKey(key);

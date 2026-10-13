@@ -6,6 +6,8 @@
         <TargetFrameworks />
         <IsPackable>false</IsPackable>
         <IsTestProject>true</IsTestProject>
+        <!-- Clipboard contract fixtures implement Avalonia's pinned platform interfaces. -->
+        <AvaloniaAccessUnstablePrivateApis>true</AvaloniaAccessUnstablePrivateApis>
     </PropertyGroup>
 
     <ItemGroup>

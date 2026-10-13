@@ -1,4 +1,5 @@
 using System;
+using System.Runtime.CompilerServices;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input.Platform;
@@ -112,10 +113,14 @@ namespace Consolonia
 
         internal static IClipboard CreateClipboard(IClipboardImpl clipboardImpl)
         {
-            // The constant name lets the trimmer preserve Avalonia's clipboard constructor.
-            var clipboardType = Type.GetType("Avalonia.Input.Platform.Clipboard, Avalonia.Base", true)!;
-            return (IClipboard)Activator.CreateInstance(clipboardType, clipboardImpl)!;
+            return (IClipboard)CreateAvaloniaClipboard(clipboardImpl);
         }
+
+        // Avalonia 12.0.4 keeps this wrapper internal. A statically resolved constructor
+        // accessor retains its ownership/disposal contract without reflection activation.
+        [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
+        [return: UnsafeAccessorType("Avalonia.Input.Platform.Clipboard, Avalonia.Base")]
+        private static extern object CreateAvaloniaClipboard(IClipboardImpl clipboardImpl);
 
         public static bool IsWslPlatform()
         {

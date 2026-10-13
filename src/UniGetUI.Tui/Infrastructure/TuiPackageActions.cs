@@ -40,19 +40,48 @@ internal static class TuiPackageActions
     }
 
     public static async Task<int> UpdateAsync(IEnumerable<IPackage> packages, bool? elevated = null,
-        bool? interactive = null, bool? skipHash = null)
+        bool? interactive = null, bool? skipHash = null, bool waitForCompletion = false, bool background = false)
     {
         int started = 0;
-        foreach (IPackage pkg in packages)
+        List<Task> running = [];
+        try
         {
-            var opts = await InstallOptionsFactory.LoadApplicableAsync(pkg, elevated: elevated,
-                interactive: interactive, no_integrity: skipHash);
-            if (PackageOperation.HasPendingOperation(pkg, OperationType.Update)) continue;
-            TuiOperationRegistry.Start(new UpdatePackageOperation(pkg, opts));
-            started++;
+            foreach (IPackage pkg in packages)
+            {
+                var opts = await InstallOptionsFactory.LoadApplicableAsync(pkg, elevated: elevated,
+                    interactive: interactive, no_integrity: skipHash);
+                if (PackageOperation.HasPendingOperation(pkg, OperationType.Update)) continue;
+                var operation = new UpdatePackageOperation(pkg, opts) { IsBackgroundOperation = background };
+                if (waitForCompletion) running.Add(AwaitUpdateOperationAsync(operation));
+                else TuiOperationRegistry.Start(operation);
+                started++;
+            }
         }
-
+        finally
+        {
+            if (waitForCompletion) await AwaitUpdateOperationsAsync(running);
+        }
         return started;
+    }
+
+    internal static async Task AwaitUpdateOperationAsync(AbstractOperation operation)
+    {
+        await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => TuiOperationRegistry.Track(operation));
+        // Run exactly once off the dispatcher, and await terminal cleanup as well as the verdict.
+        await Task.Run(operation.MainThread);
+        if (operation.Status is OperationStatus.Canceled)
+            throw new OperationCanceledException("A scheduled package update was canceled");
+        if (operation.Status is not OperationStatus.Succeeded)
+            throw new InvalidOperationException("A scheduled package update failed, see the operation log for details");
+    }
+
+    internal static async Task AwaitUpdateOperationsAsync(IReadOnlyList<Task> operations)
+    {
+        try { await Task.WhenAll(operations); }
+        catch (Exception) when (operations.Any(operation => operation.IsCanceled))
+        {
+            throw new OperationCanceledException("A scheduled package update was canceled; the batch will not be retried");
+        }
     }
 
     public static async Task<int> UninstallAsync(IEnumerable<IPackage> packages, bool? elevated = null,

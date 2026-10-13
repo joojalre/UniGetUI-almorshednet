@@ -261,7 +261,7 @@ internal static class TuiBundleService
             foreach (var process in pkg.installation_options.KillBeforeOperation)
             {
                 if (!CoreTools.IsSafeProcessImageName(process)) continue;
-                commands.Add($"taskkill /im \"{process}\"" + (forceKill ? " /f" : ""));
+                commands.Add(CreateProcessKillCommand(process, forceKill, OperatingSystem.IsWindows()));
             }
 
             if (pkg.installation_options.PreInstallCommand != "") commands.Add(pkg.installation_options.PreInstallCommand);
@@ -270,11 +270,16 @@ internal static class TuiBundleService
         }
 
         Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(path))!);
-        await File.WriteAllTextAsync(path, GenerateScript(names, commands));
+        await File.WriteAllTextAsync(path, GenerateScript(names, commands, OperatingSystem.IsWindows()));
         return names.Count;
     }
 
-    private static string GenerateScript(IReadOnlyList<string> names, IReadOnlyList<string> commands)
+    internal static string CreateProcessKillCommand(string process, bool forceKill, bool windows)
+        => windows
+            ? $"taskkill /im \"{process}\"" + (forceKill ? " /f" : "")
+            : "pkill " + (forceKill ? "-9 " : "") + "-x '" + process.Replace("'", "'\"'\"'") + "'";
+
+    internal static string GenerateScript(IReadOnlyList<string> names, IReadOnlyList<string> commands, bool windows)
     {
         string list = string.Join('\n', names.Select(x => $"Write-Host {CoreTools.EscapePowerShellSingleQuoted($"  - {x}")}"));
         string commandArray = string.Join(",\n    ", commands.Select(x => $"'{x.Replace("'", "''")}'"));
@@ -308,7 +313,7 @@ internal static class TuiBundleService
 
             foreach ($command in $commands) {
                 Write-Host "Running: $command" -ForegroundColor Yellow
-                cmd.exe /C $command
+                {{(windows ? "cmd.exe /C $command" : "sh -c $command")}}
                 if ($LASTEXITCODE -eq 0) {
                     Write-Host "[  OK  ] $command" -ForegroundColor Green
                     $success_count++

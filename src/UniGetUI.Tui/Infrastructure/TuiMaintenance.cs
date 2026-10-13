@@ -16,9 +16,8 @@ namespace UniGetUI.Tui.Infrastructure;
 internal static class TuiMaintenanceScheduler
 {
     private static readonly TimeSpan TickInterval = TimeSpan.FromSeconds(30);
-    private static readonly TimeSpan PendingInstallLifetime = TimeSpan.FromHours(2);
     private static readonly TimeSpan RetryDelay = TimeSpan.FromMinutes(15);
-    private static readonly TimeSpan TaskTimeout = TimeSpan.FromMinutes(30);
+    internal static TimeSpan TaskTimeout { get; set; } = TimeSpan.FromMinutes(30);
     private static readonly TimeSpan InstalledListMaxAge = TimeSpan.FromMinutes(15);
     private const int MaxRetriesPerOccurrence = 2;
 
@@ -27,7 +26,17 @@ internal static class TuiMaintenanceScheduler
     private static DispatcherTimer? _timer;
     private static bool _started;
     private static volatile bool _updatesWereLoaded;
-    private static DateTime? _pendingInstallSince;
+    internal static Func<Task> InstallUpdatesAsync { get; set; } = TuiUpdatesPolicy.InstallScheduledUpdatesAsync;
+
+    internal static bool IsInstallingUpdates
+    {
+        get { lock (RunningTasks) return RunningTasks.Contains(MaintenanceTaskKind.InstallUpdates); }
+    }
+
+    internal static bool HasRetry(MaintenanceTaskKind kind)
+    {
+        lock (Retries) return Retries.ContainsKey(kind);
+    }
 
     public static event Action<MaintenanceTaskKind>? TaskFinished;
 
@@ -56,25 +65,9 @@ internal static class TuiMaintenanceScheduler
 
     public static bool IsAutoInstallDue()
     {
-        if (_pendingInstallSince is { } since && DateTime.Now - since > PendingInstallLifetime)
-            _pendingInstallSince = null;
         var schedule = MaintenanceScheduleStore.Get(MaintenanceTaskKind.InstallUpdates);
-        if (!schedule.Enabled)
-        {
-            _pendingInstallSince = null;
-            return false;
-        }
-
-        if (schedule.Frequency is ScheduleFrequency.AfterEveryUpdateCheck)
-        {
-            _pendingInstallSince = null;
-            return true;
-        }
-
-        return _pendingInstallSince is not null;
+        return schedule.Enabled && schedule.Frequency is ScheduleFrequency.AfterEveryUpdateCheck;
     }
-
-    public static void MarkAutoInstallHandled() => _pendingInstallSince = null;
 
     public static bool ShouldRunAtAppStart(MaintenanceTaskKind kind)
     {
@@ -90,28 +83,40 @@ internal static class TuiMaintenanceScheduler
             if (!RunningTasks.Add(kind)) return;
 
         DateTime? previousRun = MaintenanceScheduleStore.GetLastRun(kind);
+        DateTime? configuredAt = MaintenanceScheduleStore.Get(kind).ConfiguredAtUtc;
+        Task? abandonedWork = null;
         try
         {
             MaintenanceScheduleStore.SetLastRun(kind, DateTime.UtcNow);
             Logger.ImportantInfo($"Running the maintenance task \"{MaintenanceTasks.GetId(kind)}\"");
             Task work = ExecuteAsync(kind);
-            if (await Task.WhenAny(work, Task.Delay(TaskTimeout)) != work)
+            if (!await TaskCompletion.CompletesWithin(work, TaskTimeout))
+            {
+                abandonedWork = work;
                 throw new TimeoutException($"The maintenance task \"{MaintenanceTasks.GetId(kind)}\" did not finish in time");
-            await work;
+            }
             lock (Retries) Retries.Remove(kind);
             MaintenanceScheduleStore.ClearLastFailure(kind);
+        }
+        catch (OperationCanceledException ex)
+        {
+            Logger.Warn(ex.Message);
+            MaintenanceScheduleStore.SetLastFailure(kind, DateTime.UtcNow);
+            lock (Retries) Retries.Remove(kind);
         }
         catch (Exception ex)
         {
             Logger.Error($"The maintenance task \"{MaintenanceTasks.GetId(kind)}\" failed");
             Logger.Error(ex);
             MaintenanceScheduleStore.SetLastFailure(kind, DateTime.UtcNow);
-            ScheduleRetry(kind, previousRun);
+            if (abandonedWork is null) ScheduleRetry(kind, previousRun);
             TuiNotifications.Error(CoreTools.Translate("Scheduled maintenance"), ex.Message);
         }
         finally
         {
-            lock (RunningTasks) RunningTasks.Remove(kind);
+            if (abandonedWork is null)
+                lock (RunningTasks) RunningTasks.Remove(kind);
+            else ObserveAbandoned(abandonedWork, kind, previousRun, configuredAt);
             Dispatcher.UIThread.Post(() => TaskFinished?.Invoke(kind));
         }
     }
@@ -124,8 +129,14 @@ internal static class TuiMaintenanceScheduler
                 await ReloadUpdatesAsync();
                 break;
             case MaintenanceTaskKind.InstallUpdates:
-                _pendingInstallSince = DateTime.Now;
+                bool enabledWhenStarted = MaintenanceScheduleStore.Get(kind).Enabled;
                 await ReloadUpdatesAsync();
+                await Dispatcher.UIThread.InvokeAsync(async () =>
+                {
+                    if (enabledWhenStarted && !MaintenanceScheduleStore.Get(kind).Enabled)
+                        throw new OperationCanceledException("The scheduled package updates were disabled");
+                    await InstallUpdatesAsync();
+                });
                 break;
             case MaintenanceTaskKind.LocalBackup:
                 await PrepareInstalledPackagesForBackupAsync();
@@ -138,6 +149,28 @@ internal static class TuiMaintenanceScheduler
                     throw new InvalidOperationException("The cloud backup did not complete, see the log for details");
                 break;
         }
+    }
+
+    private static void ObserveAbandoned(Task work, MaintenanceTaskKind kind, DateTime? previousRun, DateTime? configuredAt)
+    {
+        _ = work.ContinueWith(finished => Dispatcher.UIThread.Post(() =>
+        {
+            try
+            {
+                // Keep the attempted occurrence while work is still owned. Cancellation must
+                // not roll it back and make the same occurrence immediately due again.
+                if (MaintenanceScheduleStore.Get(kind).ConfiguredAtUtc == configuredAt)
+                {
+                    if (finished.IsFaulted) ScheduleRetry(kind, previousRun);
+                    else lock (Retries) Retries.Remove(kind);
+                }
+                if (finished.Exception is { } error) Logger.Error(error.GetBaseException());
+            }
+            finally
+            {
+                lock (RunningTasks) RunningTasks.Remove(kind);
+            }
+        }), TaskScheduler.Default);
     }
 
     private static void Evaluate()
@@ -256,6 +289,8 @@ internal static class TuiUpdatesPolicy
 {
     public static async Task OnUpdatesLoadedAsync(bool firstLoad)
     {
+        // A clock-driven scheduler owns its refresh and awaits its own installers.
+        if (TuiMaintenanceScheduler.IsInstallingUpdates) return;
         try
         {
             var upgradable = UpgradablePackagesLoader.Instance.Packages
@@ -266,12 +301,11 @@ internal static class TuiUpdatesPolicy
 
             if (TuiMaintenanceScheduler.IsAutoInstallDue())
             {
-                TuiMaintenanceScheduler.MarkAutoInstallHandled();
                 bool markedOnly = MaintenanceScheduleStore.GetInstallTargets() is ScheduleInstallTargets.MarkedPackagesOnly;
                 var targets = upgradable.Where(p => !markedOnly || AutoUpdatesDatabase.IsAutoUpdated(p)).ToList();
                 if (targets.Count > 0)
                 {
-                    await TuiPackageActions.UpdateAsync(targets);
+                    await TuiPackageActions.UpdateAsync(targets, background: true);
                     ShowUpgrading(targets);
                 }
 
@@ -292,6 +326,22 @@ internal static class TuiUpdatesPolicy
         {
             Logger.Error(ex);
         }
+    }
+
+    internal static async Task InstallScheduledUpdatesAsync()
+    {
+        bool markedOnly = MaintenanceScheduleStore.GetInstallTargets() is ScheduleInstallTargets.MarkedPackagesOnly;
+        var upgradable = UpgradablePackagesLoader.Instance.Packages
+            .Where(p => p.Tag is not UniGetUI.Interface.Enums.PackageTag.OnQueue and not UniGetUI.Interface.Enums.PackageTag.BeingProcessed)
+            .ToList();
+        var targets = upgradable.Where(p => !markedOnly || AutoUpdatesDatabase.IsAutoUpdated(p)).ToList();
+        if (targets.Count > 0)
+        {
+            ShowUpgrading(targets);
+            await TuiPackageActions.UpdateAsync(targets, waitForCompletion: true, background: true);
+        }
+        var skipped = upgradable.Except(targets).ToList();
+        if (skipped.Count > 0) ShowAvailable(skipped);
     }
 
     private static IReadOnlyList<IPackage> NotifiablePackages(IReadOnlyList<IPackage> packages)

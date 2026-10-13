@@ -311,29 +311,44 @@ internal sealed class InstallOptionsDialog : FormDialog
         Avalonia.Threading.Dispatcher.UIThread.Post(Form.Refresh);
     }
 
-    private async Task SaveAsync(bool proceed)
+    internal async Task SaveAsync(bool proceed)
     {
         _o.OverridesNextLevelOpts = _managerMode || _bundleMode || !_followGlobal;
         _o.KillBeforeOperation = _killList.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
-        CopyInto(_o, _target);
-        Settings.Set(Settings.K.KillProcessesThatRefuseToDie, _forceKill);
         try
         {
+            bool? ignoredTag = null;
             if (_managerMode)
             {
-                await InstallOptionsFactory.SaveForManagerAsync(_target, _manager);
+                await InstallOptionsFactory.SaveForManagerOrThrowAsync(_o, _manager);
             }
             else if (!_bundleMode && _package is not null)
             {
-                await InstallOptionsFactory.SaveForPackageAsync(_target, _package);
+                await InstallOptionsFactory.SaveForPackageOrThrowAsync(_o, _package);
                 string id = AutoUpdatesDatabase.GetIdForPackage(_package);
-                if (_autoUpdate) AutoUpdatesDatabase.Add(id);
-                else if (AutoUpdatesDatabase.IsAutoUpdated(id)) AutoUpdatesDatabase.Remove(id);
-                if (_ignoreUpdates) await _package.AddToIgnoredUpdatesAsync("*");
-                else if (await _package.GetIgnoredUpdatesVersionAsync() == "*") await _package.RemoveFromIgnoredUpdatesAsync();
+                if (_autoUpdate) AutoUpdatesDatabase.AddOrThrow(id);
+                else AutoUpdatesDatabase.RemoveOrThrow(id);
+                string ignoredId = IgnoredUpdatesDatabase.GetIgnoredIdForPackage(_package);
+                if (_ignoreUpdates)
+                {
+                    IgnoredUpdatesDatabase.AddOrThrow(ignoredId);
+                    ignoredTag = true;
+                }
+                else if (Settings.GetDictionaryOrThrow<string, string>(Settings.K.IgnoredPackageUpdates)
+                    .TryGetValue(ignoredId, out string? ignoredVersion) && ignoredVersion == "*")
+                {
+                    IgnoredUpdatesDatabase.RemoveOrThrow(ignoredId);
+                    ignoredTag = false;
+                }
             }
 
+            Settings.SetOrThrow(Settings.K.KillProcessesThatRefuseToDie, _forceKill);
+            if (ignoredTag is { } ignored && _package is not null)
+                foreach (var installed in _package.GetInstalledPackages())
+                    installed.SetTag(ignored ? UniGetUI.Interface.Enums.PackageTag.Pinned : UniGetUI.Interface.Enums.PackageTag.Default);
+            CopyInto(_o, _target);
             TuiNotifications.Success(CoreTools.Translate("Installation options"), CoreTools.Translate("Options saved"));
+            Close(proceed);
         }
         catch (Exception ex)
         {
@@ -341,7 +356,6 @@ internal sealed class InstallOptionsDialog : FormDialog
             TuiNotifications.Error(CoreTools.Translate("Installation options"), ex.Message);
         }
 
-        Close(proceed);
     }
 
     private static void CopyInto(InstallOptions from, InstallOptions to)

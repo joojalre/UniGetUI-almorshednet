@@ -129,6 +129,49 @@ namespace UniGetUI.Core.SettingsEngine
             }
         }
 
+        /// <summary>Reads a detached dictionary without converting a read failure into empty data.</summary>
+        public static Dictionary<KeyT, ValueT?> GetDictionaryOrThrow<KeyT, ValueT>(K settingsKey)
+            where KeyT : notnull
+        {
+            string file = Path.Join(CoreData.UniGetUIUserConfigurationDirectory, $"{ResolveKey(settingsKey)}.json");
+            if (Directory.Exists(file))
+                throw new IOException("A directory occupies the dictionary setting file path");
+            if (_dictionarySettings.TryGetValue(settingsKey, out var cached))
+                return cached.ToDictionary(kvp => (KeyT)kvp.Key, kvp => (ValueT?)kvp.Value);
+            string json;
+            try
+            {
+                json = File.ReadAllText(file);
+            }
+            catch (FileNotFoundException)
+            {
+                return [];
+            }
+            catch (DirectoryNotFoundException)
+            {
+                return [];
+            }
+            if (json.Length == 0) return [];
+            return SettingsJson.DeserializeDictionary<KeyT, ValueT?>(json)
+                ?? throw new JsonException("The dictionary setting contains no dictionary");
+        }
+
+        /// <summary>Persists a detached dictionary before publishing it to the settings cache.</summary>
+        public static void SetDictionaryOrThrow<KeyT, ValueT>(K settingsKey, Dictionary<KeyT, ValueT> value)
+            where KeyT : notnull
+        {
+            string file = Path.Join(CoreData.UniGetUIUserConfigurationDirectory, $"{ResolveKey(settingsKey)}.json");
+            if (Directory.Exists(file))
+                throw new IOException("A directory occupies the dictionary setting file path");
+            var snapshot = value.ToDictionary(kvp => (object)kvp.Key, kvp => (object?)kvp.Value);
+            if (value.Count != 0)
+                File.WriteAllText(file, SettingsJson.SerializeDictionary(value));
+            else
+                File.Delete(file);
+
+            _dictionarySettings[settingsKey] = snapshot;
+        }
+
         public static ValueT? GetDictionaryItem<KeyT, ValueT>(K settingsKey, KeyT key)
             where KeyT : notnull
         {

@@ -1,4 +1,5 @@
 using System;
+using System.Text;
 using System.Threading.Tasks;
 using Consolonia.Core.Infrastructure;
 
@@ -14,6 +15,12 @@ namespace Consolonia.PlatformSupport.Clipboard
         private static string _powershellPath = string.Empty;
 
         private readonly bool _isSupported;
+        private readonly Func<string, string, string, (int exitCode, string result)> _run =
+            (command, arguments, input) => ClipboardProcessRunner.ProcessText(command, arguments, input, timeout: 10000);
+        private readonly string _command;
+
+        // Clipboard data travels on stdin as base64, never as PowerShell source.
+        internal const string SetTextArguments = "-NoProfile -NonInteractive -Command \"$text = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String([Console]::In.ReadToEnd())); Set-Clipboard -Value $text\"";
 
         public WslClipboard()
         {
@@ -29,6 +36,14 @@ namespace Consolonia.PlatformSupport.Clipboard
             }
 
             _isSupported = !string.IsNullOrEmpty(_powershellPath);
+            _command = _powershellPath;
+        }
+
+        internal WslClipboard(string command, Func<string, string, string, (int exitCode, string result)> run)
+        {
+            _command = command;
+            _run = run;
+            _isSupported = !string.IsNullOrEmpty(command);
         }
 
         public override Task<string> GetTextAsync()
@@ -36,7 +51,7 @@ namespace Consolonia.PlatformSupport.Clipboard
             if (!_isSupported) return Task.FromResult(string.Empty);
 
             (int exitCode, string output) =
-                ClipboardProcessRunner.Process(_powershellPath, "-noprofile -command \"Get-Clipboard\"");
+                _run(_command, "-noprofile -command \"Get-Clipboard\"", null);
 
             if (exitCode == 0) return Task.FromResult(output);
 
@@ -47,13 +62,11 @@ namespace Consolonia.PlatformSupport.Clipboard
         {
             if (_isSupported)
             {
-                (int exitCode, string output) = ClipboardProcessRunner.Process(
-                    _powershellPath,
-                    $"-noprofile -command \"Set-Clipboard -Value \\\"{text}\\\"\""
-                );
+                (int exitCode, _) = _run(_command, SetTextArguments,
+                    Convert.ToBase64String(Encoding.UTF8.GetBytes(text ?? string.Empty)));
 
                 if (exitCode != 0)
-                    throw new InvalidOperationException($"Failed to set clipboard text: {output} using powershell");
+                    throw new InvalidOperationException("Failed to set clipboard text using powershell");
             }
 
             return Task.CompletedTask;
