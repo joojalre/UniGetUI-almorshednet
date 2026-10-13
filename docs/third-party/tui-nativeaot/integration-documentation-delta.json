@@ -1,0 +1,31 @@
+{
+  "importManifest": "candidate-source-manifest.json",
+  "unchangedImportedFiles": 131,
+  "documentationOnlyChanges": [
+    {
+      "path": "src/ExternalLibraries.Consolonia.GuiCS/PROVENANCE.md",
+      "importSha256": "cb8295581ad60d84d677a289b5cf1c7553d59ce8a415c95dea04d14ede37ecf2",
+      "integrationSha256": "128c770ddd790a0cc86869f9e3c9b8b813570540a034e36dcf261b93cb05e991",
+      "reason": "Documentation-only: link repository provenance and state isolated probe acceptance boundary."
+    },
+    {
+      "path": "src/ExternalLibraries.Consolonia.PlatformSupport/PROVENANCE.md",
+      "importSha256": "b4d309e58c84b17ee9f8568585fa79775592fad2cc2bce7559e93e448b6241fc",
+      "integrationSha256": "55749a08c4dc945044c6463cfee97f8bf9e85ba7e37fd8ec2e035ac98e4e575f",
+      "reason": "Documentation-only: link repository provenance and state isolated probe acceptance boundary."
+    },
+    {
+      "path": "src/ExternalLibraries.Iciclecreek.Avalonia.WindowManager/PROVENANCE.md",
+      "importSha256": "d802936395c671c57c6a8ac01e489fdf3e188db39af9c03b05a72963841fb7e0",
+      "integrationSha256": "c1bea0d27f11014f3196baf0ab9ce4b82c75f2bd3d922f69839dda5cd2b62e75",
+      "reason": "Documentation-only: link repository provenance and state isolated probe acceptance boundary."
+    },
+    {
+      "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/PROVENANCE.md",
+      "importSha256": "a53029dec5e32c9fd7b4dfb2070098ecd7412667da348c923604bd3c892bb98e",
+      "integrationSha256": "2572f34a8781113d652cd735b8dd68134a23193f887f23a5ca5c9c2ac097d459",
+      "reason": "Documentation-only: link repository provenance and state isolated probe acceptance boundary."
+    }
+  ],
+  "stage": "Documentation links immediately after source import, before formatting/style corrections"
+}

@@ -1,0 +1,28 @@
+{
+  "operation": "dotnet format whitespace; no source region regeneration",
+  "originalManifestSha256": "ffb038f8308822432ef57c59ed891e75a4fb9adce9a462a68cdacbbb20a01283",
+  "all117FilesRoslynTokenEquivalent": true,
+  "conditionalProof": "All per-file conditional symbol combinations, maximum2 symbols (4 combinations); strict UTF8 with Windows1252 fallback for original HRESULT.Values.cs",
+  "changes": [
+    {
+      "path": "src/UniGetUI.Avalonia.DataGrid.NativeAotTests/Ui/TuiGrids/ProductionHistoryGrid.cs",
+      "beforeSha256": "45b95c43add8f564a6c97d8cb24e47e004de16c09665628662b167b54db62505",
+      "afterSha256": "9b76ec98d668ea58ca5cd4f5af9089a5fc2595bd0051117b2110c39aba6ed028"
+    },
+    {
+      "path": "src/UniGetUI.Avalonia.DataGrid.NativeAotTests/Ui/TuiGrids/ProductionOperationsGrid.cs",
+      "beforeSha256": "223991a610c71055ccaaa36c82679f02fc5fb923ee31a02dd47c39684a012647",
+      "afterSha256": "5e074070affd7dd8d737166129a0c72b5ed24b548130ad6b0c390a1bfb701d24"
+    },
+    {
+      "path": "src/UniGetUI.Avalonia.DataGrid.NativeAotTests/Ui/TuiGrids/ProductionPackageGrid.cs",
+      "beforeSha256": "61f398687acd23bbaec15f502509cdb34bdf24da61205fb9de1a9a27e39167a0",
+      "afterSha256": "b05c7c5e8417b569e4b7d43d5298a8003747380ef0915f82284110dbb9c8ec60"
+    },
+    {
+      "path": "src/UniGetUI.Avalonia.DataGrid.NativeAotTests/Ui/TuiGrids/TuiGridProgram.cs",
+      "beforeSha256": "886c8194cd844204ad641e9191b4d551ea418b0f8cb92cbcdb0ea853ef610118",
+      "afterSha256": "fb5c945770915835a47f564f5a1b3030c87dc31ba0642b426df6e3728695bdac"
+    }
+  ]
+}

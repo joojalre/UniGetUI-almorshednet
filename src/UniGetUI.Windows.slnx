@@ -4,6 +4,22 @@
     <Platform Name="arm64" />
   </Configurations>
   <Folder Name="/ExternalLibraries/">
+    <Project Path="ExternalLibraries.Consolonia.GuiCS/ExternalLibraries.Consolonia.GuiCS.csproj">
+      <Platform Solution="*|arm64" Project="arm64" />
+      <Platform Solution="*|x64" Project="x64" />
+    </Project>
+    <Project Path="ExternalLibraries.Consolonia.PlatformSupport/ExternalLibraries.Consolonia.PlatformSupport.csproj">
+      <Platform Solution="*|arm64" Project="arm64" />
+      <Platform Solution="*|x64" Project="x64" />
+    </Project>
+    <Project Path="ExternalLibraries.Iciclecreek.Avalonia.WindowManager/ExternalLibraries.Iciclecreek.Avalonia.WindowManager.csproj">
+      <Platform Solution="*|arm64" Project="arm64" />
+      <Platform Solution="*|x64" Project="x64" />
+    </Project>
+    <Project Path="ExternalLibraries.Vanara.PInvoke.Shared/ExternalLibraries.Vanara.PInvoke.Shared.csproj">
+      <Platform Solution="*|arm64" Project="arm64" />
+      <Platform Solution="*|x64" Project="x64" />
+    </Project>
     <Project Path="ExternalLibraries.Avalonia.DataGrid/ExternalLibraries.Avalonia.DataGrid.csproj">
       <Platform Solution="*|arm64" Project="arm64" />
       <Platform Solution="*|x64" Project="x64" />
@@ -243,6 +259,16 @@
     <Platform Solution="*|arm64" Project="arm64" />
     <Platform Solution="*|x64" Project="x64" />
   </Project>
+  <Folder Name="/UniGetUI.Tui/">
+    <Project Path="UniGetUI.Tui/UniGetUI.Tui.csproj">
+      <Platform Solution="*|arm64" Project="arm64" />
+      <Platform Solution="*|x64" Project="x64" />
+    </Project>
+    <Project Path="UniGetUI.Tui.Tests/UniGetUI.Tui.Tests.csproj">
+      <Platform Solution="*|arm64" Project="arm64" />
+      <Platform Solution="*|x64" Project="x64" />
+    </Project>
+  </Folder>
   <Project Path="UniGetUI.Tests/UniGetUI.Tests.csproj">
     <Platform Solution="*|arm64" Project="arm64" />
     <Platform Solution="*|x64" Project="x64" />

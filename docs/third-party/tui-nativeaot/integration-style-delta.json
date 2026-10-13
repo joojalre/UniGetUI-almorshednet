@@ -1,0 +1,107 @@
+[
+  {
+    "path": "src/ExternalLibraries.Consolonia.GuiCS/binding.cs",
+    "beforeSha256": "27cb700924c0ab1b000a6b5b2980a195e7b4588e069ce3f32c7d2497b06581b2",
+    "afterSha256": "709177b377b1dd1d703aaa4e76587fbd0c142b0ba67f1af2de27555d6357d35f"
+  },
+  {
+    "path": "src/ExternalLibraries.Consolonia.GuiCS/constants.cs",
+    "beforeSha256": "a8684c3d005f03921b983f104905df9a8253c132b5cdd09766be2250c6bcd5af",
+    "afterSha256": "bfbfd89f33344b922b3c14b84c0d791267cb41c68793fa3c9d63951bcac90efd"
+  },
+  {
+    "path": "src/ExternalLibraries.Consolonia.GuiCS/Event.cs",
+    "beforeSha256": "04958dfb19fabc79abb243fe17584401fec603259f8bb90642789a891943ed4f",
+    "afterSha256": "ef4c0c499327bfd5ce66a90975681cfbe0f8a429b78c80e233ed48e15464c5fb"
+  },
+  {
+    "path": "src/ExternalLibraries.Consolonia.GuiCS/handles.cs",
+    "beforeSha256": "e6e90a8e09eddf6af399870120ce403240ef5e1f7fec0b8feae6ced31c9a960d",
+    "afterSha256": "acd679ac615af78fd870856b7c5ddbf6f41b5636ff92705a00064aada00d7820"
+  },
+  {
+    "path": "src/ExternalLibraries.Consolonia.GuiCS/UnmanagedLibrary.cs",
+    "beforeSha256": "7d6fe329ef25b78d4f9343498ca4f74ca45fb997b2399d54a273ce9ee81b3cb2",
+    "afterSha256": "a07da3c77ffb8ea36887ec81c442797cf9d5452885a8fd1d7b55b58a2b280ade"
+  },
+  {
+    "path": "src/ExternalLibraries.Consolonia.GuiCS/WindowsDriver.cs",
+    "beforeSha256": "88d2a83c05300975348a64cc50d7a7698852507330dfaa7099dc55e4b221e573",
+    "afterSha256": "0a0ad5a70af68b453e5c10c5555925b04e53eca3f4374c44f05ac6486cc5a156"
+  },
+  {
+    "path": "src/ExternalLibraries.Consolonia.PlatformSupport/Clipboard/WslClipboard.cs",
+    "beforeSha256": "35a0be065323dc6bc592a6389d575879db4188f16ec3a6276b54ef06d6e0980a",
+    "afterSha256": "ed243a380a0c326a5428efc7260e4e089cf06fd13173c430e3f0b84cd016b438"
+  },
+  {
+    "path": "src/ExternalLibraries.Consolonia.PlatformSupport/Gpm.cs",
+    "beforeSha256": "aca5d3c739025c563fd3b0ee703dd129cd89782474ce686b1b1542ed420dd2c5",
+    "afterSha256": "b6868d5da137f008d3e8525f6f8232305503d51811d7ad6b933722cabeff3beb"
+  },
+  {
+    "path": "src/ExternalLibraries.Consolonia.PlatformSupport/GpmMonitor.cs",
+    "beforeSha256": "2b60b4b1202ab152285fdf1be149b1e3842ccd800df6382840a11adb5bba83bc",
+    "afterSha256": "5804c92cc49fceb86b743e9d5af069577a194be835b1a8b8df78302359c3875c"
+  },
+  {
+    "path": "src/ExternalLibraries.Consolonia.PlatformSupport/PlatformSupportExtensions.cs",
+    "beforeSha256": "44cb6cbead024769f52771ee6a3f2c9522c5ef450bed846f72a9fb7c3ad15343",
+    "afterSha256": "20d7ea78a3bc7bd4dfa5b6ad4cc28b32264a7a0021eb78cadf5b5ecaa784b31e"
+  },
+  {
+    "path": "src/ExternalLibraries.Consolonia.PlatformSupport/Win32Console.cs",
+    "beforeSha256": "da9c3636db89d7fd30db4b8ea3b2d8cc567b27f7e1982a884004ddf598c18e9c",
+    "afterSha256": "04dcdd88b13cffd1120da79ef668ac864bf1002b0f077470973c3711e6510e79"
+  },
+  {
+    "path": "src/ExternalLibraries.Consolonia.PlatformSupport/WindowsConsoleBuffer.cs",
+    "beforeSha256": "d0c5c1243d5598f07dea71f0e03a6470f39438caee1dfa02dd1c423738b005e3",
+    "afterSha256": "4d0037c0d8a1fd52f79500ebc2da9be6a6c7b4e6dd98137f0c10491bc8ace427"
+  },
+  {
+    "path": "src/ExternalLibraries.Iciclecreek.Avalonia.WindowManager/ManagedWindow.axaml.cs",
+    "beforeSha256": "2ac7176d1088e0b10cd529b2c4c84b42602174349e2d22c6404eadf910576cf7",
+    "afterSha256": "27eead9d7bf58b86251658cede41fd95d7ba546b9b9dab2ccc3bc1fbc9ecd636"
+  },
+  {
+    "path": "src/ExternalLibraries.Iciclecreek.Avalonia.WindowManager/WindowsPanel.axaml.cs",
+    "beforeSha256": "b707682a308eb75bc51f04529fcce9b72d1a8d654fec516d22d7d1a4b3c5d234",
+    "afterSha256": "f93354e621967bc5f0ba71b4ec802a425229c7a6f80f2b5ba70b2ced22bc06f1"
+  },
+  {
+    "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/Handles/HANDLE.cs",
+    "beforeSha256": "909d85edf73f146ab82b9c35c6d584e1d297db5a4de35144ecd11802e8dfcf83",
+    "afterSha256": "ade2855dd65a6a97fe0cbca0a12d3aa979457bbdd3767522ba6e1787e91dd9f1"
+  },
+  {
+    "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/Handles/SafeHANDLE.cs",
+    "beforeSha256": "cfbc0a1b995ff53c23efebe805fd995f187e3cf5a1a57e017e9ad33dc0a22f9c",
+    "afterSha256": "93bdb14c9076e6c49766dde6b83d5146dd0f56c9f42d520be4bf306085217e45"
+  },
+  {
+    "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/StructHelper.cs",
+    "beforeSha256": "3d9b00edd47b8cfcb97a14636d8e3af7652d67ace76a7906a0515c8c8f3b9032",
+    "afterSha256": "8a40d56fa893567ec76311cbc809cc8f07b59da8fb828d231c7c3bcf1d1b30f1"
+  },
+  {
+    "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/WTypes/CY.cs",
+    "beforeSha256": "e183e5e880406e321ff74d7c29cd3a85c3d45f6399a7269b44fd52a0fb18db11",
+    "afterSha256": "a7b1c982804767dcd5d6c07f8443dd163332e395bcf1f91305b4edd001133c36"
+  },
+  {
+    "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/WTypes/DATE.cs",
+    "beforeSha256": "70ff88d87e4ce9de08d623da90b15d8de32520c2710f5a4b17d4ae1606449642",
+    "afterSha256": "ac0657c116085fb7066ab892f85563cf1d9ac944468d1839991fbf5184dfdbe2"
+  },
+  {
+    "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/WTypes/DECIMAL.cs",
+    "beforeSha256": "7c8c3e1b6198bec48c12309c6ad446400ab08742b4c7b0a4aed88bf030b28091",
+    "afterSha256": "c790177e6834b2ed2e27d4c1b23e95985ec1c0c31239dcd2677486dfc9cecf80"
+  },
+  {
+    "path": "src/UniGetUI.Avalonia.DataGrid.NativeAotTests/Ui/TuiGrids/TuiGridModels.cs",
+    "beforeSha256": "d86fd54cc9dd5fc9628a008481e4a6cb23ad6af47c00c52c6fe36be3a5a856e6",
+    "afterSha256": "94102e319ed08ec047f1f5b17c77a317ce765fa9f8e2334fa170371a8707372c"
+  }
+]

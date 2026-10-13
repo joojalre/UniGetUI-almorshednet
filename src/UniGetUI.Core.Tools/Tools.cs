@@ -900,7 +900,17 @@ namespace UniGetUI.Core.Tools
             try
             {
                 if (isSessionCache && _uacCacheHeld)
-                    return;
+                {
+                    if (await ProbeElevationCacheAsync() is not ElevationCacheState.Unavailable)
+                        return;
+
+                    Logger.Warn(
+                        "The administrator rights cache is no longer reachable, it will be requested again"
+                    );
+                    _uacCacheHeld = false;
+                    _elevationCacheWaitTimedOut = false;
+                    Interlocked.Increment(ref _uacCacheGeneration);
+                }
 
                 Logger.Info("Caching admin rights for process id " + Environment.ProcessId);
 
@@ -947,7 +957,31 @@ namespace UniGetUI.Core.Tools
                     )
                     .Trim();
 
-                if (p.ExitCode == 0)
+                if (p.ExitCode != 0)
+                {
+                    _uacCacheHeld = false;
+                    Logger.Error(
+                        $"The elevator could not cache administrator rights (exit code {p.ExitCode}). "
+                            + "Every operation that requires elevation will ask for consent separately."
+                    );
+                    if (output.Length > 0)
+                        Logger.Error(output);
+                }
+                else if (
+                    isSessionCache
+                    && await WaitForElevationCacheAsync() is ElevationCacheState.Unavailable
+                )
+                {
+                    _uacCacheHeld = false;
+                    Logger.Error(
+                        "The elevator reported success but no administrator rights cache became "
+                            + $"reachable for process id {Environment.ProcessId}. Every operation "
+                            + "that requires elevation will ask for consent separately."
+                    );
+                    if (output.Length > 0)
+                        Logger.Error(output);
+                }
+                else
                 {
                     _uacCacheHeld = true;
                     Interlocked.Increment(ref _uacCacheGeneration);
@@ -957,15 +991,6 @@ namespace UniGetUI.Core.Tools
                     );
                     if (output.Length > 0)
                         Logger.Info(output);
-                }
-                else
-                {
-                    Logger.Error(
-                        $"The elevator could not cache administrator rights (exit code {p.ExitCode}). "
-                            + "Every operation that requires elevation will ask for consent separately."
-                    );
-                    if (output.Length > 0)
-                        Logger.Error(output);
                 }
             }
             catch (Exception ex)
@@ -979,6 +1004,133 @@ namespace UniGetUI.Core.Tools
             }
         }
 
+        private enum ElevationCacheState
+        {
+            Available,
+            Unavailable,
+            Unknown,
+        }
+
+        private static bool _elevationCacheProbeUnsupported;
+
+        private static bool _elevationCacheProbeFailureLogged;
+
+        private static bool _elevationCacheWaitTimedOut;
+
+        private static async Task<ElevationCacheState> WaitForElevationCacheAsync()
+        {
+            ElevationCacheState state = await ProbeElevationCacheAsync();
+
+            if (_elevationCacheWaitTimedOut)
+                return state;
+
+            int[] retryDelays = [250, 500, 1000, 2000, 4000];
+
+            foreach (int delay in retryDelays)
+            {
+                if (state is not ElevationCacheState.Unavailable)
+                    return state;
+
+                await Task.Delay(delay);
+                state = await ProbeElevationCacheAsync();
+            }
+
+            _elevationCacheWaitTimedOut = state is ElevationCacheState.Unavailable;
+            return state;
+        }
+
+        private static async Task<ElevationCacheState> ProbeElevationCacheAsync()
+        {
+            if (
+                !OperatingSystem.IsWindows()
+                || _elevationCacheProbeUnsupported
+                || CoreData.ElevatorPath.Length is 0
+            )
+                return ElevationCacheState.Unknown;
+
+            try
+            {
+                using Process p = new()
+                {
+                    StartInfo = new ProcessStartInfo
+                    {
+                        FileName = CoreData.ElevatorPath,
+                        Arguments = "status CacheAvailable",
+                        UseShellExecute = false,
+                        RedirectStandardOutput = true,
+                        RedirectStandardError = true,
+                        RedirectStandardInput = true,
+                        CreateNoWindow = true,
+                        StandardOutputEncoding = Encoding.UTF8,
+                        StandardErrorEncoding = Encoding.UTF8,
+                    },
+                };
+
+                p.Start();
+                p.StandardInput.Close();
+
+                Task<string> stdout = p.StandardOutput.ReadToEndAsync();
+                Task<string> stderr = p.StandardError.ReadToEndAsync();
+                Task reads = Task.WhenAll(stdout, stderr);
+                _ = reads.ContinueWith(
+                    completed => _ = completed.Exception,
+                    CancellationToken.None,
+                    TaskContinuationOptions.OnlyOnFaulted,
+                    TaskScheduler.Default
+                );
+
+                using CancellationTokenSource cts = new(TimeSpan.FromSeconds(5));
+                try
+                {
+                    await p.WaitForExitAsync(cts.Token);
+                    await reads.WaitAsync(cts.Token);
+                }
+                catch (OperationCanceledException)
+                {
+                    try
+                    {
+                        p.Kill(entireProcessTree: true);
+                    }
+                    catch (Exception killEx)
+                        when (killEx is InvalidOperationException or NotSupportedException)
+                    {
+                        Logger.Debug(killEx);
+                    }
+
+                    Logger.Warn("The elevator did not report the administrator rights cache status");
+                    return ElevationCacheState.Unknown;
+                }
+
+                if (bool.TryParse(stdout.Result.Trim(), out bool available))
+                    return available
+                        ? ElevationCacheState.Available
+                        : ElevationCacheState.Unavailable;
+
+                string error = stderr.Result.Trim();
+
+                if (error.Contains("not a valid Status Key", StringComparison.OrdinalIgnoreCase))
+                    _elevationCacheProbeUnsupported = true;
+
+                if (!_elevationCacheProbeFailureLogged)
+                {
+                    _elevationCacheProbeFailureLogged = true;
+                    Logger.Warn(
+                        $"The elevator did not report the administrator rights cache status (exit code {p.ExitCode})"
+                    );
+                    if (error.Length > 0)
+                        Logger.Warn(error);
+                }
+
+                return ElevationCacheState.Unknown;
+            }
+            catch (Exception ex)
+            {
+                Logger.Warn("Failed to read the administrator rights cache status");
+                Logger.Warn(ex);
+                return ElevationCacheState.Unknown;
+            }
+        }
+
         /// <summary>
         /// Forgets that an elevation cache is held, without releasing it. The next operation
         /// that needs elevation will ask the elevator again; that request is free and silent
@@ -989,6 +1141,8 @@ namespace UniGetUI.Core.Tools
             await _uacCacheLock.WaitAsync();
             try
             {
+                _elevationCacheWaitTimedOut = false;
+
                 if (expectedGeneration is long expected
                     && (expected != _uacCacheGeneration || !_uacCacheHeld))
                     return false;
@@ -1033,6 +1187,8 @@ namespace UniGetUI.Core.Tools
             await _uacCacheLock.WaitAsync();
             try
             {
+                _elevationCacheWaitTimedOut = false;
+
                 if (expectedGeneration is long expected
                     && (expected != _uacCacheGeneration || !_uacCacheHeld))
                     return false;
@@ -1282,10 +1438,78 @@ namespace UniGetUI.Core.Tools
         }
 
         /// <summary>
-        /// Pings the update server and 3 well-known sites to check for internet availability
+        /// Waits until the device reports internet access, giving up after
+        /// <see cref="InternetWaitTimeout"/> so that a wrong answer from the system never blocks loading forever
         /// </summary>
         public static async Task WaitForInternetConnection() =>
             await TaskRecycler<int>.RunOrAttachAsync_VOID(_waitForInternetConnection);
+
+        private static readonly TimeSpan InternetWaitTimeout = TimeSpan.FromSeconds(30);
+        private static readonly TimeSpan HttpCheckTimeout = TimeSpan.FromSeconds(5);
+        private const string ConnectivityTestUrl = "http://www.msftconnecttest.com/connecttest.txt";
+        private const string ConnectivityTestBody = "Microsoft Connect Test";
+
+        private static bool _systemReportsInternetAccess()
+        {
+#if WINDOWS
+            var profile = NetworkInformation.GetInternetConnectionProfile();
+            return profile?.GetNetworkConnectivityLevel() == NetworkConnectivityLevel.InternetAccess;
+#else
+            return NetworkInterface.GetIsNetworkAvailable();
+#endif
+        }
+
+        private static bool _tryHttpConnectivityCheck(TimeSpan budget)
+        {
+            var handler = GenericHttpClientParameters;
+            handler.AllowAutoRedirect = false;
+            return HttpConnectivityCheck(handler, new Uri(ConnectivityTestUrl), budget);
+        }
+
+        /// <summary>
+        /// Fetches the connectivity test page and returns whether it came back as expected within
+        /// <paramref name="budget"/> (at most <see cref="HttpCheckTimeout"/>). Once SendAsync has returned its
+        /// task, the call stops waiting at that limit even if the request does not react to cancellation, and
+        /// leaves the request to end on its own.
+        /// </summary>
+        internal static bool HttpConnectivityCheck(HttpMessageHandler handler, Uri url, TimeSpan budget)
+        {
+            TimeSpan limit = budget < HttpCheckTimeout ? budget : HttpCheckTimeout;
+            try
+            {
+                return HttpConnectivityCheckAsync(handler, url, limit).WaitAsync(limit).GetAwaiter().GetResult();
+            }
+            catch (Exception)
+            {
+                // WaitAsync throws once the limit has passed, and any other failure is no connection either
+                return false;
+            }
+        }
+
+        private static async Task<bool> HttpConnectivityCheckAsync(HttpMessageHandler handler, Uri url, TimeSpan limit)
+        {
+            try
+            {
+                using HttpClient client = new(handler)
+                {
+                    Timeout = limit,
+                    MaxResponseContentBufferSize = 1024,
+                };
+                using var request = new HttpRequestMessage(HttpMethod.Get, url);
+                using HttpResponseMessage response = await client.SendAsync(request).ConfigureAwait(false);
+                if (response.StatusCode != HttpStatusCode.OK)
+                    return false;
+
+                // A captive portal can answer 200 too, so the page itself has to be the expected one
+                using var reader = new StreamReader(response.Content.ReadAsStream());
+                return reader.ReadToEnd().Trim() == ConnectivityTestBody;
+            }
+            catch (Exception)
+            {
+                // Any failure, including the timeout, means the endpoint could not be reached
+                return false;
+            }
+        }
 
         public static void _waitForInternetConnection()
         {
@@ -1293,30 +1517,56 @@ namespace UniGetUI.Core.Tools
                 return;
 
             Logger.Debug("Checking for internet connectivity...");
+            WaitForConnectivity(
+                _systemReportsInternetAccess,
+                _tryHttpConnectivityCheck,
+                InternetWaitTimeout,
+                TimeSpan.FromSeconds(1)
+            );
+        }
+
+        /// <summary>
+        /// Polls until the system or the HTTP check reports connectivity, or until
+        /// <paramref name="timeout"/> has elapsed. The HTTP check is told how much of the timeout
+        /// is left. Returns whether connectivity was established.
+        /// </summary>
+        internal static bool WaitForConnectivity(
+            Func<bool> systemReportsInternet,
+            Func<TimeSpan, bool> httpCheckSucceeds,
+            TimeSpan timeout,
+            TimeSpan pollInterval
+        )
+        {
+            var stopwatch = Stopwatch.StartNew();
             bool internetLost = false;
 
-#if WINDOWS
-            var profile = NetworkInformation.GetInternetConnectionProfile();
-            while (
-                profile is null
-                || profile.GetNetworkConnectivityLevel()
-                    is not NetworkConnectivityLevel.InternetAccess
-            )
+            while (true)
             {
-                Thread.Sleep(1000);
-                profile = NetworkInformation.GetInternetConnectionProfile();
-                if (!internetLost)
+                if (systemReportsInternet())
+                {
+                    Logger.Debug("Internet connectivity was established.");
+                    return true;
+                }
+
+                // NCSI may be stale (common Windows 10 bug); verify with a real HTTP request
+                TimeSpan remaining = timeout - stopwatch.Elapsed;
+                if (remaining > TimeSpan.Zero && httpCheckSucceeds(remaining))
+                {
+                    Logger.Debug(
+                        "Internet connectivity was established (HTTP check passed, NCSI was stale)."
+                    );
+                    return true;
+                }
+
+                remaining = timeout - stopwatch.Elapsed;
+                if (remaining <= TimeSpan.Zero)
                 {
                     Logger.Warn(
-                        "User is not connected to the internet, waiting for an internet connectio to be available..."
+                        $"Internet connectivity check timed out after {timeout.TotalSeconds}s, proceeding anyway."
                     );
-                    internetLost = true;
+                    return false;
                 }
-            }
-#else
-            while (!NetworkInterface.GetIsNetworkAvailable())
-            {
-                Thread.Sleep(1000);
+
                 if (!internetLost)
                 {
                     Logger.Warn(
@@ -1324,9 +1574,9 @@ namespace UniGetUI.Core.Tools
                     );
                     internetLost = true;
                 }
+
+                Thread.Sleep(remaining < pollInterval ? remaining : pollInterval);
             }
-#endif
-            Logger.Debug("Internet connectivity was established.");
         }
 
         public static string TextProgressGenerator(int length, int progressPercent, string? extra)

@@ -1,0 +1,42 @@
+{
+  "overloads": [
+    {
+      "line": 1188,
+      "source": "\t/// </remarks>\n\t// https://docs.microsoft.com/en-us/windows/console/getconsolemode BOOL WINAPI GetConsoleMode( _In_ HANDLE hConsoleHandle, _Out_\n\t// LPDWORD lpMode );\n\t[DllImport(Lib.Kernel32, SetLastError = true, ExactSpelling = true)]\n\t[PInvokeData(\"ConsoleApi.h\", MSDNShortId = \"49adf618-196d-4490-93ca-cd177807f58e\")]\n\tpublic static extern bool GetConsoleMode(HFILE hConsoleHandle, out CONSOLE_INPUT_MODE lpMode);\n\n\t/// <summary>Retrieves the current input mode of a console's input buffer or the current output mode of a console screen buffer.</summary>",
+      "setLastError": true
+    },
+    {
+      "line": 1369,
+      "source": "\t/// </remarks>\n\t// https://docs.microsoft.com/en-us/windows/console/getconsolemode BOOL WINAPI GetConsoleMode( _In_ HANDLE hConsoleHandle, _Out_\n\t// LPDWORD lpMode );\n\t[DllImport(Lib.Kernel32, SetLastError = true, ExactSpelling = true)]\n\t[PInvokeData(\"ConsoleApi.h\", MSDNShortId = \"49adf618-196d-4490-93ca-cd177807f58e\")]\n\tpublic static extern bool GetConsoleMode(HFILE hConsoleHandle, out CONSOLE_OUTPUT_MODE lpMode);\n\n\t/// <summary>Retrieves the original title for the current console window.</summary>",
+      "setLastError": true
+    },
+    {
+      "line": 1874,
+      "source": "\t// BOOL WINAPI ReadConsoleInput( _In_ HANDLE hConsoleInput, _Out_ PINPUT_RECORD lpBuffer, _In_ DWORD nLength, _Out_ LPDWORD\n\t// lpNumberOfEventsRead );\n\t[DllImport(Lib.Kernel32, SetLastError = true, CharSet = CharSet.Auto)]\n\t[PInvokeData(\"Wincon.h\", MSDNShortId = \"\")]\n\t[return: MarshalAs(UnmanagedType.Bool)]\n\tpublic static extern bool ReadConsoleInput(HFILE hConsoleInput, [Out, MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 2)] INPUT_RECORD[] lpBuffer,\n\t\tuint nLength, out uint lpNumberOfEventsRead);\n",
+      "setLastError": true
+    },
+    {
+      "line": 2132,
+      "source": "\t/// </returns>\n\t// BOOL WINAPI SetConsoleCP( _In_ UINT wCodePageID );\n\t[DllImport(Lib.Kernel32, SetLastError = true, ExactSpelling = true)]\n\t[PInvokeData(\"Wincon.h\", MSDNShortId = \"\")]\n\t[return: MarshalAs(UnmanagedType.Bool)]\n\tpublic static extern bool SetConsoleCP(uint wCodePageID);\n\n\t/// <summary>",
+      "setLastError": true
+    },
+    {
+      "line": 2430,
+      "source": "\t/// </returns>\n\t// BOOL WINAPI SetConsoleMode( _In_ HANDLE hConsoleHandle, _In_ DWORD dwMode );\n\t[DllImport(Lib.Kernel32, SetLastError = true, ExactSpelling = true)]\n\t[PInvokeData(\"Wincon.h\", MSDNShortId = \"\")]\n\t[return: MarshalAs(UnmanagedType.Bool)]\n\tpublic static extern bool SetConsoleMode(HFILE hConsoleHandle, CONSOLE_INPUT_MODE dwMode);\n\n\t/// <summary>Sets the input mode of a console's input buffer or the output mode of a console screen buffer.</summary>",
+      "setLastError": true
+    },
+    {
+      "line": 2595,
+      "source": "\t/// </returns>\n\t// BOOL WINAPI SetConsoleMode( _In_ HANDLE hConsoleHandle, _In_ DWORD dwMode );\n\t[DllImport(Lib.Kernel32, SetLastError = true, ExactSpelling = true)]\n\t[PInvokeData(\"Wincon.h\", MSDNShortId = \"\")]\n\t[return: MarshalAs(UnmanagedType.Bool)]\n\tpublic static extern bool SetConsoleMode(HFILE hConsoleHandle, CONSOLE_OUTPUT_MODE dwMode);\n\n\t/// <summary>",
+      "setLastError": true
+    },
+    {
+      "line": 2610,
+      "source": "\t/// </returns>\n\t// BOOL WINAPI SetConsoleOutputCP( _In_ UINT wCodePageID );\n\t[DllImport(Lib.Kernel32, SetLastError = true, ExactSpelling = true)]\n\t[PInvokeData(\"Wincon.h\", MSDNShortId = \"\")]\n\t[return: MarshalAs(UnmanagedType.Bool)]\n\tpublic static extern bool SetConsoleOutputCP(uint wCodePageID);\n\n\t/// <summary>Sets extended information about the specified console screen buffer.</summary>",
+      "setLastError": true
+    }
+  ],
+  "executed": false,
+  "pin": "3da05fe4d87bc5de96527fad5c9b7e6058690deb",
+  "apiFamilies": 5
+}

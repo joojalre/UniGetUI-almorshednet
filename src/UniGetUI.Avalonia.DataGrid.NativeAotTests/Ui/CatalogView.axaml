@@ -1,0 +1,63 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="using:Acceptance" x:Class="Acceptance.CatalogView"
+             x:DataType="local:SoftwareCatalogViewModel" x:CompileBindings="True">
+    <UserControl.Resources>
+        <DataTemplate x:Key="CatalogSmallIcon" x:DataType="local:CatalogTileViewModel">
+            <Panel Width="24" Height="24" Opacity="{Binding TitleOpacity}">
+                <Image Classes="catalog-icon" Source="{Binding IconBitmap}" IsVisible="{Binding HasCustomIcon}" Stretch="Uniform"/>
+                <!-- The product SVG is represented by an inert label; visibility binding is unchanged. -->
+                <TextBlock Classes="catalog-fallback-icon" Text="Package" IsVisible="{Binding !HasCustomIcon}"/>
+            </Panel>
+        </DataTemplate>
+        <!-- Production parent-command, parameter and status bindings; icons/translations are inert labels. -->
+        <DataTemplate x:Key="CatalogInstallAction" x:DataType="local:CatalogTileViewModel">
+            <Panel>
+                <Button Classes="catalog-install" Content="Install" IsVisible="{Binding ShowInstall}" IsEnabled="{Binding CanInstall}"
+                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                        ToolTip.Tip="{Binding StatusText}" ToolTip.ShowOnDisabled="True"
+                        Command="{Binding $parent[UserControl].((local:SoftwareCatalogViewModel)DataContext).InstallCommand}"
+                        CommandParameter="{Binding}"/>
+                <TextBlock Classes="catalog-installed" Text="Installed" IsVisible="{Binding IsInstalled}"
+                           FontWeight="SemiBold" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,8"/>
+            </Panel>
+        </DataTemplate>
+    </UserControl.Resources>
+    <DataGrid x:Name="PackageList" ItemsSource="{Binding Packages}" Margin="8,0"
+              AutoGenerateColumns="False" IsReadOnly="True" CanUserSortColumns="True"
+              CanUserResizeColumns="True" CanUserReorderColumns="True" GridLinesVisibility="None" RowHeight="48">
+        <DataGrid.Columns>
+            <DataGridTemplateColumn Tag="Name" Header="Package Name" Width="2*">
+                <DataGridTemplateColumn.CellTemplate><DataTemplate x:DataType="local:CatalogTileViewModel">
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6" Margin="8,0" VerticalAlignment="Center">
+                    <ContentControl Content="{Binding}" ContentTemplate="{StaticResource CatalogSmallIcon}"/>
+                    <TextBlock Grid.Column="1" Classes="catalog-name" Text="{Binding Entry.Name}" Opacity="{Binding TitleOpacity}"
+                               ToolTip.Tip="{Binding UnavailableReason}" VerticalAlignment="Center" Margin="8,0" TextTrimming="CharacterEllipsis"/>
+                    </Grid>
+                </DataTemplate></DataGridTemplateColumn.CellTemplate>
+            </DataGridTemplateColumn>
+            <DataGridTemplateColumn Tag="Id" Header="Package ID" Width="2*">
+                <DataGridTemplateColumn.CellTemplate><DataTemplate x:DataType="local:CatalogTileViewModel">
+                    <TextBlock Classes="catalog-id" Text="{Binding Entry.Id}" VerticalAlignment="Center" Margin="8,0" TextTrimming="CharacterEllipsis"/>
+                </DataTemplate></DataGridTemplateColumn.CellTemplate>
+            </DataGridTemplateColumn>
+            <DataGridTemplateColumn Tag="Source" Header="Source" Width="*">
+                <DataGridTemplateColumn.CellTemplate><DataTemplate x:DataType="local:CatalogTileViewModel">
+                    <StackPanel Spacing="2" VerticalAlignment="Center" Margin="8,0">
+                        <TextBlock Classes="catalog-manager" Text="{Binding Entry.ManagerName}" TextTrimming="CharacterEllipsis"/>
+                        <TextBlock Classes="catalog-source" Text="{Binding Entry.Source}" FontSize="11" TextTrimming="CharacterEllipsis"/>
+                    </StackPanel>
+                </DataTemplate></DataGridTemplateColumn.CellTemplate>
+            </DataGridTemplateColumn>
+            <DataGridTemplateColumn CanUserSort="False" Header="Catalog" Width="*">
+                <DataGridTemplateColumn.CellTemplate><DataTemplate x:DataType="local:CatalogTileViewModel">
+                    <TextBlock Classes="catalog-catalog" Text="{Binding CatalogName}" VerticalAlignment="Center" Margin="8,0" TextTrimming="CharacterEllipsis"/>
+                </DataTemplate></DataGridTemplateColumn.CellTemplate>
+            </DataGridTemplateColumn>
+            <DataGridTemplateColumn CanUserSort="False" Header="Status" Width="140">
+                <DataGridTemplateColumn.CellTemplate><DataTemplate x:DataType="local:CatalogTileViewModel">
+                    <ContentControl Content="{Binding}" ContentTemplate="{StaticResource CatalogInstallAction}" Margin="8,0" VerticalAlignment="Center"/>
+                </DataTemplate></DataGridTemplateColumn.CellTemplate>
+            </DataGridTemplateColumn>
+        </DataGrid.Columns>
+    </DataGrid>
+</UserControl>

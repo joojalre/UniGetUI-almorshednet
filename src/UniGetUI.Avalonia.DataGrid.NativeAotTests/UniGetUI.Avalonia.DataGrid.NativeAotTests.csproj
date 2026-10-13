@@ -25,6 +25,8 @@
         <PackageReference Include="Avalonia.Themes.Fluent" Version="12.0.4" />
         <ProjectReference Include="../ExternalLibraries.Avalonia.DataGrid/ExternalLibraries.Avalonia.DataGrid.csproj" />
         <Compile Include="../UniGetUI.Avalonia/Models/DataGridObservableCollection.cs" Link="Models/DataGridObservableCollection.cs" />
+        <Compile Include="../UniGetUI.Tui/Infrastructure/DataGridList.cs" Link="Models/TuiDataGridList.cs" />
+        <Compile Include="../UniGetUI.Tui/Infrastructure/DataGridTextBinding.cs" Link="Models/TuiDataGridTextBinding.cs" />
     </ItemGroup>
     <Import Project="../DataGrid.AotContract.targets" />
 </Project>

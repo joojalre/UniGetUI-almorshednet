@@ -43,6 +43,8 @@ public enum PageType
     About,
     Quit,
     Null, // Used for initializers
+    Catalog,
+    CatalogEditor,
 }
 
 public partial class MainWindow : Window
@@ -97,8 +99,17 @@ public partial class MainWindow : Window
     private const uint WM_DWMCOLORIZATIONCOLORCHANGED = 0x0320;
     private const nint SC_MAXIMIZE = 0xF030;
     private const nint SC_RESTORE = 0xF120;
+    private const int HTNOWHERE = 0;
     private const int HTCLIENT = 1;
     private const int HTMAXBUTTON = 9;
+    private const int HTLEFT = 10;
+    private const int HTRIGHT = 11;
+    private const int HTTOP = 12;
+    private const int HTTOPLEFT = 13;
+    private const int HTTOPRIGHT = 14;
+    private const int HTBOTTOM = 15;
+    private const int HTBOTTOMLEFT = 16;
+    private const int HTBOTTOMRIGHT = 17;
     private const uint TME_LEAVE = 0x0002;
     private const uint TME_NONCLIENT = 0x0010;
     private const int GWL_STYLE = -16;
@@ -161,6 +172,7 @@ public partial class MainWindow : Window
 
     private MainWindowViewModel ViewModel => (MainWindowViewModel)DataContext!;
     public PageType CurrentPage => ViewModel.CurrentPage_t;
+    public bool SoftwareCatalogEnabled => ViewModel.Sidebar.SoftwareCatalogEnabled;
 
     public MainWindow()
     {
@@ -230,6 +242,7 @@ public partial class MainWindow : Window
 
         SetupMicaAndAccentBorder();
         UpdateWindowCornerPreference();
+        UpdateCaptionButtonInset();
 
         ActualThemeVariantChanged += (_, _) =>
         {
@@ -283,8 +296,8 @@ public partial class MainWindow : Window
 
         _focusSidebarSelectionOnNextPageChange = true;
         ViewModel.NavigateTo(e.KeyModifiers.HasFlag(KeyModifiers.Shift)
-            ? MainWindowViewModel.GetPreviousPage(ViewModel.CurrentPage_t)
-            : MainWindowViewModel.GetNextPage(ViewModel.CurrentPage_t));
+            ? MainWindowViewModel.GetPreviousPage(ViewModel.CurrentPage_t, SoftwareCatalogEnabled)
+            : MainWindowViewModel.GetNextPage(ViewModel.CurrentPage_t, SoftwareCatalogEnabled));
         e.Handled = true;
     }
 
@@ -1059,6 +1072,60 @@ public partial class MainWindow : Window
         return (unchecked((short)(packed & 0xFFFF)), unchecked((short)((packed >> 16) & 0xFFFF)));
     }
 
+    private static int HitTestResizeBorder(nint hWnd, nint lParam)
+    {
+        if (NativeMethods.IsZoomed(hWnd))
+            return HTNOWHERE;
+
+        uint style = (uint)NativeMethods.GetWindowLongPtr(hWnd, GWL_STYLE).ToInt64();
+        if ((style & WS_THICKFRAME) == 0)
+            return HTNOWHERE;
+
+        if (!NativeMethods.GetWindowRect(hWnd, out NativeMethods.RECT window))
+            return HTNOWHERE;
+
+        uint dpi = NativeMethods.GetDpiForWindow(hWnd);
+        if (dpi == 0) dpi = 96;
+
+        var frame = default(NativeMethods.RECT);
+        var border = default(NativeMethods.RECT);
+        if (!NativeMethods.AdjustWindowRectExForDpi(ref frame, style, false, 0, dpi)
+            || !NativeMethods.AdjustWindowRectExForDpi(ref border, style & ~WS_CAPTION, false, 0, dpi))
+            return HTNOWHERE;
+
+        var (x, y) = ScreenPointFromLParam(lParam);
+
+        int column = 1;
+        if (x >= window.Left && x < window.Left - frame.Left)
+            column = 0;
+        else if (x < window.Right && x >= window.Right - frame.Right)
+            column = 2;
+
+        int row = 1;
+        if (y >= window.Top && y < window.Top - frame.Top)
+        {
+            if (y < window.Top - border.Top)
+                row = 0;
+        }
+        else if (y < window.Bottom && y >= window.Bottom - frame.Bottom)
+        {
+            row = 2;
+        }
+
+        return ((row * 3) + column) switch
+        {
+            0 => HTTOPLEFT,
+            1 => HTTOP,
+            2 => HTTOPRIGHT,
+            3 => HTLEFT,
+            5 => HTRIGHT,
+            6 => HTBOTTOMLEFT,
+            7 => HTBOTTOM,
+            8 => HTBOTTOMRIGHT,
+            _ => HTNOWHERE,
+        };
+    }
+
     // Emulates the button's pointer-over/pressed fill (lost once input is non-client) using the
     // same Fluent brushes the neighbouring min/close buttons use, so the row stays consistent.
     private void SetMaximizeButtonVisual(bool hover, bool pressed)
@@ -1135,6 +1202,28 @@ public partial class MainWindow : Window
         NativeMethods.DwmSetWindowAttribute(handle, DWMWA_WINDOW_CORNER_PREFERENCE, ref corner, sizeof(int));
     }
 
+    private void UpdateCaptionButtonInset()
+    {
+        if (!OperatingSystem.IsWindows() || !WindowButtons.IsVisible)
+            return;
+
+        if (TryGetPlatformHandle()?.Handle is not { } handle || handle == 0)
+            return;
+
+        double inset = 0;
+        if (!NativeMethods.IsZoomed(handle))
+        {
+            uint dpi = NativeMethods.GetDpiForWindow(handle);
+            if (dpi == 0) dpi = 96;
+            uint style = (uint)NativeMethods.GetWindowLongPtr(handle, GWL_STYLE).ToInt64();
+            var frame = default(NativeMethods.RECT);
+            if (NativeMethods.AdjustWindowRectExForDpi(ref frame, style, false, 0, dpi))
+                inset = frame.Right / (dpi / 96.0);
+        }
+
+        WindowButtons.Margin = new Thickness(0, 0, inset, 0);
+    }
+
     private void ApplyWindowBorderColor(nint handle)
     {
         int color;
@@ -1178,13 +1267,19 @@ public partial class MainWindow : Window
         if ((msg == WM_SHOWWINDOW || (msg == WM_SIZE && (wParam == SIZE_RESTORED || wParam == SIZE_MAXIMIZED)))
             && Instance is { } cornerOwner)
         {
-            Dispatcher.UIThread.Post(cornerOwner.UpdateWindowCornerPreference);
+            Dispatcher.UIThread.Post(() =>
+            {
+                cornerOwner.UpdateWindowCornerPreference();
+                cornerOwner.UpdateCaptionButtonInset();
+            });
         }
 
         if (msg == WM_SETTINGCHANGE && Instance is { } trayOwner)
         {
             trayOwner.UpdateSystemTrayStatus();
         }
+
+        int borderEdge = msg == WM_NCHITTEST ? HitTestResizeBorder(hWnd, lParam) : HTNOWHERE;
 
         // ── Snap Layouts: report HTMAXBUTTON over the custom maximize button so Win11 shows the
         // layout flyout, and emulate hover/press/click since input now arrives as NC messages. ──
@@ -1193,6 +1288,11 @@ public partial class MainWindow : Window
             switch (msg)
             {
                 case WM_NCHITTEST:
+                    if (borderEdge is not HTNOWHERE and not HTTOP)
+                    {
+                        handled = true;
+                        return borderEdge;
+                    }
                     if (self.HitTestMaximizeButton(lParam))
                     {
                         handled = true;
@@ -1243,6 +1343,12 @@ public partial class MainWindow : Window
                     handled = true;   // the down/up pair already toggled; swallow the follow-up dblclk
                     return 0;
             }
+        }
+
+        if (borderEdge != HTNOWHERE)
+        {
+            handled = true;
+            return borderEdge;
         }
 
         // Force client = full window rect. Avalonia's ExtendClientArea handler only overrides
@@ -1376,6 +1482,10 @@ public partial class MainWindow : Window
         [DllImport("user32.dll", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         public static extern bool AdjustWindowRectExForDpi(ref RECT lpRect, uint dwStyle, [MarshalAs(UnmanagedType.Bool)] bool bMenu, uint dwExStyle, uint dpi);
+
+        [DllImport("user32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static extern bool GetWindowRect(nint hWnd, out RECT lpRect);
 
         [DllImport("user32.dll")]
         public static extern nint MonitorFromWindow(nint hwnd, uint dwFlags);

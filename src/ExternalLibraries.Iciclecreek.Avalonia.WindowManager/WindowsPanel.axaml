@@ -1,0 +1,39 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:iconPacks="https://github.com/MahApps/IconPacks.Avalonia"
+        xmlns:wm="using:Iciclecreek.Avalonia.WindowManager"
+        x:DataType="wm:WindowsPanel">
+
+
+  <!-- set default style for the WindowsPanel type -->
+  <ControlTheme x:Key="{x:Type wm:WindowsPanel}"
+              TargetType="wm:WindowsPanel">
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Panel Background="{TemplateBinding Background}">
+          <ContentPresenter x:Name="PART_ContentPresenter"
+                            Content="{TemplateBinding Content}"
+                            ContentTemplate="{TemplateBinding ContentTemplate}" />
+
+          <Panel x:Name="PART_ModalOverlay"
+                 IsVisible="False"
+                 Background="{DynamicResource ManagedWindow_ModalBackgroundBrush}"/>
+
+          <Canvas x:Name="PART_Windows" />
+
+        </Panel>
+      </ControlTemplate>
+    </Setter>
+    
+    <!-- windowpanel has a dialog -->
+    <Style Selector="^:hasmodal /template/ Panel#PART_ModalOverlay">
+      <Setter Property="IsVisible" Value="true"/>
+    </Style>
+    
+    <Style Selector="^:hasmodal /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="IsEnabled" Value="false"/>
+    </Style>
+
+  </ControlTheme>
+</ResourceDictionary>
+

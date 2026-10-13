@@ -30,6 +30,7 @@ $commands = [Collections.Generic.List[object]]::new()
 $runs = [ordered]@{}
 $artifacts = [ordered]@{}
 $inputs = @()
+$sourceProof = $null
 $compared = $false
 $failure = $null
 $common = @('/m:1', '/nodeReuse:false', '-p:UseSharedCompilation=false', ('-p:Platform=' + $platform), '-p:SelfContained=true', '-nologo')
@@ -86,10 +87,17 @@ function Get-Inputs {
     $queue.Enqueue($project)
     [void]$paths.Add($guard)
     [void]$paths.Add($PSCommandPath)
+    [void]$paths.Add((Join-Path $repo 'scripts/verify-datagrid-production-extracts.ps1'))
+    foreach ($name in @('production-extracts.json', 'addon-manifest.json', 'Verify-ProductionGrids.ps1')) {
+        [void]$paths.Add((Join-Path $repo ('src/UniGetUI.Avalonia.DataGrid.NativeAotTests/Ui/TuiGrids/' + $name)))
+    }
     foreach ($name in @('global.json', 'NuGet.Config', 'src/Directory.Build.props', 'src/Directory.Build.targets', 'src/Directory.Packages.props', 'src/.editorconfig')) {
         $path = Join-Path $repo $name
         if (Test-Path -LiteralPath $path -PathType Leaf) { [void]$paths.Add($path) }
     }
+    foreach ($entry in $sourceProof.Regions) { [void]$paths.Add((Join-Path $repo $entry.Source)) }
+    foreach ($entry in $sourceProof.TuiProduction.productionInputs) { [void]$paths.Add((Join-Path $repo $entry.path)) }
+    [void]$paths.Add((Join-Path $repo 'src/UniGetUI.Avalonia/Views/SoftwarePages/SoftwareCatalogPage.axaml'))
     $visited = [Collections.Generic.HashSet[string]]::new($pathComparer)
     while ($queue.Count -gt 0) {
         $current = $queue.Dequeue()
@@ -118,12 +126,12 @@ function Get-Inputs {
 function Read-Run([string]$Path, [string]$Scenario, [bool]$Native) {
     $text = [IO.File]::ReadAllText($Path).Replace("`r`n", "`n").TrimEnd([char[]]"`r`n")
     if ($text -match '\bIL\d{4}\b') { throw "IL diagnostic in runtime log $Path" }
-    $expected = if ($Scenario -eq 'boundaries') { 38 } else { 320 }
+    $expected = if ($Scenario -eq 'boundaries') { 38 } else { 1068 }
     $pattern = if ($Scenario -eq 'boundaries') { '(?m)^CHECK\tPASS\t[^\t\r\n]+$' } else { '(?m)^CHECK\tPASS\t[^\t\r\n]+\t[^\t\r\n]+$' }
     $checks = @([regex]::Matches($text, $pattern) | ForEach-Object Value)
     $allChecks = @([regex]::Matches($text, '(?m)^CHECK\t[^\r\n]*$'))
     $summary = @([regex]::Matches($text, '(?m)^RESULT\t[^\r\n]*$') | ForEach-Object Value)
-    $expectedSummary = if ($Scenario -eq 'boundaries') { "RESULT`tPASS`tchecks=38`tbackend=headless-fake-drawing`tinput=programmatic-control-properties" } else { "RESULT`tPASS`tchecks=320`tbackend=headless`tproduction-logic=exact-extracts" }
+    $expectedSummary = if ($Scenario -eq 'boundaries') { "RESULT`tPASS`tchecks=38`tbackend=headless-fake-drawing`tinput=programmatic-control-properties" } else { "RESULT`tPASS`tchecks=1068`tbackend=headless`tproduction-logic=exact-extracts" }
     if ($checks.Count -ne $expected -or $allChecks.Count -ne $expected -or $summary.Count -ne 1 -or $summary[0] -cne $expectedSummary) { throw "Invalid $Scenario checks or summary in $Path" }
     if (@($checks | Where-Object { $_ -match '\truntime-mode$' }).Count -ne 1) { throw "Missing unique runtime-mode assertion in $Path" }
     if ($Scenario -eq 'boundaries') {
@@ -137,7 +145,7 @@ function Read-Run([string]$Path, [string]$Scenario, [bool]$Native) {
         if (@([regex]::Matches($text, '(?m)^MODE\t[^\r\n]*$') | ForEach-Object Value).Count -ne 1 -or !($text.Split("`n") -ccontains $mode)) { throw "Incorrect patched/native UI mode in $Path" }
         $normalized = $text.Replace($mode, "MODE`tAOT=<mode>`tPatched=True")
     }
-    [ordered]@{ Checks = $expected; Summary = $summary[0]; NormalizedText = $normalized; LogSha256 = (Get-Sha $Path) }
+    [ordered]@{ Checks = $expected; Summary = $summary[0]; NormalizedText = $normalized; LogSha256 = (Get-Sha $Path); ProductionInputs = $sourceProof.TuiProduction.productionInputs; TuiFixtureManifestSha256 = $sourceProof.TuiFixtureManifestSha256 }
 }
 
 function Get-Binary([string]$Path, [bool]$Native) {
@@ -157,6 +165,7 @@ function Get-Binary([string]$Path, [bool]$Native) {
 }
 
 try {
+    $sourceProof = & (Join-Path $repo 'scripts/verify-datagrid-production-extracts.ps1') -RepositoryRoot $repo -FixtureRoot (Join-Path $repo 'src/UniGetUI.Avalonia.DataGrid.NativeAotTests/Ui') | ConvertFrom-Json
     $inputs = @(Get-Inputs)
     $guardProject = Join-Path $output 'guard-probe.proj'
     $escapedGuard = [Security.SecurityElement]::Escape($guard)
@@ -196,6 +205,8 @@ try {
         }
     }
     if ($Phase -in @('Native', 'All')) {
+        $null = & (Join-Path $repo 'scripts/verify-datagrid-production-extracts.ps1') -RepositoryRoot $repo -FixtureRoot (Join-Path $repo 'src/UniGetUI.Avalonia.DataGrid.NativeAotTests/Ui')
+        if (($inputs | ConvertTo-Json -Depth 6 -Compress) -cne (@(Get-Inputs) | ConvertTo-Json -Depth 6 -Compress)) { throw 'Source inputs changed before NativeAOT acceptance.' }
         $nativeOutput = Join-Path $output 'native'
         [void](Invoke-Logged 'native-restore' 'dotnet' (@('restore', $project, '-r', $RuntimeIdentifier, '-p:Configuration=Release', '-p:PublishAot=true', '-p:PublishTrimmed=true', '-p:TrimMode=full') + $common + $strict))
         [void](Invoke-Logged 'native-publish' 'dotnet' (@('publish', $project, '-c', 'Release', '-f', 'net10.0', '-r', $RuntimeIdentifier, '--self-contained', 'true', '--no-restore', '-p:PublishAot=true', '-p:PublishTrimmed=true', '-p:TrimMode=full', '-o', $nativeOutput) + $common + $strict))
@@ -226,7 +237,7 @@ try {
     throw
 } finally {
     $compactRuns = [ordered]@{}
-    foreach ($name in $runs.Keys) { $compactRuns[$name] = [ordered]@{ Checks = $runs[$name].Checks; Summary = $runs[$name].Summary; LogSha256 = $runs[$name].LogSha256 } }
-    [ordered]@{ Status = $(if ($failure) { 'Failed' } else { 'Passed' }); Phase = $Phase; RuntimeIdentifier = $RuntimeIdentifier; FinishedUtc = [DateTime]::UtcNow.ToString('o'); Failure = $failure; JitNativeCompared = $compared; Inputs = $inputs; Runs = $compactRuns; Artifacts = $artifacts; Commands = $commands; Cleanup = 'None' } | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath (Join-Path $output 'summary.json') -Encoding utf8
+    foreach ($name in $runs.Keys) { $compactRuns[$name] = [ordered]@{ Checks = $runs[$name].Checks; Summary = $runs[$name].Summary; LogSha256 = $runs[$name].LogSha256; ProductionInputs = $runs[$name].ProductionInputs; TuiFixtureManifestSha256 = $runs[$name].TuiFixtureManifestSha256 } }
+    [ordered]@{ Status = $(if ($failure) { 'Failed' } else { 'Passed' }); Phase = $Phase; RuntimeIdentifier = $RuntimeIdentifier; FinishedUtc = [DateTime]::UtcNow.ToString('o'); Failure = $failure; JitNativeCompared = $compared; Inputs = $inputs; ProductionExtracts = $sourceProof; Runs = $compactRuns; Artifacts = $artifacts; Commands = $commands; Cleanup = 'None' } | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath (Join-Path $output 'summary.json') -Encoding utf8
     Write-Host "Acceptance receipt: $(Join-Path $output 'summary.json')"
 }

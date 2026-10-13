@@ -164,6 +164,17 @@ dotnet publish src/UniGetUI.Avalonia/UniGetUI.Avalonia.csproj /p:Configuration=R
 - Self-contained, publish-trimmed (partial), Windows App SDK self-contained
 - Tests use **xUnit** (`[Fact]`, `Assert.*`)
 
+### Formatting (required before every commit)
+
+The PR check (`.github/workflows/dotnet-test.yml`) fails on any whitespace or code-style diff, even when the build and tests pass. After changing any C# file, apply both formatters from the repo root and commit the result:
+
+```shell
+dotnet format whitespace src --folder
+dotnet format style src/UniGetUI.Windows.slnx --no-restore
+```
+
+To reproduce the CI gate exactly, add `--verify-no-changes --verbosity minimal` to both commands; they must exit with code 0. Run both — `whitespace` and `style` catch different issues, and passing one does not imply passing the other.
+
 ## NativeAOT and Trim Safety
 
 Release packages are self-contained, fully trimmed NativeAOT binaries on every supported RID. Treat NativeAOT safety as a non-negotiable production requirement: changes must work without runtime-generated code or metadata that the trimmer cannot prove is required.
@@ -218,6 +229,14 @@ Use `CoreTools.Translate("text")` for all user-facing strings. Parameterized: `C
 - Manager initialization flows through `Initialize()` -> `_loadManagerExecutableFile()` -> `_loadManagerVersion()` -> `_performExtraLoadingSteps()`
 - Operations that may fail return `OperationVeredict` (note: intentional misspelling used throughout codebase)
 
+## Terminal UI
+
+- `src/UniGetUI.Tui` is the Consolonia terminal front-end library, hosted by the main executable's `tui` command (`unigetui tui` or `uniget tui`). Pages must reach the engine through `TuiEngine` (never `PEInterface` directly), so that `--fake-data` can swap in the fake managers from `FakeData/`.
+- Run it with fake data: `dotnet run --project src/UniGetUI.Avalonia/UniGetUI.Avalonia.csproj -- tui --fake-data`. Nothing real is installed; all state lives in a sandbox.
+- Dialogs are in-window overlays (`Views/Dialogs/TuiModal`), not Avalonia popups. Popups capture input unreliably in Windows console hosts.
+- Colours come from the active theme: use `TuiPalette` brushes (`Theme/TuiPalette.cs`), never `Color.Parse` in a control, so themes and live theme switching reach it.
+- End-to-end tests in `src/UniGetUI.Tui.Tests/E2E` drive the real UI by keystrokes against the fake data set. Add a test for any new page action.
+
 ## Key Files
 
 | Purpose | Path |
@@ -233,3 +252,5 @@ Use `CoreTools.Translate("text")` for all user-facing strings. Parameterized: `C
 | Setting keys | `src/UniGetUI.Core.Settings/SettingsEngine_Names.cs` |
 | Logger | `src/UniGetUI.Core.Logger/Logger.cs` |
 | CI test workflow | `.github/workflows/dotnet-test.yml` |
+| Terminal UI (Consolonia) | `src/UniGetUI.Tui/` — see `docs/TUI.md` |
+| Terminal UI tests (E2E, fake data) | `src/UniGetUI.Tui.Tests/` |

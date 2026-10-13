@@ -1,0 +1,2 @@
+# Inherit the maintained repository's analyzer policy. The upstream blanket
+# analyzer disable remains preserved only in the original provenance source.
