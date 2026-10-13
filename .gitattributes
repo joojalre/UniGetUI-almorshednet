@@ -4,3 +4,13 @@ UniGetUI.iss whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
 # Keep vendored provenance byte-stable across Windows checkouts.
 src/ExternalLibraries.Avalonia.DataGrid/** -text
 src/ExternalLibraries.Avalonia.DataGrid/provenance/avalonia.public.snk binary
+# Preserve the exact production bytes recorded by the TUI grid verifier.
+src/UniGetUI.Tui/Infrastructure/DataGridList.cs text eol=lf
+src/UniGetUI.Tui/Infrastructure/DataGridTextBinding.cs text eol=lf
+src/UniGetUI.Tui/Views/Pages/PackageListPage.cs text eol=crlf
+src/UniGetUI.Tui/Views/Pages/HistoryPage.cs text eol=crlf
+src/UniGetUI.Tui/Views/Pages/OperationsPage.cs text eol=crlf
+# Extracted fixtures contain CRLF production fragments inside LF scaffolding.
+src/UniGetUI.Avalonia.DataGrid.NativeAotTests/Ui/TuiGrids/ProductionPackageGrid.cs -text
+src/UniGetUI.Avalonia.DataGrid.NativeAotTests/Ui/TuiGrids/ProductionHistoryGrid.cs -text
+src/UniGetUI.Avalonia.DataGrid.NativeAotTests/Ui/TuiGrids/ProductionOperationsGrid.cs -text
