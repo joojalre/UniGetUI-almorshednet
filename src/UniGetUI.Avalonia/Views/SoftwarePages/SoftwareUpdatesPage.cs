@@ -87,13 +87,13 @@ public class SoftwareUpdatesPage : AbstractPackagesPage
         uninstallSelected.Click += (_, _) => _ = LaunchUninstallFromUpdates(vm.FilteredPackages.GetCheckedPackages());
 
         // ── Toolbar buttons ─────────────────────────────────────────────────
-        ViewModel.AddToolbarSeparator();
+        ViewModel.AddToolbarSeparator(subgroup: !ViewModel.DisableReload);
         ViewModel.AddToolbarButton("options", CoreTools.Translate("Update options"),
             () => _ = ShowInstallationOptionsForPackage(SelectedItem), showLabel: false);
-        ViewModel.AddToolbarSeparator();
+        ViewModel.AddToolbarSeparator(subgroup: true);
         ViewModel.AddToolbarButton("console", CoreTools.Translate("Manual update"),
             () => _ = ManualInstallHelper.LaunchManualAsync(SelectedItem, OperationType.Update));
-        ViewModel.AddToolbarSeparator();
+        ViewModel.AddToolbarSeparator(subgroup: true);
         ViewModel.AddToolbarButton("info_round", CoreTools.Translate("Package details"),
             () => _ = ShowDetailsForPackage(SelectedItem), showLabel: false);
         ViewModel.AddToolbarSeparator();
@@ -108,7 +108,7 @@ public class SoftwareUpdatesPage : AbstractPackagesPage
         });
         ViewModel.AddToolbarButton("clipboard_list", CoreTools.Translate("Manage ignored updates"),
             () => vm.RequestManageIgnoredCommand.Execute(null));
-        ViewModel.AddToolbarSeparator();
+        ViewModel.AddToolbarSeparator(subgroup: true);
         ViewModel.AddToolbarButton("save_as", CoreTools.Translate("Export to CSV"),
             () => _ = ExportPackagesToCsvAsync());
     }

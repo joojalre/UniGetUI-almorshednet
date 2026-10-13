@@ -36,6 +36,7 @@ internal static partial class Program
             Check("production-helper-static-metadata",ReferenceEquals(metadata,((Avalonia.Collections.IDataGridItemMetadataProvider)new MetadataRows()).ItemMetadata));
 #endif
             ComparerContracts();
+            IncrementalPackageContracts();
             RunGrid("Packages");
             RunGrid("History");
             RunGrid("Desktop");

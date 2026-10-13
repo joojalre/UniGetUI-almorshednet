@@ -686,6 +686,12 @@ namespace Avalonia.Controls
                         }
                     }
                     break;
+                case NotifyCollectionChangedAction.Move:
+                    if (!IsGrouping && e.OldItems != null && e.OldItems.Count == 1)
+                    {
+                        _owner.MoveRowAt(e.OldStartingIndex, e.NewStartingIndex, e.OldItems[0]);
+                    }
+                    break;
                 case NotifyCollectionChangedAction.Replace:
                     throw new NotSupportedException(); // 
 

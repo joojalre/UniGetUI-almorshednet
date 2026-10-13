@@ -47,8 +47,8 @@
     },
     {
       "Path": "Collections/DataGridCollectionView.cs",
-      "Sha256": "3ea0ccc18ec41453ae294e3a24b15d8628020d1ca4af5ef604c8073d33c02ca6",
-      "Bytes": 169201,
+      "Sha256": "420b78de1b78a29f65f460a1cbf9b81e8d6d3e77fae03330141ae61cae1f0ddb",
+      "Bytes": 171286,
       "UpstreamSha256": "c1d5896c8d85c70a2ee984f08b8bca3e2cf4aae918bbb88c40f86b747e0d31b8",
       "ChangedFromUpstream": true
     },
@@ -159,8 +159,8 @@
     },
     {
       "Path": "DataGridDataConnection.cs",
-      "Sha256": "de4195de12be18a527d24e53dea9e9630d9e2be692eaec5608477af39d7a52bb",
-      "Bytes": 27812,
+      "Sha256": "bd94d8188c6d38b3923185fa9dc6246fb625d56580ea1d0a666e92125fa1e3f9",
+      "Bytes": 28127,
       "UpstreamSha256": "835891afd7ff40dea8614626ced11e13929d1eee3fd26d2a337d8b905699d8c9",
       "ChangedFromUpstream": true
     },
@@ -236,10 +236,10 @@
     },
     {
       "Path": "DataGridRows.cs",
-      "Sha256": "a5cb84e090f739309777e303a2046a09330af446273c4ac78b9ce4b5e745f8df",
-      "Bytes": 132402,
+      "Sha256": "f01ea0ea465ee063fc0782f402f39ff9cf392ac8585dc905ec1fb3064c0ae686",
+      "Bytes": 133652,
       "UpstreamSha256": "a5cb84e090f739309777e303a2046a09330af446273c4ac78b9ce4b5e745f8df",
-      "ChangedFromUpstream": false
+      "ChangedFromUpstream": true
     },
     {
       "Path": "DataGridSelectedItemsCollection.cs",
@@ -298,6 +298,13 @@
       "ChangedFromUpstream": false
     },
     {
+      "Path": "PROVENANCE.md",
+      "Sha256": "4798c2606d036db6cf76baba13e4e88984ade2a8c14d6905f77c4a0dc78d7b64",
+      "Bytes": 4230,
+      "UpstreamSha256": null,
+      "ChangedFromUpstream": null
+    },
+    {
       "Path": "Primitives/DataGridCellsPresenter.cs",
       "Sha256": "b505e177e01bfa4946ead53afdb170e35a6f8b205223024661ec589b76483fe8",
       "Bytes": 15280,
@@ -340,69 +347,6 @@
       "ChangedFromUpstream": false
     },
     {
-      "Path": "provenance/additional-license-source.json",
-      "Sha256": "b737bf9c3ca09a14f6b12eccc24ca5cf9eabc108dca30dd92e804878bbdfbf91",
-      "Bytes": 222,
-      "UpstreamSha256": null,
-      "ChangedFromUpstream": null
-    },
-    {
-      "Path": "provenance/avalonia.public.snk",
-      "Sha256": "34d062cd8b0bbdf600f86c7857ec9c1a776bea9be9b94665ef9b6a939de4f518",
-      "Bytes": 160,
-      "UpstreamSha256": null,
-      "ChangedFromUpstream": null
-    },
-    {
-      "Path": "provenance/Directory.Build.props",
-      "Sha256": "10ea157cc8feb217dd330529b1a75e675f48755f86714af569e42c634800af13",
-      "Bytes": 687,
-      "UpstreamSha256": null,
-      "ChangedFromUpstream": null
-    },
-    {
-      "Path": "provenance/licence.md",
-      "Sha256": "213814d306090074d234d760239ff0f67eb9b8d20eefb4d5631bb39dbe0b769b",
-      "Bytes": 1096,
-      "UpstreamSha256": null,
-      "ChangedFromUpstream": null
-    },
-    {
-      "Path": "provenance/Microsoft-Public-License.txt",
-      "Sha256": "975ea92d0726d0b5ee02c1d55dfd697cb2d100af24d8c0e5b837bdbc31ff55b3",
-      "Bytes": 2713,
-      "UpstreamSha256": null,
-      "ChangedFromUpstream": null
-    },
-    {
-      "Path": "provenance/SharedVersion.props",
-      "Sha256": "1e09d16f11efb265b43d7516c5c71e54e6c6c12f6a3f84dc4aa2d3cbb2bbfae6",
-      "Bytes": 1745,
-      "UpstreamSha256": null,
-      "ChangedFromUpstream": null
-    },
-    {
-      "Path": "provenance/tag-reference.json",
-      "Sha256": "ad42f577c99f29b6766e8689f3fa4e94631dbd66bfba94c92acde33dcfd37321",
-      "Bytes": 430,
-      "UpstreamSha256": null,
-      "ChangedFromUpstream": null
-    },
-    {
-      "Path": "provenance/upstream-manifest.json",
-      "Sha256": "f529c44ad9d614b9a2be949d41d715c55003b13a6fc951cb31bd98d9e3661fac",
-      "Bytes": 10344,
-      "UpstreamSha256": null,
-      "ChangedFromUpstream": null
-    },
-    {
-      "Path": "PROVENANCE.md",
-      "Sha256": "c8a08ea0696e8387c7dc4440a561bc14a3265f00ed0aa69220778aea86055df5",
-      "Bytes": 3370,
-      "UpstreamSha256": null,
-      "ChangedFromUpstream": null
-    },
-    {
       "Path": "Range.cs",
       "Sha256": "5f5c1c350734c47c0774b3e30f6b1cea8893f3412cbea6254804e7d157858480",
       "Bytes": 1430,
@@ -410,9 +354,9 @@
       "ChangedFromUpstream": false
     },
     {
-      "Path": "review/reflection-free-datagrid.patch",
-      "Sha256": "a01ac8f57e02d7a358f54142b6bc78af519de1136957bfeb7f885a70946c7ad5",
-      "Bytes": 27419,
+      "Path": "THIRD_PARTY_NOTICES.md",
+      "Sha256": "64feb3d5c0909d48821aa332ce836a1e03bf11a1362e91981775656c0dc34409",
+      "Bytes": 1445,
       "UpstreamSha256": null,
       "ChangedFromUpstream": null
     },
@@ -429,13 +373,6 @@
       "Bytes": 17211,
       "UpstreamSha256": "61bab9c979bbe0c6f80995f60a2d27942bb7286384b2670f9e333c3d52b17af0",
       "ChangedFromUpstream": false
-    },
-    {
-      "Path": "THIRD_PARTY_NOTICES.md",
-      "Sha256": "64feb3d5c0909d48821aa332ce836a1e03bf11a1362e91981775656c0dc34409",
-      "Bytes": 1445,
-      "UpstreamSha256": null,
-      "ChangedFromUpstream": null
     },
     {
       "Path": "Utils/ActionDisposable.cs",
@@ -506,6 +443,76 @@
       "Bytes": 6579,
       "UpstreamSha256": "d6565268471862a056e74b5b49c384053faa9b7911a2f42aadf07a50b55d14ad",
       "ChangedFromUpstream": false
+    },
+    {
+      "Path": "provenance/Directory.Build.props",
+      "Sha256": "10ea157cc8feb217dd330529b1a75e675f48755f86714af569e42c634800af13",
+      "Bytes": 687,
+      "UpstreamSha256": null,
+      "ChangedFromUpstream": null
+    },
+    {
+      "Path": "provenance/Microsoft-Public-License.txt",
+      "Sha256": "975ea92d0726d0b5ee02c1d55dfd697cb2d100af24d8c0e5b837bdbc31ff55b3",
+      "Bytes": 2713,
+      "UpstreamSha256": null,
+      "ChangedFromUpstream": null
+    },
+    {
+      "Path": "provenance/SharedVersion.props",
+      "Sha256": "1e09d16f11efb265b43d7516c5c71e54e6c6c12f6a3f84dc4aa2d3cbb2bbfae6",
+      "Bytes": 1745,
+      "UpstreamSha256": null,
+      "ChangedFromUpstream": null
+    },
+    {
+      "Path": "provenance/additional-license-source.json",
+      "Sha256": "b737bf9c3ca09a14f6b12eccc24ca5cf9eabc108dca30dd92e804878bbdfbf91",
+      "Bytes": 222,
+      "UpstreamSha256": null,
+      "ChangedFromUpstream": null
+    },
+    {
+      "Path": "provenance/avalonia.public.snk",
+      "Sha256": "34d062cd8b0bbdf600f86c7857ec9c1a776bea9be9b94665ef9b6a939de4f518",
+      "Bytes": 160,
+      "UpstreamSha256": null,
+      "ChangedFromUpstream": null
+    },
+    {
+      "Path": "provenance/licence.md",
+      "Sha256": "213814d306090074d234d760239ff0f67eb9b8d20eefb4d5631bb39dbe0b769b",
+      "Bytes": 1096,
+      "UpstreamSha256": null,
+      "ChangedFromUpstream": null
+    },
+    {
+      "Path": "provenance/tag-reference.json",
+      "Sha256": "ad42f577c99f29b6766e8689f3fa4e94631dbd66bfba94c92acde33dcfd37321",
+      "Bytes": 430,
+      "UpstreamSha256": null,
+      "ChangedFromUpstream": null
+    },
+    {
+      "Path": "provenance/upstream-manifest.json",
+      "Sha256": "f529c44ad9d614b9a2be949d41d715c55003b13a6fc951cb31bd98d9e3661fac",
+      "Bytes": 10344,
+      "UpstreamSha256": null,
+      "ChangedFromUpstream": null
+    },
+    {
+      "Path": "review/incremental-move.patch",
+      "Sha256": "fe14e4031dbf923592b8f6da192b4a55380fcbe969fa181f6f7b250cbb97ed12",
+      "Bytes": 5438,
+      "UpstreamSha256": null,
+      "ChangedFromUpstream": null
+    },
+    {
+      "Path": "review/reflection-free-datagrid.patch",
+      "Sha256": "a01ac8f57e02d7a358f54142b6bc78af519de1136957bfeb7f885a70946c7ad5",
+      "Bytes": 27419,
+      "UpstreamSha256": null,
+      "ChangedFromUpstream": null
     }
   ]
 }
