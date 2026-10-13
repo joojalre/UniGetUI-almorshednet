@@ -225,6 +225,7 @@ public partial class PackagesPageViewModel : ViewModelBase
     protected ConcurrentDictionary<IManagerSource, SourceTreeNode> NodesForSources = new();
     private readonly SourceTreeNode _localPackagesNode = new() { PackageName = "local" };
     private bool _isSynchronizingSourceSelection;
+    private int _sourceUpdateDepth;
 
     // ─── Events (replace abstract methods) ───────────────────────────────────
     public event Action<ReloadReason>? PackagesLoaded;
@@ -483,13 +484,21 @@ public partial class PackagesPageViewModel : ViewModelBase
         if (e.ProceduralChange)
         {
             var added = new List<PackageWrapper>();
-            foreach (var pkg in e.AddedPackages)
+            _sourceUpdateDepth++;
+            try
             {
-                if (_wrappedPackages.Any(w => w.Package.GetVersionedHash() == pkg.GetVersionedHash())) continue;
-                var wrapper = new PackageWrapper(pkg, this);
-                _wrappedPackages.Add(wrapper);
-                added.Add(wrapper);
-                AddPackageToSourcesList(pkg);
+                foreach (var pkg in e.AddedPackages)
+                {
+                    if (_wrappedPackages.Any(w => w.Package.GetVersionedHash() == pkg.GetVersionedHash())) continue;
+                    var wrapper = new PackageWrapper(pkg, this);
+                    _wrappedPackages.Add(wrapper);
+                    added.Add(wrapper);
+                    AddPackageToSourcesList(pkg);
+                }
+            }
+            finally
+            {
+                _sourceUpdateDepth--;
             }
             var toRemove = _wrappedPackages
                 .Where(w => e.RemovedPackages.Any(r => r.GetVersionedHash() == w.Package.GetVersionedHash()))
@@ -927,7 +936,8 @@ public partial class PackagesPageViewModel : ViewModelBase
                 }
             }
 
-            if (_isSynchronizingSourceSelection)
+            // The procedural batch applies the final filter incrementally after sources settle.
+            if (_isSynchronizingSourceSelection || _sourceUpdateDepth > 0)
                 return;
 
             FilterPackages();
