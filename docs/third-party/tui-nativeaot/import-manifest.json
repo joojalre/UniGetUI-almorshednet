@@ -1,0 +1,691 @@
+[
+  {
+    "repository": "dahall/Vanara",
+    "archiveUrl": "https://codeload.github.com/dahall/Vanara/zip/3da05fe4d87bc5de96527fad5c9b7e6058690deb",
+    "files": [
+      {
+        "sha256": "2efb6765a8eb4bcd68cbf5d23981e33969b95729350264fa1f1a1ac68667ffc2",
+        "bytes": 336,
+        "path": "AsmDef.cs"
+      },
+      {
+        "sha256": "f5799fd46f53a4a0eb98e3f131b3b120395a190bf1c97c5761bbee347860d356",
+        "bytes": 1864,
+        "path": "Directory.Build.props"
+      },
+      {
+        "sha256": "54808b4229af017de7d9ab6638be54d58569c6fa90d5134ace9be8d1506a5f4d",
+        "bytes": 1067,
+        "path": "LICENSE"
+      },
+      {
+        "sha256": "501f987b3c57c43f251b49a4a6d4301b2e709e85c285d2823aa34b1dc13cc9bf",
+        "bytes": 1967,
+        "path": "PInvoke/Shared/AssociateAttribute.cs"
+      },
+      {
+        "sha256": "66cf1ac573c1b7f47f85b9ba4883174f63c87933cddcfd0c8c651664c8daac0e",
+        "bytes": 835,
+        "path": "PInvoke/Shared/AssociateStringAttribute.cs"
+      },
+      {
+        "sha256": "1f115f0ee757af96841fd342540b52ae4573ae3da7e2d6eb2dd4878b00b2def0",
+        "bytes": 6395,
+        "path": "PInvoke/Shared/BkwdComp/EnumeratorToEnumVariantMarshaler.cs"
+      },
+      {
+        "sha256": "f3729473cb6073a739bc22730a3df50a7e409e0aad1bbafb063261c1587441cc",
+        "bytes": 1556,
+        "path": "PInvoke/Shared/Cfg.cs"
+      },
+      {
+        "sha256": "39ecd566a7c32150eefe72018732d2f2514fb0160a6eb1d19bfdb2fb21e62b63",
+        "bytes": 1031,
+        "path": "PInvoke/Shared/CfgMgr32.cs"
+      },
+      {
+        "sha256": "23a7d7334e7eaa313b0bbb2bcec87cd229ffb8780122bf1f21391f3a6b781fa1",
+        "bytes": 5467,
+        "path": "PInvoke/Shared/Collections/IEnumFromCom.cs"
+      },
+      {
+        "sha256": "9fea316defa42d9d8efec742e1c1d6025a8ac469e20867416f9d3eb352c2f5e4",
+        "bytes": 8952,
+        "path": "PInvoke/Shared/Collections/IEnumGenerics.cs"
+      },
+      {
+        "sha256": "2d3979ada46b62268175d69d95ee30f630fbcabe27408a44e22621f3c1e29ab1",
+        "bytes": 3543,
+        "path": "PInvoke/Shared/ErrorHelper.cs"
+      },
+      {
+        "sha256": "0eb4d44389c2d9c702a0c878f0959bdd1aa86d6c6b1261bdea38a0059565e0d3",
+        "bytes": 4342,
+        "path": "PInvoke/Shared/FieldValueHash.cs"
+      },
+      {
+        "sha256": "05feab7fb1cb19d8a38ceccc5155b7fd595244e0910bce2330318af8b342cf3e",
+        "bytes": 16194,
+        "path": "PInvoke/Shared/FunctionHelper.cs"
+      },
+      {
+        "sha256": "03284397f02d12fc8a4da267d9c1ac99ed25d6a71915fbb80aa056691ad5e076",
+        "bytes": 115552,
+        "path": "PInvoke/Shared/Handles/HANDLE.cs"
+      },
+      {
+        "sha256": "4c324ecd30502a8f3f68d3bca3acdc182d86f53ebd7ba00c3e760620a11b9c66",
+        "bytes": 12959,
+        "path": "PInvoke/Shared/Handles/HANDLE.tt"
+      },
+      {
+        "sha256": "714447c3b1f2d543ef1ab0d73888cbd22f022c2f269c1789b5df11cd7c186498",
+        "bytes": 1601,
+        "path": "PInvoke/Shared/Handles/HANDLEConverter.cs"
+      },
+      {
+        "sha256": "0d2873868334b0aa26acaa5cbc8f4523c1eef65d1cb9cfca37960db526a9bd71",
+        "bytes": 882,
+        "path": "PInvoke/Shared/Handles/IHandle.cs"
+      },
+      {
+        "sha256": "166e3bc138c616528ce9f2bbd3f8c59fa6a3d823dec02962aef84bf7cd023d70",
+        "bytes": 5718,
+        "path": "PInvoke/Shared/Handles/SafeHANDLE.cs"
+      },
+      {
+        "sha256": "1dd99eb7918484c4586d380c0e195b6635b6f5ccbdc01097fd6affc9dbd22b61",
+        "bytes": 7087,
+        "path": "PInvoke/Shared/IndirectResource.cs"
+      },
+      {
+        "sha256": "161f699b3bbb16f928620540cd6312596e8c44f75ccf4d9ce8eb716eda770b82",
+        "bytes": 4084,
+        "path": "PInvoke/Shared/IndirectString.cs"
+      },
+      {
+        "sha256": "c8be4bc79f352ecdb4e705032c56eb0be21e532ff53bfc31415baa13ca7fec7a",
+        "bytes": 643,
+        "path": "PInvoke/Shared/InteropServices/CoTaskMemStringMarshaler.cs"
+      },
+      {
+        "sha256": "a3837cbab942e747c61e9b25ccf8d6ed2884b65f02be8b2af36f218b73362859",
+        "bytes": 3753,
+        "path": "PInvoke/Shared/InteropServices/GenericStringMarshaler.cs"
+      },
+      {
+        "sha256": "2fb0b52adfd1a6896b4b3d1d03e34d2d6eda124a11951f1393c741d9e30ab291",
+        "bytes": 1753,
+        "path": "PInvoke/Shared/InteropServices/NullTermStringArrayMarshaler.cs"
+      },
+      {
+        "sha256": "b58e1cdd680e21802244b340b7d1566f85cdffee9a1600ce1ef46e9c94de3d87",
+        "bytes": 17088,
+        "path": "PInvoke/Shared/InteropServices/SafeAnysizeStruct.cs"
+      },
+      {
+        "sha256": "7de7129b9099be8c53c6f3087c5fc01c765bff68d852a3c736c87b2ca889da01",
+        "bytes": 5518,
+        "path": "PInvoke/Shared/InteropServices/SafeElementArray.cs"
+      },
+      {
+        "sha256": "62cfce9b1c86636de098bebbf0145fb47e0f7d3d05e2c65c58a7e5b38b74fdb3",
+        "bytes": 15856,
+        "path": "PInvoke/Shared/InteropServices/SafeNativeArray.cs"
+      },
+      {
+        "sha256": "c311ef730053a2ad5b8b966a4bf014925d533a065037faff9ec9d420ba26f8b0",
+        "bytes": 3915,
+        "path": "PInvoke/Shared/InteropServices/SafeNativeLinkedList.cs"
+      },
+      {
+        "sha256": "28e264059d29ed7cb4c8f54148f22c812517a6aab7af9b0a2dde33cfee83da70",
+        "bytes": 2982,
+        "path": "PInvoke/Shared/InteropServices/SafeNativeListBase.cs"
+      },
+      {
+        "sha256": "46b462c5ac9af9e490bce5d6dded6c3b7be053dc46e544b36b4f0fb210889504",
+        "bytes": 1781,
+        "path": "PInvoke/Shared/InteropServices/StringPtrArrayMarshaler.cs"
+      },
+      {
+        "sha256": "9030fc0eece7a8b86d22fe3ad8aa54d471910db43993b4432af63fe6efd7541d",
+        "bytes": 5239,
+        "path": "PInvoke/Shared/Lib.cs"
+      },
+      {
+        "sha256": "571123ea567f9ff43a9c56dd735275882f23de8cd6e99b3d1dfbfc2529ca429b",
+        "bytes": 9380,
+        "path": "PInvoke/Shared/ObjBase/STGM.cs"
+      },
+      {
+        "sha256": "414bf8ca8d8567a36897bfc262c30df9a20ccdf33611a3cb3d8b9c9ba260c6e9",
+        "bytes": 8631,
+        "path": "PInvoke/Shared/OverlappedAsyncBase.cs"
+      },
+      {
+        "sha256": "6ef663420d5adf366211123d3c41cab0c263c31375b974d6be9728338d1733cf",
+        "bytes": 3836,
+        "path": "PInvoke/Shared/PInvokeDataAttribute.cs"
+      },
+      {
+        "sha256": "6af41b6a4a3f5fd11983da024146a8ad31edb1bc6897cd876e542a78bd6c7bc2",
+        "bytes": 5557,
+        "path": "PInvoke/Shared/Reason/SystemShutDownReason.cs"
+      },
+      {
+        "sha256": "1f360f4a9947654006ca91b6e38ec7d7517eb9ac228636c2fc66daf79cf15036",
+        "bytes": 2199,
+        "path": "PInvoke/Shared/RegStr.cs"
+      },
+      {
+        "sha256": "733a838c0452221fd12eb80eee21187a8daae4ff98ce136eb95973aa699acec2",
+        "bytes": 6938,
+        "path": "PInvoke/Shared/Registry.cs"
+      },
+      {
+        "sha256": "4675dba53463dfc7aa193e0671a60bd12aae29af6aa07402669ec1b0f022487d",
+        "bytes": 23294,
+        "path": "PInvoke/Shared/ResourceId.cs"
+      },
+      {
+        "sha256": "3f1032ded59d7788cc7c6d3736812875808f33b84821fbc74304e797114584e3",
+        "bytes": 2836,
+        "path": "PInvoke/Shared/SdkDdkVer.cs"
+      },
+      {
+        "sha256": "772665d0579af87a8ca94c6db8bed0fda333958b2b38cf7d1695d789854b1026",
+        "bytes": 1955,
+        "path": "PInvoke/Shared/ShTypes.cs"
+      },
+      {
+        "sha256": "c2e753eb3414ee4e9384c972c41057ab6bef01a629453f14428d1b9f94e3a448",
+        "bytes": 2681,
+        "path": "PInvoke/Shared/StructHelper.cs"
+      },
+      {
+        "sha256": "c61f90da6042e89bc98a9727578ed5a35322c57699e9f1cd98d54c29b9d5a490",
+        "bytes": 1311,
+        "path": "PInvoke/Shared/UrlMon/URLZONE.cs"
+      },
+      {
+        "sha256": "f57716c9635428e7402d41a99350c3a90d4531392833999528c3846a0a5deded",
+        "bytes": 5040,
+        "path": "PInvoke/Shared/Vanara.PInvoke.Shared.csproj"
+      },
+      {
+        "sha256": "12eca0f4ce6c8ccc8a1b3a93ca5f397b3b84fa7f79e4661bf1d9e9f2fa25208a",
+        "bytes": 7813,
+        "path": "PInvoke/Shared/WTypes/CY.cs"
+      },
+      {
+        "sha256": "d2584060de18f9076ff59536a19d5481c88663f93a5d4ace2da43178795edb6f",
+        "bytes": 7598,
+        "path": "PInvoke/Shared/WTypes/DATE.cs"
+      },
+      {
+        "sha256": "bb6cc728bac0ba6a9fd2971ce144f1af00948b40e3c2c004b98954c641b4d0d5",
+        "bytes": 8116,
+        "path": "PInvoke/Shared/WTypes/DECIMAL.cs"
+      },
+      {
+        "sha256": "e8b44ffe02ccac1a253f6d2951d2c05065e76b8ee5c926c0572e8108f61deb55",
+        "bytes": 69424,
+        "path": "PInvoke/Shared/Wdm.cs"
+      },
+      {
+        "sha256": "57ff7ede91c092eb97ec0f728ad7db31037ae8091fc6ae1d1473b90b630e5a60",
+        "bytes": 1846,
+        "path": "PInvoke/Shared/WinBase/OFSTRUCT.cs"
+      },
+      {
+        "sha256": "65b87a4d76aa64cc052dde0acefa23c56fea90202b86f2e927dcc7bbae3bfc6d",
+        "bytes": 7692,
+        "path": "PInvoke/Shared/WinBase/PFILETIME.cs"
+      },
+      {
+        "sha256": "369b45891503b59ffd2d148b446503aa0999a7489d0eb78a8b9f135b16bbba5b",
+        "bytes": 3210,
+        "path": "PInvoke/Shared/WinBase/SECURITY_ATTRIBUTES.cs"
+      },
+      {
+        "sha256": "8f835253bea5a7da91c8ba6ae40b867a552682efd6145ea97e51bb62c2d69c6f",
+        "bytes": 30971,
+        "path": "PInvoke/Shared/WinBase/SYSTEMTIME.cs"
+      },
+      {
+        "sha256": "9eabb2bd9b87db42078c19d1f67659b5577e3bd3087f36a9019e74e65c9e45f4",
+        "bytes": 3495,
+        "path": "PInvoke/Shared/WinBase/WIN32_FIND_DATA.cs"
+      },
+      {
+        "sha256": "6d138808c8f755e56aff52dca15345fe99e96f4f5273c118f2eb5980876e15dc",
+        "bytes": 6345,
+        "path": "PInvoke/Shared/WinDef/COLORREF.cs"
+      },
+      {
+        "sha256": "5a9a30370edfd9962c7f534bb94b2d434cc8f4cbe8554f2401893aa5dc96dd81",
+        "bytes": 11129,
+        "path": "PInvoke/Shared/WinDef/POINT.cs"
+      },
+      {
+        "sha256": "8aa2a611593908582193b2c73b4c0f7af155890b1cb553790f7fd72ace4a6a81",
+        "bytes": 4030,
+        "path": "PInvoke/Shared/WinDef/POINTS.cs"
+      },
+      {
+        "sha256": "f9dd0124cc20f8b39e49be7dd845f856dcd53404b34effc9b044d2f50e08a43e",
+        "bytes": 21825,
+        "path": "PInvoke/Shared/WinDef/RECT.cs"
+      },
+      {
+        "sha256": "f46cfee86322aeed6f601dcab3763ad5b87940781c45959423e16e214f678552",
+        "bytes": 4734,
+        "path": "PInvoke/Shared/WinDef/SIZE.cs"
+      },
+      {
+        "sha256": "59c82639808401d14eb41b008194fbac3086f616b2434d63279061e7cd3dd817",
+        "bytes": 560941,
+        "path": "PInvoke/Shared/WinError/HRESULT.Values.cs"
+      },
+      {
+        "sha256": "7f3eaf52c3b22793d936d45d88b58d25bae1935f74dcf28447c70b083d6f8b21",
+        "bytes": 31460,
+        "path": "PInvoke/Shared/WinError/HRESULT.cs"
+      },
+      {
+        "sha256": "319d5817664ac1d8ed6257d797572ff46682f899a37fa4caa40da6542e046234",
+        "bytes": 1324,
+        "path": "PInvoke/Shared/WinError/IErrorProvider.cs"
+      },
+      {
+        "sha256": "36a3727aa83f367eb7ef20ca5062d15e660067ebd7a5b1029e5c39474628400c",
+        "bytes": 327739,
+        "path": "PInvoke/Shared/WinError/NTStatus.Values.cs"
+      },
+      {
+        "sha256": "b03ef2294f642faefb5420cb9b2fe9602f95416d4bb2adfab1f4153a3315b487",
+        "bytes": 25296,
+        "path": "PInvoke/Shared/WinError/NTStatus.cs"
+      },
+      {
+        "sha256": "37dfed09a2e5a7eb978ee28eb0c5ca21429a4695005ccfb7e0455fd792aa55ee",
+        "bytes": 484477,
+        "path": "PInvoke/Shared/WinError/Win32Error.Values.cs"
+      },
+      {
+        "sha256": "5cf40eb53ce84a3c91feaadee4d88f4b40b8c3e32556fda5451067ee7e91042a",
+        "bytes": 15946,
+        "path": "PInvoke/Shared/WinError/Win32Error.cs"
+      },
+      {
+        "sha256": "70ef09811b72309c7ac5609e4d15e82ff8c19f1106babb990e5c2141524caf10",
+        "bytes": 58366,
+        "path": "PInvoke/Shared/WinGdi/WinGdi.DEVMODE.cs"
+      },
+      {
+        "sha256": "515a2853f7072114a079873e9d81a68319ddf9210bc8903567a967f08c9a69bf",
+        "bytes": 17200,
+        "path": "PInvoke/Shared/WinGdi/WinGdi.LOGFONT.cs"
+      },
+      {
+        "sha256": "bf24a594f19a3ca3d894b678abed3bd113160bae14f36b3486f1020bb6d894b8",
+        "bytes": 3544,
+        "path": "PInvoke/Shared/WinGdi/WinGdi.LOGPALETTE.cs"
+      },
+      {
+        "sha256": "32d237d2003952d86cf8b8fb34e2b6643fc84928eb68a45b6040872138b72251",
+        "bytes": 4177,
+        "path": "PInvoke/Shared/WinGdi/WinGdi.RGBQUAD.cs"
+      },
+      {
+        "sha256": "622f725750e8948f75018a77d8ade5fd76aabea0ccbdefaabee613e0c1e3ffc4",
+        "bytes": 8695,
+        "path": "PInvoke/Shared/WinGdi/WinGdi.TEXTMETRIC.cs"
+      },
+      {
+        "sha256": "ac4cef9c96c99e55e37019301e857f577194fc55ab5868d2ce912fb24ac24435",
+        "bytes": 9301,
+        "path": "PInvoke/Shared/WinNT/ACCESS_MASK.cs"
+      },
+      {
+        "sha256": "cfd6c51fb6a0b4f7435a32c57ba8f9551d59333ebcaf4d41371d2a3863757776",
+        "bytes": 1373,
+        "path": "PInvoke/Shared/WinNT/CORRELATION_VECTOR.cs"
+      },
+      {
+        "sha256": "844a5439bffced813e0972ffc76b7db51a9470e5fb513444239b32b1b8733ac8",
+        "bytes": 17498,
+        "path": "PInvoke/Shared/WinNT/FileFlagsAndAttributes.cs"
+      },
+      {
+        "sha256": "0a915d28fa2b41e77bb641b20e355310d2c35f564a7dabf6764aac2964e4c2d7",
+        "bytes": 34680,
+        "path": "PInvoke/Shared/WinNT/LANGID.cs"
+      },
+      {
+        "sha256": "fa10f886ab46a3702e8e0d1ba0a8277a7ddbc9a0fc95797451c16691d072e9da",
+        "bytes": 13849,
+        "path": "PInvoke/Shared/WinNT/LCID.cs"
+      },
+      {
+        "sha256": "f1f4b44ae221cd006566cdf7b17801474f810aa4c6a1dcb649dc49b02c93222b",
+        "bytes": 2619,
+        "path": "PInvoke/Shared/WinNT/OBJECT_TYPE_LIST.cs"
+      },
+      {
+        "sha256": "004829b4d71d79ced07338754336583b71beb9d1553518dd05ad27107e90aaf1",
+        "bytes": 1254,
+        "path": "PInvoke/Shared/WinNT/ProcessorArchitecture.cs"
+      },
+      {
+        "sha256": "e4132db993d6a59ef7b0bb9875e9a1bc056fefba52bcc1972cf17f45619d8e5b",
+        "bytes": 2625,
+        "path": "PInvoke/Shared/WinNT/SECURITY_INFORMATION.cs"
+      },
+      {
+        "sha256": "2ea571959dba7858d07a2958ca7f8ea51e3acdcf6014ebc2ac602cb7359efeeb",
+        "bytes": 17874,
+        "path": "PInvoke/Shared/WinUser/CLIPFORMAT.cs"
+      },
+      {
+        "sha256": "fcdf3c59e19e6315efcd3a66da6545295c736218df77581aaaaf87b6273bf108",
+        "bytes": 5515,
+        "path": "PInvoke/Shared/WinUser/DrawTextFlags.cs"
+      },
+      {
+        "sha256": "6c2046e7c31217d3fbeb9f43356fa7f105eed0d31f9d76d17cf378e6b9343dca",
+        "bytes": 3850,
+        "path": "PInvoke/Shared/WinUser/MSG.cs"
+      },
+      {
+        "sha256": "ad2cab44e7c18562bf99b698ba64af09c2bb6f09e86fa327f8a42a321d87e061",
+        "bytes": 10765,
+        "path": "PInvoke/Shared/WinUser/Macros.cs"
+      },
+      {
+        "sha256": "0ec6520f111ec50c4bc22e9e74fe06e6b5c0ef27a00693fd46ccafeeabd3529c",
+        "bytes": 714,
+        "path": "PInvoke/Shared/WinUser/MouseButtonState.cs"
+      },
+      {
+        "sha256": "9e359c7a4b4cf7010b6110499ae168798fc353e27d8c01e37864e6d648f41e80",
+        "bytes": 2594,
+        "path": "PInvoke/Shared/WinUser/ShowWindowCommand.cs"
+      },
+      {
+        "sha256": "7f5ecfd5a63e934c0502319c4b1fcc8ad4c986a1a9c523404b45a283b293831b",
+        "bytes": 5699,
+        "path": "PInvoke/Shared/WinUser/SystemColorIndex.cs"
+      },
+      {
+        "sha256": "b650cf2bc8ad2934370d6d7c02df4bff11dc7b33a1d2b2f02a9c619cd6f01d26",
+        "bytes": 4374,
+        "path": "PInvoke/Shared/pkgreadme.md"
+      },
+      {
+        "sha256": "740f0fb2b639adef12b34c2a36a958fb5107f43fa3e5db38953f5d2d1724421c",
+        "bytes": 76186,
+        "path": "PInvoke/Shared/readme.md"
+      }
+    ],
+    "archiveSha256": "38ba5da5b44891960b57a875c9b595de06cdd2c8f25190cea680bb3b01a106bc",
+    "commit": "3da05fe4d87bc5de96527fad5c9b7e6058690deb"
+  },
+  {
+    "repository": "consolonia/consolonia",
+    "archiveUrl": "https://codeload.github.com/consolonia/consolonia/zip/5c317423e7fe9896d9a4fab412b3fba8c7ef1e7b",
+    "files": [
+      {
+        "sha256": "e11eb84597f17b83b789c875873103e6f9414a13c82d64c6d020623bdd8745a8",
+        "bytes": 1593,
+        "path": "Directory.Build.props"
+      },
+      {
+        "sha256": "432b61689b08d50c1b5fad4cb0ea800fa1bd31b3a528d9e82c1425655c8218c5",
+        "bytes": 941,
+        "path": "Directory.Core.Build.props"
+      },
+      {
+        "sha256": "760ba0cded8a55c720488ab04084850963b8c4d385d126262674f3ae6fbd9443",
+        "bytes": 1072,
+        "path": "LICENSE"
+      },
+      {
+        "sha256": "1a2f35e7284768ed0e2b57c17e63c0918773d1e2f474621fcf02f3a7373c4e48",
+        "bytes": 127,
+        "path": "src/Consolonia.GuiCS/.editorconfig"
+      },
+      {
+        "sha256": "fffd8ee846a34c5d4bfced4d874dad0570f72048e928d7ba03d3cab52f4dca0b",
+        "bytes": 240,
+        "path": "src/Consolonia.GuiCS/Assembly.cs"
+      },
+      {
+        "sha256": "2517ce6b487caf78d264b33ba609be29730a93541d2462642ef6e8aed93ccf6c",
+        "bytes": 351,
+        "path": "src/Consolonia.GuiCS/Consolonia.GuiCS.csproj"
+      },
+      {
+        "sha256": "843696bb78cd83677a1d3ca91802d203eaf8cf548702def8bb64b2404c5fef1a",
+        "bytes": 2406,
+        "path": "src/Consolonia.GuiCS/CursorVisibility.cs"
+      },
+      {
+        "sha256": "232bf649f097af6c7379d21fcea7b9d64e5a9c848e3f8b0203bb1f509a02c25a",
+        "bytes": 18100,
+        "path": "src/Consolonia.GuiCS/Event.cs"
+      },
+      {
+        "sha256": "2a7331c273b7c121f5e1f6f10e13d279a739ac310c49b56f2fb251d0490988d0",
+        "bytes": 1085,
+        "path": "src/Consolonia.GuiCS/LICENSE"
+      },
+      {
+        "sha256": "1a5a59c78d8019a41b96d04c2d228bdc1f2c019a754dd04902516006643c200c",
+        "bytes": 5662,
+        "path": "src/Consolonia.GuiCS/Point.cs"
+      },
+      {
+        "sha256": "929617f5be352aeb8e837b131fbfa74efb47bbd569c70bf4f391c37d0e3ede05",
+        "bytes": 5304,
+        "path": "src/Consolonia.GuiCS/Size.cs"
+      },
+      {
+        "sha256": "badb87dd80d04dc2b9587761a69cc5c073e41346b93d012068a0c51cf7f0791b",
+        "bytes": 9301,
+        "path": "src/Consolonia.GuiCS/UnmanagedLibrary.cs"
+      },
+      {
+        "sha256": "612f2d3c8621f2854633af38c4149f6008f34ccde7b02bda9c7765e99f628ba7",
+        "bytes": 2231,
+        "path": "src/Consolonia.GuiCS/WindowsDriver.cs"
+      },
+      {
+        "sha256": "c7d25aecda78c40d3034298a4e521e340850512e70cfa8230e19616696867ee2",
+        "bytes": 25598,
+        "path": "src/Consolonia.GuiCS/binding.cs"
+      },
+      {
+        "sha256": "05ab5efedd9e82a5e2d865212cc821112d85f6304eb1460cab88d5698ce442f5",
+        "bytes": 9649,
+        "path": "src/Consolonia.GuiCS/constants.cs"
+      },
+      {
+        "sha256": "63463a8bec9eb231bf6235b1bfe2ecdb88f7276970277b521b660effd13cb2ea",
+        "bytes": 3923,
+        "path": "src/Consolonia.GuiCS/handles.cs"
+      },
+      {
+        "sha256": "b79dfce3408c2b929dacac9b849db390875b591a595ed1bdc248da132938d160",
+        "bytes": 654,
+        "path": "src/Consolonia.PlatformSupport/Assembly.cs"
+      },
+      {
+        "sha256": "1ae23cc83246fff3b0de2c275c80ffa377e2f12feeb62981056b0d1c5626be3e",
+        "bytes": 2549,
+        "path": "src/Consolonia.PlatformSupport/Clipboard/ClipboardProcessRunner.cs"
+      },
+      {
+        "sha256": "bf189fb41567b1a2f90d0ff99c1e3a5ee31df944e83315ff5fea04ab8c533148",
+        "bytes": 4652,
+        "path": "src/Consolonia.PlatformSupport/Clipboard/MacClipboard.cs"
+      },
+      {
+        "sha256": "fb8b1937b19c73c42b668c6b1494e2b8e6d0d903ac65d9d3a2476c5e02b4b4eb",
+        "bytes": 4999,
+        "path": "src/Consolonia.PlatformSupport/Clipboard/Win32Clipboard.cs"
+      },
+      {
+        "sha256": "314c775b37deedf87e29c379a4b74dbabcbd583b87fc2c7a515449cd797f125e",
+        "bytes": 2194,
+        "path": "src/Consolonia.PlatformSupport/Clipboard/WslClipboard.cs"
+      },
+      {
+        "sha256": "f0c2e5fe8a50f49abb555106a7896ca668e77553b3bb6ed717950d6d28b2f518",
+        "bytes": 1507,
+        "path": "src/Consolonia.PlatformSupport/Clipboard/X11Clipboard.cs"
+      },
+      {
+        "sha256": "33bbf51f121f9f4698e4ba4963df2a1b941588c1de8569bccf5684e8794579fc",
+        "bytes": 1915,
+        "path": "src/Consolonia.PlatformSupport/Clipboard/XClipClipboard.cs"
+      },
+      {
+        "sha256": "d7e5569fe379587040c4de6777dd433f607ee6edfe4abbac575a2aeea1d484b0",
+        "bytes": 2162,
+        "path": "src/Consolonia.PlatformSupport/Consolonia.PlatformSupport.csproj"
+      },
+      {
+        "sha256": "e2db982875c47449d8a2f91341484474e662da6d90b8b2251ca5bc65c1211ced",
+        "bytes": 16568,
+        "path": "src/Consolonia.PlatformSupport/CursesConsole.Kitty.cs"
+      },
+      {
+        "sha256": "1171a302e68a9b4d9dcdb87321b138f165807005f8f1e76432dfb77e227b01bf",
+        "bytes": 41246,
+        "path": "src/Consolonia.PlatformSupport/CursesConsole.cs"
+      },
+      {
+        "sha256": "c7bcc33d874b7f0e580d58f104118a4c5e839840d3d4f0f5156746073be2325c",
+        "bytes": 1029,
+        "path": "src/Consolonia.PlatformSupport/GPMConsole.md"
+      },
+      {
+        "sha256": "6b659fe3e1eae91117781b3d31ca5e5221b10dc478c5172a6f3395a756e09549",
+        "bytes": 7309,
+        "path": "src/Consolonia.PlatformSupport/Gpm.cs"
+      },
+      {
+        "sha256": "da3523c3c35cacfe0d37d31bc3962aecc8a7261ccd4a2c80563aaa5d099919d8",
+        "bytes": 6599,
+        "path": "src/Consolonia.PlatformSupport/GpmMonitor.cs"
+      },
+      {
+        "sha256": "d75141b3ae5addd05b045f28d0b26ce5568122648c4e2dfd886a2a1287a23802",
+        "bytes": 506,
+        "path": "src/Consolonia.PlatformSupport/Helpers.cs"
+      },
+      {
+        "sha256": "0814f82b9dc58ced3ff0f8d1263ae3fbe2cea27a8dbafe6c7e0c8a563850483e",
+        "bytes": 7446,
+        "path": "src/Consolonia.PlatformSupport/PlatformSupportExtensions.cs"
+      },
+      {
+        "sha256": "e1e018441e8763a2ab19850b401ac1504d279838630565482a09ea631795f4f2",
+        "bytes": 17739,
+        "path": "src/Consolonia.PlatformSupport/Win32Console.cs"
+      },
+      {
+        "sha256": "fb712d0dfbdd906cfbdf066de0b4564f0ed3fa752cdd77621640feb594dbb757",
+        "bytes": 5210,
+        "path": "src/Consolonia.PlatformSupport/WindowsConsoleBuffer.cs"
+      },
+      {
+        "sha256": "47e3aa8e6f7093b9270e5825c2faac94c2a2d51c33e4a02ddfe7fab7e4fc5f8b",
+        "bytes": 1070,
+        "path": "src/Consolonia.PlatformSupport/WindowsLegacyConsoleOutput.cs"
+      },
+      {
+        "sha256": "e2a418194234d7a40d370c724aaa3170fd7bb8f6c3c7fe5bcfc8af3d77c82035",
+        "bytes": 720,
+        "path": "src/Consolonia.PlatformSupport/readme.md"
+      }
+    ],
+    "archiveSha256": "7174c5e2bb30009c8f3a5410f05093c7e1dbea02995054e4b27f148c0d06675a",
+    "commit": "5c317423e7fe9896d9a4fab412b3fba8c7ef1e7b"
+  },
+  {
+    "repository": "tomlm/Iciclecreek.Avalonia.WindowManager",
+    "archiveUrl": "https://codeload.github.com/tomlm/Iciclecreek.Avalonia.WindowManager/zip/4e57389db02f32f4572146afb7e37304fe7db667",
+    "files": [
+      {
+        "sha256": "60957c2a4732512d8f4f86a8511181d435605a4872a1d4ec0456f6fe302d3ed5",
+        "bytes": 1076,
+        "path": "LICENSE"
+      },
+      {
+        "sha256": "82ca696c0714c4013ccadcf7fcf8d6f8804774f5b8763a7d73076ff16cd927c1",
+        "bytes": 971,
+        "path": "source/Iciclecreek.Avalonia.WindowManager/Extensions.cs"
+      },
+      {
+        "sha256": "3c9d83274e586e45896dd71bca0903d2878240a5a1d5baafd9e3bd6ded7f6878",
+        "bytes": 1860,
+        "path": "source/Iciclecreek.Avalonia.WindowManager/IPortableWindowHost.cs"
+      },
+      {
+        "sha256": "896ee33460bcaa085f5a671de1006a813df27144925d32274c8dec486e243897",
+        "bytes": 1994,
+        "path": "source/Iciclecreek.Avalonia.WindowManager/Iciclecreek.Avalonia.WindowManager.csproj"
+      },
+      {
+        "sha256": "fafae1793b9e5f72ac110ec017e15f1d203765aeb3058d828754d3a72f60eeb2",
+        "bytes": 11362,
+        "path": "source/Iciclecreek.Avalonia.WindowManager/ManagedWindow.axaml"
+      },
+      {
+        "sha256": "4e44422f3fc28923e38324cec8fa778d7406c70ce6295e6c458ff0eb1a11c30c",
+        "bytes": 69552,
+        "path": "source/Iciclecreek.Avalonia.WindowManager/ManagedWindow.axaml.cs"
+      },
+      {
+        "sha256": "fd2ee297d5ce0154622ab70b108f5e13a522c2cd56b2198e357e819e7fdf3fba",
+        "bytes": 6438,
+        "path": "source/Iciclecreek.Avalonia.WindowManager/ManagedWindowHost.cs"
+      },
+      {
+        "sha256": "d2996ea6c615e264c773953e181d0ecf06ce7ac9573f6722d22b90bdf1c69159",
+        "bytes": 14632,
+        "path": "source/Iciclecreek.Avalonia.WindowManager/PortableWindow.cs"
+      },
+      {
+        "sha256": "3f71551ad67f3df78d337ef69d410940eaafcdae05d3d6d688c4936d38e93b92",
+        "bytes": 6765,
+        "path": "source/Iciclecreek.Avalonia.WindowManager/SystemWindowHost.cs"
+      },
+      {
+        "sha256": "3848cca2093d560a3ba5cd6f337bb0741a41905ca79063718af1397e6d8f5dcf",
+        "bytes": 8878,
+        "path": "source/Iciclecreek.Avalonia.WindowManager/WindowManagerTheme.xaml"
+      },
+      {
+        "sha256": "f3806eafe25714d99571c1612938edf4ea23fb28426ed3f380a62eced36c65b0",
+        "bytes": 467,
+        "path": "source/Iciclecreek.Avalonia.WindowManager/WindowManagerTheme.xaml.cs"
+      },
+      {
+        "sha256": "e8541a0322c8d1c0e60378d1d80fbbe856a011d0340ad5efe331ca205dd53be7",
+        "bytes": 1398,
+        "path": "source/Iciclecreek.Avalonia.WindowManager/WindowsPanel.axaml"
+      },
+      {
+        "sha256": "3a27aa0f54e6696468e3a77481304f9de16fc7946f96e5bc370d98628fc28797",
+        "bytes": 8977,
+        "path": "source/Iciclecreek.Avalonia.WindowManager/WindowsPanel.axaml.cs"
+      }
+    ],
+    "archiveSha256": "142d7e5f44262ef2b2b421e8bb7bb6e27b731d11664a33855e91db43c11d67fd",
+    "commit": "4e57389db02f32f4572146afb7e37304fe7db667"
+  }
+]

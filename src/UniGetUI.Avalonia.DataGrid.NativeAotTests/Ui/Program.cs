@@ -17,7 +17,7 @@ using MetadataRows = UniGetUI.Avalonia.Models.DataGridObservableCollection<Accep
 
 namespace Acceptance;
 
-internal static class Program
+internal static partial class Program
 {
     private static int _checks;
     private static string _scenario = "startup";
@@ -40,6 +40,8 @@ internal static class Program
             RunGrid("History");
             RunGrid("Desktop");
             RunGrid("StartMenu");
+            RunCatalogGrid();
+            RunTuiGrids();
             Console.WriteLine($"RESULT\tPASS\tchecks={_checks}\tbackend=headless\tproduction-logic=exact-extracts");
             return 0;
         }

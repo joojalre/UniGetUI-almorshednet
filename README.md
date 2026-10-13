@@ -104,6 +104,8 @@ pwsh ./scripts/publish-nativeaot.ps1 -Platform x64   # or arm64
 
 This publishes `src/UniGetUI.Avalonia/UniGetUI.Avalonia.csproj` as a self-contained NativeAOT build into `artifacts/nativeaot/win-<platform>/`.
 
+The maintained [DataGrid acceptance suite](src/UniGetUI.Avalonia.DataGrid.NativeAotTests/README.md) checks eight desktop/TUI grid configurations in JIT and NativeAOT. The [TUI dependency provenance](docs/third-party/tui-nativeaot/README.md) documents the pinned source fixes, clipboard review corrections, licenses and derived formatting. See [the integration summary](SUMMARY.md) for verification boundaries. Each release architecture still requires its own build and runtime checks.
+
 ### macOS
 
 macOS builds are available from GitHub Releases. Use the `.dmg` for the standard installer experience, or the `.tar.gz` archive for a portable app bundle.

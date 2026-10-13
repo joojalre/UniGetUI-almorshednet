@@ -1,0 +1,162 @@
+diff --git a/upstream/consolonia_consolonia/src/Consolonia.PlatformSupport/WindowsConsoleBuffer.cs b/src/ExternalLibraries.Consolonia.PlatformSupport/WindowsConsoleBuffer.cs
+index dce0b3e..d57cf5a 100644
+--- a/upstream/consolonia_consolonia/src/Consolonia.PlatformSupport/WindowsConsoleBuffer.cs
++++ b/src/ExternalLibraries.Consolonia.PlatformSupport/WindowsConsoleBuffer.cs
+@@ -58,12 +58,12 @@ namespace Consolonia.PlatformSupport
+             Console.SetOut(new StreamWriter(new FileStream(handle, FileAccess.Write)) { AutoFlush = true });
+ 
+             if (!SetConsoleCP(65001) || !SetConsoleOutputCP(65001))
+-                throw GetLastError().GetException();
++                throw new System.ComponentModel.Win32Exception(System.Runtime.InteropServices.Marshal.GetLastPInvokeError());
+ 
+             // set console mode
+             if (!SetConsoleMode(Handle, CONSOLE_OUTPUT_MODE.DISABLE_NEWLINE_AUTO_RETURN |
+                                         CONSOLE_OUTPUT_MODE.ENABLE_LVB_GRID_WORLDWIDE))
+-                throw GetLastError().GetException();
++                throw new System.ComponentModel.Win32Exception(System.Runtime.InteropServices.Marshal.GetLastPInvokeError());
+ 
+             _bufferHeight = Console.BufferHeight;
+             _bufferWidth = Console.BufferWidth;
+diff --git a/upstream/consolonia_consolonia/src/Consolonia.GuiCS/WindowsDriver.cs b/src/ExternalLibraries.Consolonia.GuiCS/WindowsDriver.cs
+index 23c4483..3099fa1 100644
+--- a/upstream/consolonia_consolonia/src/Consolonia.GuiCS/WindowsDriver.cs
++++ b/src/ExternalLibraries.Consolonia.GuiCS/WindowsDriver.cs
+@@ -1,4 +1,4 @@
+-﻿// Adapted from GUI.cs (MIT license)
++// Adapted from GUI.cs (MIT license)
+ 
+ // ReSharper disable All
+ using System;
+@@ -36,13 +36,13 @@ namespace Terminal.Gui
+             get
+             {
+                 if (!GetConsoleMode(InputHandle, out CONSOLE_INPUT_MODE v))
+-                    throw GetLastError().GetException();
++                    throw new System.ComponentModel.Win32Exception(System.Runtime.InteropServices.Marshal.GetLastPInvokeError());
+                 return v;
+             }
+             set
+             {
+                 if (!SetConsoleMode(InputHandle, value))
+-                    throw GetLastError().GetException();
++                    throw new System.ComponentModel.Win32Exception(System.Runtime.InteropServices.Marshal.GetLastPInvokeError());
+             }
+         }
+ 
+@@ -53,7 +53,7 @@ namespace Terminal.Gui
+         {
+             if (!Kernel32.ReadConsoleInput(InputHandle, s_inputBuffer, bufferSize,
+                 out var numberEventsRead))
+-                throw GetLastError().GetException();
++                throw new System.ComponentModel.Win32Exception(System.Runtime.InteropServices.Marshal.GetLastPInvokeError());
+             INPUT_RECORD[] recordsToReturn = new INPUT_RECORD[numberEventsRead];
+             Array.Copy(s_inputBuffer, recordsToReturn, numberEventsRead);
+             return recordsToReturn;
+diff --git a/upstream/consolonia_consolonia/src/Consolonia.GuiCS/.editorconfig b/src/ExternalLibraries.Consolonia.GuiCS/.editorconfig
+index 1cbf660..cbc14d1 100644
+--- a/upstream/consolonia_consolonia/src/Consolonia.GuiCS/.editorconfig
++++ b/src/ExternalLibraries.Consolonia.GuiCS/.editorconfig
+@@ -1,7 +1,2 @@
+-root = true
+-
+-[*.cs]
+-
+-# Disable all .NET analyzers
+-dotnet_analyzer_diagnostic.severity = none
+-dotnet_diagnostic.severity = none 
+\ No newline at end of file
++# Inherit the maintained repository's analyzer policy. The upstream blanket
++# analyzer disable remains preserved only in the original provenance source.
+diff --git a/upstream/dahall_Vanara/PInvoke/Shared/Handles/HANDLEConverter.cs b/src/ExternalLibraries.Vanara.PInvoke.Shared/Handles/HANDLEConverter.cs
+index 0eb150e..de59ac5 100644
+--- a/upstream/dahall_Vanara/PInvoke/Shared/Handles/HANDLEConverter.cs
++++ b/src/ExternalLibraries.Vanara.PInvoke.Shared/Handles/HANDLEConverter.cs
+@@ -1,6 +1,5 @@
+-﻿using System.ComponentModel;
++using System.ComponentModel;
+ using System.Globalization;
+-using Vanara.Extensions.Reflection;
+ 
+ namespace Vanara.PInvoke;
+ 
+@@ -10,7 +9,7 @@ public class HANDLEConverter : TypeConverter
+ {
+ 	/// <inheritdoc/>
+ 	public override bool CanConvertFrom(ITypeDescriptorContext? context, Type sourceType) => sourceType == typeof(string) || sourceType == typeof(int) ||
+-		sourceType == typeof(int) || sourceType.InheritsFrom<IHandle>() || base.CanConvertFrom(context, sourceType);
++		sourceType == typeof(int) || typeof(IHandle).IsAssignableFrom(sourceType) || base.CanConvertFrom(context, sourceType);
+ 
+ 	/// <inheritdoc/>
+ 	public override object? ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object value) => value switch
+diff --git a/upstream/tomlm_Iciclecreek.Avalonia.WindowManager/source/Iciclecreek.Avalonia.WindowManager/Extensions.cs b/src/ExternalLibraries.Iciclecreek.Avalonia.WindowManager/Extensions.cs
+index 283a953..e19f5c2 100644
+--- a/upstream/tomlm_Iciclecreek.Avalonia.WindowManager/source/Iciclecreek.Avalonia.WindowManager/Extensions.cs
++++ b/src/ExternalLibraries.Iciclecreek.Avalonia.WindowManager/Extensions.cs
+@@ -1,32 +1,12 @@
+-﻿using Avalonia;
++using System.Runtime.CompilerServices;
+ using Avalonia.Controls;
+-using Avalonia.Controls.Primitives;
+-using Avalonia.Media;
+-using Avalonia.VisualTree;
+-using System;
+-using System.Linq;
+-using System.Reflection;
+-using System.Threading.Tasks;
+ 
+ namespace Iciclecreek.Avalonia.WindowManager
+ {
+-    internal static class ActivatorEx
++    internal static class WindowClosingEventArgsFactory
+     {
+-        public static T CreateInstance<T>(params object[] args)
+-        {
+-            var types = args?.Select(arg => arg.GetType()).ToArray();
+-            // Get the internal constructor with the specified parameter types
+-            ConstructorInfo constructor = typeof(T).GetConstructor(
+-                BindingFlags.Instance | BindingFlags.NonPublic,
+-                null,
+-                types!,
+-                null
+-            )!;
+-
+-            // Create an instance of the class using the constructor
+-            var result = constructor.Invoke(args);
+-            ArgumentNullException.ThrowIfNull(result);
+-            return (T)result;
+-        }
++        // Avalonia 12.0.4: internal WindowClosingEventArgs(WindowCloseReason, bool).
++        [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
++        internal static extern WindowClosingEventArgs Create(WindowCloseReason reason, bool isProgrammatic);
+     }
+-}
++}
+\ No newline at end of file
+diff --git a/upstream/tomlm_Iciclecreek.Avalonia.WindowManager/source/Iciclecreek.Avalonia.WindowManager/ManagedWindow.axaml.cs b/src/ExternalLibraries.Iciclecreek.Avalonia.WindowManager/ManagedWindow.axaml.cs
+index 009e735..550c3b5 100644
+--- a/upstream/tomlm_Iciclecreek.Avalonia.WindowManager/source/Iciclecreek.Avalonia.WindowManager/ManagedWindow.axaml.cs
++++ b/src/ExternalLibraries.Iciclecreek.Avalonia.WindowManager/ManagedWindow.axaml.cs
+@@ -1,4 +1,4 @@
+-﻿using Avalonia;
++using Avalonia;
+ using Avalonia.Animation;
+ using Avalonia.Controls;
+ using Avalonia.Controls.ApplicationLifetimes;
+@@ -1091,7 +1091,7 @@ public class ManagedWindow : ContentControl
+ 
+         try
+         {
+-            var args = ActivatorEx.CreateInstance<WindowClosingEventArgs>(reason, isProgrammatic);
++            var args = WindowClosingEventArgsFactory.Create(reason, isProgrammatic);
+             if (ShouldCancelClose(args))
+             {
+                 close = false;
+@@ -1139,7 +1139,7 @@ public class ManagedWindow : ContentControl
+                 if (_children.Count > 0)
+                 {
+                     var childArgs = args.CloseReason == WindowCloseReason.WindowClosing ?
+-                        ActivatorEx.CreateInstance<WindowClosingEventArgs>(WindowCloseReason.OwnerWindowClosing, args.IsProgrammatic) :
++                        WindowClosingEventArgsFactory.Create(WindowCloseReason.OwnerWindowClosing, args.IsProgrammatic) :
+                         args;
+ 
+                     foreach (var (child, _) in _children.ToArray())

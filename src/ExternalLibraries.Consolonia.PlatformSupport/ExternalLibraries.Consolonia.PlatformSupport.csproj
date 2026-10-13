@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <TargetFrameworks />
+    <AssemblyName>Consolonia.PlatformSupport</AssemblyName>
+    <PackageId>Consolonia.PlatformSupport</PackageId>
+    <RootNamespace>Consolonia.PlatformSupport</RootNamespace>
+    <Version>12.0.3.14</Version>
+    <AssemblyVersion>12.0.3.14</AssemblyVersion>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <IsPackable>false</IsPackable>
+    <PublishReadyToRun>false</PublishReadyToRun>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AvaloniaAccessUnstablePrivateApis>true</AvaloniaAccessUnstablePrivateApis>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Consolonia.Core" Version="12.0.3.14" />
+    <PackageReference Include="Avalonia" Version="12.0.4" />
+    <PackageReference Include="jinek.X11Clipboard.Fork" Version="1.0.0.1" />
+    <PackageReference Include="Vanara.PInvoke.Kernel32" Version="4.0.4" />
+    <ProjectReference Include="../ExternalLibraries.Consolonia.GuiCS/ExternalLibraries.Consolonia.GuiCS.csproj" />
+    <ProjectReference Include="../ExternalLibraries.Vanara.PInvoke.Shared/ExternalLibraries.Vanara.PInvoke.Shared.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="LICENSE;PROVENANCE.md" Link="ThirdPartyNotices/Consolonia.PlatformSupport/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

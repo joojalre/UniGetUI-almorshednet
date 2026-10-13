@@ -131,6 +131,21 @@ namespace UniGetUI.PackageEngine.PackageClasses
         public static Task SaveForManagerAsync(InstallOptions options, IPackageManager manager) =>
             Task.Run(() => _saveToDisk(options, StoragePath.Get(manager)));
 
+        /// <summary>Persists options or propagates the failure; updates the cache only after writing succeeds.</summary>
+        public static Task SaveForPackageOrThrowAsync(InstallOptions options, IPackage package) =>
+            Task.Run(() => SaveToDiskOrThrow(options, StoragePath.Get(package)));
+
+        public static Task SaveForManagerOrThrowAsync(InstallOptions options, IPackageManager manager) =>
+            Task.Run(() => SaveToDiskOrThrow(options, StoragePath.Get(manager)));
+
+        private static void SaveToDiskOrThrow(InstallOptions options, string key)
+        {
+            if (!TryResolveOptionsPath(key, out string filePath))
+                throw new IOException("Could not resolve a safe installation options path");
+            File.WriteAllText(filePath, options.AsJsonString());
+            _optionsCache[key] = options.Copy();
+        }
+
         /// <summary>
         /// Loads the applicable InstallationOptions, and applies
         /// any required transformations in case that generic options are being used

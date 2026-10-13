@@ -23,13 +23,29 @@ $specs=@(
  @{Name='package-sorter-enum';Source='src/UniGetUI.Avalonia/Models/PackageCollections.cs';Fixture='ProductionPackageSort.cs';Marker='public enum Sorter';Tail=$false},
  @{Name='package-comparison-methods';Source='src/UniGetUI.Avalonia/Models/PackageCollections.cs';Fixture='ProductionPackageSort.cs';Marker='public sealed class ObservablePackageCollection :';Tail=$true},
  @{Name='history-comparer';Source='src/UniGetUI.Avalonia/ViewModels/Pages/LogPages/OperationHistoryRowViewModel.cs';Fixture='ProductionHistorySort.cs';Marker='internal sealed class OperationHistoryRowComparer';Tail=$false},
- @{Name='numeric-version-struct';Source='src/UniGetUI.Core.Tools/Tools.cs';Fixture='ProductionVersion.cs';Marker='public struct Version :';Tail=$false}
+ @{Name='numeric-version-struct';Source='src/UniGetUI.Core.Tools/Tools.cs';Fixture='ProductionVersion.cs';Marker='public struct Version :';Tail=$false},
+ @{Name='catalog-sort-enum';Source='src/UniGetUI.Avalonia/ViewModels/SoftwarePages/SoftwareCatalogViewModel.cs';Fixture='ProductionCatalogSort.cs';Marker='public enum CatalogSortField';Tail=$false},
+ @{Name='catalog-toggle-sort';Source='src/UniGetUI.Avalonia/ViewModels/SoftwarePages/SoftwareCatalogViewModel.cs';Fixture='ProductionCatalogSort.cs';Marker='public void ToggleSort(CatalogSortField field)';Tail=$false},
+ @{Name='catalog-comparison-methods';Source='src/UniGetUI.Avalonia/ViewModels/SoftwarePages/SoftwareCatalogViewModel.cs';Fixture='ProductionCatalogSort.cs';Marker='private static string SortKey(';EndBlock='private CatalogTileViewModel[] SortTiles(';Tail=$false},
+ @{Name='catalog-setup-sort-arrows';Source='src/UniGetUI.Avalonia/Views/SoftwarePages/SoftwareCatalogPage.axaml.cs';Fixture='CatalogView.cs';Marker='private void SetupSortArrows()';Tail=$false},
+ @{Name='catalog-update-sort-arrows';Source='src/UniGetUI.Avalonia/Views/SoftwarePages/SoftwareCatalogPage.axaml.cs';Fixture='CatalogView.cs';Marker='private void UpdateSortArrows()';Tail=$false}
 )
 $records=@(foreach($spec in $specs){
  $source=Get-Content -LiteralPath (Join-Path $RepositoryRoot $spec.Source) -Raw
  $fixture=Get-Content -LiteralPath (Join-Path $FixtureRoot $spec.Fixture) -Raw
- $source=Get-Block $source $spec.Marker
- $fixture=Get-Block $fixture $spec.Marker
+ if($spec.ContainsKey('EndBlock')){
+  # A contiguous range includes expression-bodied methods between two block markers.
+  $sourceStart=$source.IndexOf($spec.Marker,[StringComparison]::Ordinal)
+  $fixtureStart=$fixture.IndexOf($spec.Marker,[StringComparison]::Ordinal)
+  if($sourceStart -lt 0 -or $fixtureStart -lt 0){throw "Missing region start: $($spec.Marker)"}
+  $sourceEnd=$source.IndexOf($spec.EndBlock,[StringComparison]::Ordinal)+(Get-Block $source $spec.EndBlock).Length
+  $fixtureEnd=$fixture.IndexOf($spec.EndBlock,[StringComparison]::Ordinal)+(Get-Block $fixture $spec.EndBlock).Length
+  $source=$source.Substring($sourceStart,$sourceEnd-$sourceStart)
+  $fixture=$fixture.Substring($fixtureStart,$fixtureEnd-$fixtureStart)
+ }else{
+  $source=Get-Block $source $spec.Marker
+  $fixture=Get-Block $fixture $spec.Marker
+ }
  if($spec.Tail){
   $marker='private static int Compare(PackageWrapper a, PackageWrapper b, Sorter sorter)'
   $index=$source.IndexOf($marker,[StringComparison]::Ordinal);if($index -lt 0){throw 'Production comparison marker missing'};$source=$source.Substring($index)
@@ -38,7 +54,10 @@ $records=@(foreach($spec in $specs){
  $sourceHash=Get-Hash $source;$fixtureHash=Get-Hash $fixture
  [ordered]@{Name=$spec.Name;Source=$spec.Source;Fixture=$spec.Fixture;NormalizedProductionSha256=$sourceHash;NormalizedFixtureSha256=$fixtureHash;Matches=($sourceHash -ceq $fixtureHash)}
 })
-$receipt=[ordered]@{VerifiedUtc=[DateTime]::UtcNow.ToString('o');Scope='Exact comparer/enum/version regions; collection metadata scaffolding excluded';Regions=$records;AllMatch=(@($records|Where-Object{-not $_.Matches}).Count -eq 0)}
+$tuiFixture=Join-Path $FixtureRoot 'TuiGrids'
+$tuiProof=& (Join-Path $tuiFixture 'Verify-ProductionGrids.ps1') -Repository $RepositoryRoot -FixtureDirectory $tuiFixture | ConvertFrom-Json
+$tuiManifestHash=(Get-FileHash -LiteralPath (Join-Path $tuiFixture 'addon-manifest.json') -Algorithm SHA256).Hash
+$receipt=[ordered]@{TuiProduction=$tuiProof;TuiFixtureManifestSha256=$tuiManifestHash;VerifiedUtc=[DateTime]::UtcNow.ToString('o');Scope='Exact comparer/enum/version/Catalog sort callback regions; collection metadata scaffolding excluded';Regions=$records;AllMatch=(@($records|Where-Object{-not $_.Matches}).Count -eq 0)}
 $json=$receipt|ConvertTo-Json -Depth 6
 if($OutputPath){$json|Set-Content -LiteralPath $OutputPath -Encoding utf8}
 $json

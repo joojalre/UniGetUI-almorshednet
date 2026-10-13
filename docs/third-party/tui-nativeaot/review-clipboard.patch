@@ -1,0 +1,289 @@
+diff --git a/src/ExternalLibraries.Consolonia.PlatformSupport/Assembly.cs b/src/ExternalLibraries.Consolonia.PlatformSupport/Assembly.cs
+index 08866d613..9a8184832 100644
+--- a/src/ExternalLibraries.Consolonia.PlatformSupport/Assembly.cs
++++ b/src/ExternalLibraries.Consolonia.PlatformSupport/Assembly.cs
+@@ -3,6 +3,7 @@ using System.Runtime.CompilerServices;
+ using Avalonia.Metadata;
+ 
+ [assembly: InternalsVisibleTo("Consolonia.Core.Tests")]
++[assembly: InternalsVisibleTo("UniGetUI.Tui.Tests")]
+ 
+ [assembly: CLSCompliant(false)] //todo: should we make it compliant?
+ 
+diff --git a/src/ExternalLibraries.Consolonia.PlatformSupport/Clipboard/ClipboardProcessRunner.cs b/src/ExternalLibraries.Consolonia.PlatformSupport/Clipboard/ClipboardProcessRunner.cs
+index 39f8faa40..14edebf2e 100644
+--- a/src/ExternalLibraries.Consolonia.PlatformSupport/Clipboard/ClipboardProcessRunner.cs
++++ b/src/ExternalLibraries.Consolonia.PlatformSupport/Clipboard/ClipboardProcessRunner.cs
+@@ -1,6 +1,9 @@
+ using System;
+ using System.Diagnostics;
++using System.IO;
++using System.Text;
+ using System.Threading;
++using System.Threading.Tasks;
+ 
+ namespace Consolonia.PlatformSupport.Clipboard
+ {
+@@ -26,6 +29,77 @@ namespace Consolonia.PlatformSupport.Clipboard
+             return !string.IsNullOrEmpty(value) && !value.Contains("not found", StringComparison.Ordinal);
+         }
+ 
++        public static (int exitCode, string result) ProcessText(
++            string cmd,
++            string arguments,
++            string input = null,
++            bool waitForOutput = true,
++            int timeout = 10000
++        )
++        {
++            string output = string.Empty;
++
++            using var process = new Process();
++
++            process.StartInfo = new ProcessStartInfo
++            {
++                FileName = cmd,
++                Arguments = arguments,
++                RedirectStandardOutput = true,
++                RedirectStandardError = true,
++                RedirectStandardInput = true,
++                UseShellExecute = false,
++                CreateNoWindow = true
++            };
++
++            // TaskCompletionSource<bool> eventHandled = new();
++            process.Start();
++
++            // Drain both pipes while writing/waiting so large clipboard data cannot fill a pipe.
++            using var drainTimeout = new CancellationTokenSource(timeout);
++            var stdout = ReadOutputAsync(process.StandardOutput, waitForOutput ? 16 * 1024 * 1024 : 0, drainTimeout.Token);
++            var stderr = ReadOutputAsync(process.StandardError, 64 * 1024, drainTimeout.Token);
++            var stdin = WriteInputAsync(process.StandardInput.BaseStream, input, drainTimeout.Token);
++
++            if (!process.WaitForExit(timeout))
++            {
++                drainTimeout.Cancel();
++                process.Kill(entireProcessTree: true);
++                process.WaitForExit(1000);
++                string timeoutError =
++                    $@"Process timed out. Command line: {process.StartInfo.FileName} {process.StartInfo.Arguments}.";
++
++                throw new TimeoutException(timeoutError);
++            }
++            // A descendant retaining an inherited pipe must not keep the UI waiting forever.
++            drainTimeout.CancelAfter(1000);
++
++            try
++            {
++                stdin.GetAwaiter().GetResult();
++            }
++            catch (OperationCanceledException) when (drainTimeout.IsCancellationRequested)
++            {
++                throw new TimeoutException("Clipboard command input did not complete within its time limit.");
++            }
++            catch (IOException) when (process.ExitCode != 0)
++            {
++                // Preserve the child's failure when it exits before consuming its input.
++            }
++            var standardOutput = stdout.GetAwaiter().GetResult();
++            var standardError = stderr.GetAwaiter().GetResult();
++            if (waitForOutput && standardOutput.truncated)
++                throw new InvalidOperationException("Clipboard command output exceeded its size or drain-time limit.");
++            if (waitForOutput) output = standardOutput.text;
++
++            if (process.ExitCode > 0)
++                output = $@"Process failed to run. Command line: {cmd} {arguments}.
++										Output: {output}
++										Error: {standardError.text}";
++
++            return (process.ExitCode, output);
++        }
++
+         public static (int exitCode, string result) Process(
+             string cmd,
+             string arguments,
+@@ -75,5 +149,49 @@ namespace Consolonia.PlatformSupport.Clipboard
+ 
+             return (process.ExitCode, output);
+         }
++
++        internal static async Task WriteInputAsync(Stream stream, string input, CancellationToken cancellationToken)
++        {
++            try
++            {
++                if (!string.IsNullOrEmpty(input))
++                {
++                    byte[] bytes = Encoding.UTF8.GetBytes(input);
++                    // WaitAsync also bounds a stream that cannot cancel an in-flight OS write.
++                    await stream.WriteAsync(bytes.AsMemory(), cancellationToken).AsTask()
++                        .WaitAsync(cancellationToken).ConfigureAwait(false);
++                }
++                await stream.FlushAsync(cancellationToken).WaitAsync(cancellationToken).ConfigureAwait(false);
++            }
++            finally
++            {
++                // EOF is required even when an empty string is being copied.
++                // Close the unbuffered pipe, never synchronously flush a StreamWriter here.
++                stream.Close();
++            }
++        }
++
++        private static async Task<(string text, bool truncated)> ReadOutputAsync(StreamReader reader, int limit, CancellationToken cancellationToken)
++        {
++            var output = new StringBuilder();
++            char[] buffer = new char[4096];
++            bool truncated = false;
++            int read;
++            try
++            {
++                while ((read = await reader.ReadAsync(buffer.AsMemory(), cancellationToken).AsTask()
++                    .WaitAsync(cancellationToken).ConfigureAwait(false)) != 0)
++                {
++                    int retained = Math.Min(read, limit - output.Length);
++                    output.Append(buffer, 0, retained);
++                    truncated |= retained != read;
++                }
++            }
++            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
++            {
++                truncated = true;
++            }
++            return (output.ToString(), truncated);
++        }
+     }
+ }
+diff --git a/src/ExternalLibraries.Consolonia.PlatformSupport/Clipboard/MacClipboard.cs b/src/ExternalLibraries.Consolonia.PlatformSupport/Clipboard/MacClipboard.cs
+index a5f5738fe..8bf6f86c1 100644
+--- a/src/ExternalLibraries.Consolonia.PlatformSupport/Clipboard/MacClipboard.cs
++++ b/src/ExternalLibraries.Consolonia.PlatformSupport/Clipboard/MacClipboard.cs
+@@ -49,7 +49,7 @@ namespace Consolonia.PlatformSupport.Clipboard
+             nint ptr = objc_msgSend(_generalPasteboard, _stringForTypeRegister, _nsStringPboardType);
+             nint charArray = objc_msgSend(ptr, _utf8Register);
+ 
+-            return Task.FromResult(Marshal.PtrToStringAnsi(charArray));
++            return Task.FromResult(Marshal.PtrToStringUTF8(charArray));
+         }
+ 
+         public override Task SetTextAsync(string text)
+@@ -81,14 +81,14 @@ namespace Consolonia.PlatformSupport.Clipboard
+             return exitCode == 0 && result.FileExists();
+         }
+ 
+-        [DllImport("/System/Library/Frameworks/AppKit.framework/AppKit", CharSet = CharSet.Unicode)]
+-        private static extern nint objc_getClass(string className);
++        [DllImport("/System/Library/Frameworks/AppKit.framework/AppKit", ExactSpelling = true)]
++        private static extern nint objc_getClass([MarshalAs(UnmanagedType.LPUTF8Str)] string className);
+ 
+         [DllImport("/System/Library/Frameworks/AppKit.framework/AppKit")]
+         private static extern nint objc_msgSend(nint receiver, nint selector);
+ 
+-        [DllImport("/System/Library/Frameworks/AppKit.framework/AppKit", CharSet = CharSet.Unicode)]
+-        private static extern nint objc_msgSend(nint receiver, nint selector, string arg1);
++        [DllImport("/System/Library/Frameworks/AppKit.framework/AppKit", ExactSpelling = true)]
++        private static extern nint objc_msgSend(nint receiver, nint selector, [MarshalAs(UnmanagedType.LPUTF8Str)] string arg1);
+ 
+         [DllImport("/System/Library/Frameworks/AppKit.framework/AppKit")]
+         private static extern nint objc_msgSend(nint receiver, nint selector, nint arg1);
+@@ -96,7 +96,7 @@ namespace Consolonia.PlatformSupport.Clipboard
+         [DllImport("/System/Library/Frameworks/AppKit.framework/AppKit")]
+         private static extern nint objc_msgSend(nint receiver, nint selector, nint arg1, nint arg2);
+ 
+-        [DllImport("/System/Library/Frameworks/AppKit.framework/AppKit", CharSet = CharSet.Unicode)]
+-        private static extern nint sel_registerName(string selectorName);
++        [DllImport("/System/Library/Frameworks/AppKit.framework/AppKit", ExactSpelling = true)]
++        private static extern nint sel_registerName([MarshalAs(UnmanagedType.LPUTF8Str)] string selectorName);
+     }
+ }
+diff --git a/src/ExternalLibraries.Consolonia.PlatformSupport/Clipboard/WslClipboard.cs b/src/ExternalLibraries.Consolonia.PlatformSupport/Clipboard/WslClipboard.cs
+index 545003117..f45dffa02 100644
+--- a/src/ExternalLibraries.Consolonia.PlatformSupport/Clipboard/WslClipboard.cs
++++ b/src/ExternalLibraries.Consolonia.PlatformSupport/Clipboard/WslClipboard.cs
+@@ -1,4 +1,5 @@
+ using System;
++using System.Text;
+ using System.Threading.Tasks;
+ using Consolonia.Core.Infrastructure;
+ 
+@@ -14,6 +15,12 @@ namespace Consolonia.PlatformSupport.Clipboard
+         private static string _powershellPath = string.Empty;
+ 
+         private readonly bool _isSupported;
++        private readonly Func<string, string, string, (int exitCode, string result)> _run =
++            (command, arguments, input) => ClipboardProcessRunner.ProcessText(command, arguments, input, timeout: 10000);
++        private readonly string _command;
++
++        // Clipboard data travels on stdin as base64, never as PowerShell source.
++        internal const string SetTextArguments = "-NoProfile -NonInteractive -Command \"$text = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String([Console]::In.ReadToEnd())); Set-Clipboard -Value $text\"";
+ 
+         public WslClipboard()
+         {
+@@ -29,6 +36,14 @@ namespace Consolonia.PlatformSupport.Clipboard
+             }
+ 
+             _isSupported = !string.IsNullOrEmpty(_powershellPath);
++            _command = _powershellPath;
++        }
++
++        internal WslClipboard(string command, Func<string, string, string, (int exitCode, string result)> run)
++        {
++            _command = command;
++            _run = run;
++            _isSupported = !string.IsNullOrEmpty(command);
+         }
+ 
+         public override Task<string> GetTextAsync()
+@@ -36,7 +51,7 @@ namespace Consolonia.PlatformSupport.Clipboard
+             if (!_isSupported) return Task.FromResult(string.Empty);
+ 
+             (int exitCode, string output) =
+-                ClipboardProcessRunner.Process(_powershellPath, "-noprofile -command \"Get-Clipboard\"");
++                _run(_command, "-noprofile -command \"Get-Clipboard\"", null);
+ 
+             if (exitCode == 0) return Task.FromResult(output);
+ 
+@@ -47,13 +62,11 @@ namespace Consolonia.PlatformSupport.Clipboard
+         {
+             if (_isSupported)
+             {
+-                (int exitCode, string output) = ClipboardProcessRunner.Process(
+-                    _powershellPath,
+-                    $"-noprofile -command \"Set-Clipboard -Value \\\"{text}\\\"\""
+-                );
++                (int exitCode, _) = _run(_command, SetTextArguments,
++                    Convert.ToBase64String(Encoding.UTF8.GetBytes(text ?? string.Empty)));
+ 
+                 if (exitCode != 0)
+-                    throw new InvalidOperationException($"Failed to set clipboard text: {output} using powershell");
++                    throw new InvalidOperationException("Failed to set clipboard text using powershell");
+             }
+ 
+             return Task.CompletedTask;
+diff --git a/src/ExternalLibraries.Consolonia.PlatformSupport/PlatformSupportExtensions.cs b/src/ExternalLibraries.Consolonia.PlatformSupport/PlatformSupportExtensions.cs
+index bf564755b..c1b70fd13 100644
+--- a/src/ExternalLibraries.Consolonia.PlatformSupport/PlatformSupportExtensions.cs
++++ b/src/ExternalLibraries.Consolonia.PlatformSupport/PlatformSupportExtensions.cs
+@@ -1,4 +1,5 @@
+ using System;
++using System.Runtime.CompilerServices;
+ using Avalonia;
+ using Avalonia.Controls;
+ using Avalonia.Input.Platform;
+@@ -112,11 +113,15 @@ namespace Consolonia
+ 
+         internal static IClipboard CreateClipboard(IClipboardImpl clipboardImpl)
+         {
+-            // The constant name lets the trimmer preserve Avalonia's clipboard constructor.
+-            var clipboardType = Type.GetType("Avalonia.Input.Platform.Clipboard, Avalonia.Base", true)!;
+-            return (IClipboard)Activator.CreateInstance(clipboardType, clipboardImpl)!;
++            return (IClipboard)CreateAvaloniaClipboard(clipboardImpl);
+         }
+ 
++        // Avalonia 12.0.4 keeps this wrapper internal. A statically resolved constructor
++        // accessor retains its ownership/disposal contract without reflection activation.
++        [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
++        [return: UnsafeAccessorType("Avalonia.Input.Platform.Clipboard, Avalonia.Base")]
++        private static extern object CreateAvaloniaClipboard(IClipboardImpl clipboardImpl);
++
+         public static bool IsWslPlatform()
+         {
+             return !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("WSL_DISTRO_NAME"));

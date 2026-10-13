@@ -342,7 +342,8 @@ public class SoftwareUpdatesPage : AbstractPackagesPage
         bool? elevated = null,
         bool? interactive = null,
         bool? no_integrity = null,
-        bool waitForCompletion = false)
+        bool waitForCompletion = false,
+        bool background = false)
     {
         List<Task> running = [];
         try
@@ -352,7 +353,7 @@ public class SoftwareUpdatesPage : AbstractPackagesPage
                 var opts = await InstallOptionsFactory.LoadApplicableAsync(
                     pkg, elevated: elevated, interactive: interactive, no_integrity: no_integrity);
                 if (PackageOperation.HasPendingOperation(pkg, OperationType.Update)) continue;
-                var op = new UpdatePackageOperation(pkg, opts);
+                var op = new UpdatePackageOperation(pkg, opts) { IsBackgroundOperation = background };
                 op.OperationSucceeded += (_, _) => TelemetryHandler.UpdatePackage(pkg, TEL_OP_RESULT.SUCCESS);
                 op.OperationFailed += (_, _) => TelemetryHandler.UpdatePackage(pkg, TEL_OP_RESULT.FAILED);
                 AvaloniaOperationRegistry.Add(op);
@@ -430,7 +431,7 @@ public class SoftwareUpdatesPage : AbstractPackagesPage
             }
             else if (CoreData.GetProcessArguments().Contains("--updateapps"))
             {
-                _ = AvaloniaPackageOperationHelper.UpdateAllAsync();
+                _ = AvaloniaPackageOperationHelper.UpdateAllAsync(background: true);
                 ShowUpgradingPackagesNotification(upgradable);
                 Logger.Warn("Automatic install of updates has been enabled via Command Line (user settings have been overriden)");
             }
@@ -494,7 +495,7 @@ public class SoftwareUpdatesPage : AbstractPackagesPage
         if (targets.Count > 0)
         {
             ShowUpgradingPackagesNotification(targets);
-            await LaunchUpdate(targets, waitForCompletion: waitForCompletion);
+            await LaunchUpdate(targets, waitForCompletion: waitForCompletion, background: true);
         }
         else
         {

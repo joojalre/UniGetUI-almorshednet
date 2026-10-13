@@ -1,0 +1,22 @@
+[
+  {
+    "path": "supporting-source/Vanara.ReflectionExtensions.cs",
+    "url": "https://raw.githubusercontent.com/dahall/Vanara/3da05fe4d87bc5de96527fad5c9b7e6058690deb/Core/Extensions/ReflectionExtensions.cs",
+    "sha256": "A04CC402EEA6DB108E4EBC7A0BEA149FE18FB0E97A5514042812746261006C71"
+  },
+  {
+    "path": "supporting-source/Avalonia.WindowClosingEventArgs.cs",
+    "url": "https://raw.githubusercontent.com/AvaloniaUI/Avalonia/12.0.4/src/Avalonia.Controls/WindowClosingEventArgs.cs",
+    "sha256": "2F6B2E87A7FDA527B54FA36E3EAFCC6FDECB2645F6004541C5A18B44C4616310"
+  },
+  {
+    "path": "supporting-source/Vanara.WinCon.cs",
+    "url": "https://raw.githubusercontent.com/dahall/Vanara/3da05fe4d87bc5de96527fad5c9b7e6058690deb/PInvoke/Kernel32/WinCon.cs",
+    "sha256": "910A42697B369D3E37C18D612C3590D07C0475CCF435494BECABAB0275B06A43"
+  },
+  {
+    "path": "supporting-source/Vanara.IHandle.cs",
+    "url": "https://raw.githubusercontent.com/dahall/Vanara/3da05fe4d87bc5de96527fad5c9b7e6058690deb/Core/IHandle.cs",
+    "sha256": "A16524A0A79BBC171D81DBED4CA8160602F754C7E84F66F17262A4844987CABF"
+  }
+]

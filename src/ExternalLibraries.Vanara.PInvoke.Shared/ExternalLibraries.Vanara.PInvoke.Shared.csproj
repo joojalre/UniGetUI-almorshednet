@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <TargetFrameworks />
+    <AssemblyName>Vanara.PInvoke.Shared</AssemblyName>
+    <PackageId>Vanara.PInvoke.Shared</PackageId>
+    <RootNamespace>Vanara.PInvoke</RootNamespace>
+    <Version>4.0.4</Version>
+    <AssemblyVersion>4.0.4.0</AssemblyVersion>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <IsPackable>false</IsPackable>
+    <PublishReadyToRun>false</PublishReadyToRun>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <SignAssembly>true</SignAssembly>
+    <DelaySign>true</DelaySign>
+    <PublicSign>false</PublicSign>
+    <AssemblyOriginatorKeyFile>provenance/vanara.public.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Vanara.Core" Version="4.0.4" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="LICENSE;PROVENANCE.md" Link="ThirdPartyNotices/Vanara.PInvoke.Shared/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

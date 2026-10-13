@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <TargetFrameworks />
+    <AssemblyName>Consolonia.GuiCS</AssemblyName>
+    <PackageId>Consolonia.GuiCS</PackageId>
+    <RootNamespace>Consolonia.GuiCS</RootNamespace>
+    <Version>12.0.3.14</Version>
+    <AssemblyVersion>12.0.3.14</AssemblyVersion>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <IsPackable>false</IsPackable>
+    <PublishReadyToRun>false</PublishReadyToRun>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Vanara.PInvoke.Kernel32" Version="4.0.4" />
+    <ProjectReference Include="../ExternalLibraries.Vanara.PInvoke.Shared/ExternalLibraries.Vanara.PInvoke.Shared.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="LICENSE;PROVENANCE.md" Link="ThirdPartyNotices/Consolonia.GuiCS/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

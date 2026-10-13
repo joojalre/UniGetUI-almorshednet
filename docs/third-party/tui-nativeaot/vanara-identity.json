@@ -1,0 +1,6 @@
+{
+  "publicKeyOnly": true,
+  "identity": "Vanara.PInvoke.Shared, Version=4.0.4.0, Culture=neutral, PublicKeyToken=c37e4080322237fa",
+  "sourcePackage": "Vanara.PInvoke.Shared 4.0.4",
+  "publicKeySha256": "A9A3E1BC56B0D16FF0555D6034D427765A4B4E9B50D989DED88B51EA3BECE93E"
+}

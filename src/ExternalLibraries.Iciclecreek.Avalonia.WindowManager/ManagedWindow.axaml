@@ -1,0 +1,246 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:wm="using:Iciclecreek.Avalonia.WindowManager"
+        x:DataType="wm:ManagedWindow">
+
+  <ControlTheme x:Key="{x:Type wm:ManagedWindow}"
+                TargetType="wm:ManagedWindow">
+    <Setter Property="Background"
+            Value="{DynamicResource ManagedWindow_BackgroundBrush}" />
+    <Setter Property="Foreground"
+            Value="{DynamicResource ManagedWindow_ForegroundBrush}" />
+    <Setter Property="BorderBrush" 
+            Value="{DynamicResource ManagedWindow_BorderBrush}"/>
+    <Setter Property="BorderThickness" 
+            Value="{DynamicResource ManagedWindow_BorderThickness}"/>
+    <Setter Property="BoxShadow" 
+            Value="{DynamicResource ManagedWindow_BoxShadows}"/>
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="WindowDecorations" Value="Full"/>
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate>
+          <!--outer invisible border for resize hit-testing (uses ResizeThickness) -->
+          <Border Name="PART_WindowBorder"
+                  BorderBrush="Transparent"
+                  BorderThickness="{TemplateBinding ResizeThickness}"
+                  Background="Transparent">
+            <!--inner visible border for visual styling -->
+            <Border BorderBrush="{TemplateBinding BorderBrush}"
+                    BorderThickness="{TemplateBinding BorderThickness}"
+                    BoxShadow="{TemplateBinding BoxShadow}"
+                    CornerRadius="{TemplateBinding CornerRadius}">
+              <Grid RowDefinitions="Auto *"
+                    Background="{TemplateBinding Background}">
+              <Grid.KeyBindings>
+                <KeyBinding Gesture="Alt+-"
+                            Command="{Binding $parent[wm:ManagedWindow].ShowSystemMenuCommand}" />
+                <KeyBinding Gesture="Ctrl+F4"
+                            Command="{Binding $parent[wm:ManagedWindow].CloseCommand}" />
+              </Grid.KeyBindings>
+
+              <!--Title Bar-->
+              <Grid Name="PART_TitleBar"
+                    Cursor="Arrow"
+                    ColumnDefinitions="Auto Auto * Auto"
+                    Background="{DynamicResource ManagedWindow_TitleBarBackgroundBrush}">
+                <Grid.Styles>
+                  <Style Selector="Button">
+                    <Setter Property="Background" Value="Transparent"/>
+                  </Style>
+                </Grid.Styles>
+
+                <!--system button-->
+                <Menu Name="PART_SystemMenu"
+                        IsTabStop="True"
+                        Foreground="{DynamicResource ManagedWindow_TitleBarForegroundBrush}">
+                  <MenuItem Name="PART_SystemMenuItem">
+                    <MenuItem.Header>
+                      <ContentControl ContentTemplate="{DynamicResource ManagedWindow_SystemMenuIcon}" />
+                    </MenuItem.Header>
+                    <MenuItem Header="_Restore" Command="{Binding $parent[wm:ManagedWindow].RestoreCommand}">
+                      <MenuItem.Icon>
+                        <ContentControl ContentTemplate="{DynamicResource ManagedWindow_RestoreIcon}" />
+                      </MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem Header="_Move" Command="{Binding $parent[wm:ManagedWindow].MoveCommand}" />
+                    <MenuItem Header="_Size" Command="{Binding $parent[wm:ManagedWindow].SizeCommand}" />
+                    <MenuItem Header="Mi_nimize" Command="{Binding $parent[wm:ManagedWindow].MinimizeCommand}" >
+                      <MenuItem.Icon>
+                        <ContentControl ContentTemplate="{DynamicResource ManagedWindow_MinimizeIcon}" />
+                      </MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem Header="Ma_ximize" Command="{Binding $parent[wm:ManagedWindow].MaximizeCommand}" >
+                      <MenuItem.Icon>
+                        <ContentControl ContentTemplate="{DynamicResource ManagedWindow_MaximizeIcon}" />
+                      </MenuItem.Icon>
+                    </MenuItem>
+                    <Separator/>
+                    <MenuItem Header="_Close" Command="{Binding $parent[wm:ManagedWindow].CloseCommand}" InputGesture="Ctrl+F4" >
+                      <MenuItem.Icon>
+                        <ContentControl ContentTemplate="{DynamicResource ManagedWindow_CloseIcon}" />
+                      </MenuItem.Icon>
+                    </MenuItem>
+                  </MenuItem>
+                </Menu>
+
+                <!-- Icon -->
+                <ContentPresenter Grid.Column="1"
+                                  VerticalAlignment="Center"
+                                  HorizontalAlignment="Center"
+                                  Content="{TemplateBinding Icon}" />
+                <!-- Title -->
+                <TextBlock Name="PART_Title"
+                           Grid.Column="2"
+                           Foreground="{DynamicResource ManagedWindow_TitleBarForegroundBrush}"
+                           VerticalAlignment="Center"
+                           FontFamily="{TemplateBinding FontFamily}"
+                           FontSize="{TemplateBinding FontSize}"
+                           FontWeight="{TemplateBinding FontWeight}"
+                           FontStyle="{TemplateBinding FontStyle}"
+                           Text="{TemplateBinding Title}"/>
+
+                <!-- System Decorations (aka buttons)-->
+                <StackPanel Grid.Column="3"
+                            Orientation="Horizontal"
+                            VerticalAlignment="Center"
+                            HorizontalAlignment="Right"
+                            Spacing="{DynamicResource ManagedWindow_SystemIconSpacing}">
+                  <Button Name="PART_MinimizeButton"
+                          IsTabStop="True"
+                          Foreground="{DynamicResource ManagedWindow_TitleBarForegroundBrush}"
+                          ContentTemplate="{DynamicResource ManagedWindow_MinimizeIcon}" />
+                  <Button Name="PART_MaximizeButton"
+                          IsVisible="False"
+                          IsTabStop="True"
+                          Foreground="{DynamicResource ManagedWindow_TitleBarForegroundBrush}"
+                          ContentTemplate="{DynamicResource ManagedWindow_MaximizeIcon}" />
+                  <Button Name="PART_RestoreButton"
+                          IsVisible="False"
+                          IsTabStop="True"
+                          Foreground="{DynamicResource ManagedWindow_TitleBarForegroundBrush}"
+                          ContentTemplate="{DynamicResource ManagedWindow_RestoreIcon}" />
+                  <Button Name="PART_CloseButton"
+                          IsTabStop="True"
+                          Foreground="{DynamicResource ManagedWindow_TitleBarForegroundBrush}"
+                          ContentTemplate="{DynamicResource ManagedWindow_CloseIcon}" />
+                </StackPanel>
+              </Grid>
+
+              <!-- window content-->
+              <ContentPresenter Grid.Row="1"
+                                Name="PART_ContentPresenter"
+                                ClipToBounds="True"
+                                KeyboardNavigation.TabNavigation="Continue"
+                                Margin="{TemplateBinding Margin}"
+                                Padding="{TemplateBinding Padding}"
+                                ContentTemplate="{TemplateBinding ContentTemplate}"
+                                Content="{TemplateBinding Content}" />
+
+              <Panel Name="PART_ModalOverlay"
+                     Grid.RowSpan="2"
+                     IsVisible="false"
+                     Background="{DynamicResource ManagedWindow_ModalBackgroundBrush}">
+              </Panel>
+            </Grid>
+            </Border>
+          </Border>
+
+
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+
+    <Style Selector="^ /template/ TextBlock#PART_Title">
+      <Setter Property="Margin" Value="{DynamicResource ManagedWindow_TitleMargin}"/>
+    </Style>
+
+    <!-- window state styles -->
+
+    <!--minimized -->
+    <Style Selector="^:minimized /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="IsVisible" Value="False"/>
+    </Style>
+    <Style Selector="^:minimized /template/ Button#PART_MinimizeButton">
+      <Setter Property="IsVisible" Value="False"/>
+    </Style>
+    <Style Selector="^:minimized /template/ Button#PART_MaximizeRestoreButton">
+      <Setter Property="IsVisible" Value="False"/>
+    </Style>
+    <Style Selector="^:minimized /template/ Button#PART_CloseButton">
+      <Setter Property="IsVisible" Value="False"/>
+    </Style>
+
+    <!-- window is being moved -->
+    <Style Selector="^:moving /template/ Panel#PART_ModalOverlay">
+      <Setter Property="Cursor" Value="SizeAll"/>
+      <Setter Property="IsVisible" Value="True"/>
+    </Style>
+
+    <!-- window is being sized -->
+    <Style Selector="^:sizing /template/ Panel#PART_ModalOverlay">
+      <Setter Property="Cursor" Value="SizeAll"/>
+      <Setter Property="IsVisible" Value="True"/>
+    </Style>
+
+    <!--maximized-->
+    <Style Selector="^:maximized /template/ Border#PART_WindowBorder">
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="BoxShadow" Value="0 0 0 Transparent"/>
+    </Style>
+
+    <Style Selector="^:maximized /template/ Button#PART_RestoreButton" >
+      <Setter Property="IsVisible" Value="True"/>
+    </Style>
+
+    <!--normal-->
+    <Style Selector="^:normal /template/ Button#PART_MaximizeButton" >
+      <Setter Property="IsVisible" Value="True"/>
+    </Style>
+
+    <!-- activated -->
+    <Style Selector="^:active">
+      <Setter Property="BorderBrush" Value="{DynamicResource ManagedWindow_Active_BorderBrush}"/>
+    </Style>
+
+    <Style Selector="^:active /template/ Grid#PART_TitleBar">
+      <Setter Property="Background" Value="{DynamicResource ManagedWindow_Active_TitleBarBackgroundBrush}"/>
+    </Style>
+
+    <Style Selector="^:active /template/ Grid#PART_TitleBar > TextBlock">
+      <Setter Property="Foreground" Value="{DynamicResource ManagedWindow_Active_TitleBarForegroundBrush}"/>
+    </Style>
+
+    <Style Selector="^:active /template/ Grid#PART_TitleBar > Button">
+      <Setter Property="Foreground" Value="{DynamicResource ManagedWindow_Active_TitleBarForegroundBrush}"/>
+    </Style>
+
+    <!--no border -->
+    <Style Selector="^:noborder /template/ Border#PART_WindowBorder">
+      <Setter Property="BorderThickness" Value="0"/>
+    </Style>
+
+    <!--no titlebar -->
+    <Style Selector="^:notitle /template/ Grid#PART_TitleBar">
+      <Setter Property="IsVisible" Value="False"/>
+    </Style>
+
+    <!-- dialog state styles -->
+
+    <!-- window is a dialog -->
+    <Style Selector="^:fixedsize /template/ Border#PART_WindowBorder">
+      <Setter Property="BorderThickness" Value="0"/>
+    </Style>
+
+    <!-- window has a dialog -->
+    <Style Selector="^:hasmodal /template/ Panel#PART_ModalOverlay">
+      <Setter Property="IsVisible" Value="True"/>
+    </Style>
+    <Style Selector="^:hasmodal /template/ Panel#PART_ContentPresenter">
+      <Setter Property="IsEnabled" Value="False"/>
+    </Style>
+
+  </ControlTheme>
+
+</ResourceDictionary>
+

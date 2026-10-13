@@ -1,0 +1,574 @@
+{
+  "formatter": "dotnet format whitespace src --folder --verbosity minimal --exclude ExternalLibraries.Avalonia.DataGrid/",
+  "proof": "Roslyn raw token kind/exact text including structured trivia under every per-file conditional symbol combination; strict UTF8 with explicit Windows1252 fallback",
+  "maximumSymbolCombinations": 4,
+  "encodingCorrection": "Preserved eight original em-dashes and nine nonbreaking spaces in HRESULT.Values.cs comments, converted explicitly from Windows1252 to UTF8.",
+  "sourceChanges": [
+    {
+      "path": "src/ExternalLibraries.Consolonia.GuiCS/Assembly.cs",
+      "beforeSha256": "fffd8ee846a34c5d4bfced4d874dad0570f72048e928d7ba03d3cab52f4dca0b",
+      "afterSha256": "1070db435c93d8629b0e5ae609e9edb646e59c522c4d327c3cc9376151e48a28"
+    },
+    {
+      "path": "src/ExternalLibraries.Consolonia.GuiCS/binding.cs",
+      "beforeSha256": "c7d25aecda78c40d3034298a4e521e340850512e70cfa8230e19616696867ee2",
+      "afterSha256": "27cb700924c0ab1b000a6b5b2980a195e7b4588e069ce3f32c7d2497b06581b2"
+    },
+    {
+      "path": "src/ExternalLibraries.Consolonia.GuiCS/constants.cs",
+      "beforeSha256": "05ab5efedd9e82a5e2d865212cc821112d85f6304eb1460cab88d5698ce442f5",
+      "afterSha256": "a8684c3d005f03921b983f104905df9a8253c132b5cdd09766be2250c6bcd5af"
+    },
+    {
+      "path": "src/ExternalLibraries.Consolonia.GuiCS/CursorVisibility.cs",
+      "beforeSha256": "843696bb78cd83677a1d3ca91802d203eaf8cf548702def8bb64b2404c5fef1a",
+      "afterSha256": "3cd72efb6c6e8d6dab5d269ffe12cc0608fa89bab2310056e83ab7f4c7a47c61"
+    },
+    {
+      "path": "src/ExternalLibraries.Consolonia.GuiCS/Event.cs",
+      "beforeSha256": "232bf649f097af6c7379d21fcea7b9d64e5a9c848e3f8b0203bb1f509a02c25a",
+      "afterSha256": "04958dfb19fabc79abb243fe17584401fec603259f8bb90642789a891943ed4f"
+    },
+    {
+      "path": "src/ExternalLibraries.Consolonia.GuiCS/handles.cs",
+      "beforeSha256": "63463a8bec9eb231bf6235b1bfe2ecdb88f7276970277b521b660effd13cb2ea",
+      "afterSha256": "e6e90a8e09eddf6af399870120ce403240ef5e1f7fec0b8feae6ced31c9a960d"
+    },
+    {
+      "path": "src/ExternalLibraries.Consolonia.GuiCS/Point.cs",
+      "beforeSha256": "1a5a59c78d8019a41b96d04c2d228bdc1f2c019a754dd04902516006643c200c",
+      "afterSha256": "aecc47b20fdcac9ecbe61c6858ff0b90a9837e7dc1c5449c2a9bf1429f8494e3"
+    },
+    {
+      "path": "src/ExternalLibraries.Consolonia.GuiCS/Size.cs",
+      "beforeSha256": "929617f5be352aeb8e837b131fbfa74efb47bbd569c70bf4f391c37d0e3ede05",
+      "afterSha256": "3e4cc64ca044a1182cf27824cba75db1f9ba1ec76a8ce122fd8ff372d6467a30"
+    },
+    {
+      "path": "src/ExternalLibraries.Consolonia.GuiCS/UnmanagedLibrary.cs",
+      "beforeSha256": "badb87dd80d04dc2b9587761a69cc5c073e41346b93d012068a0c51cf7f0791b",
+      "afterSha256": "7d6fe329ef25b78d4f9343498ca4f74ca45fb997b2399d54a273ce9ee81b3cb2"
+    },
+    {
+      "path": "src/ExternalLibraries.Consolonia.GuiCS/WindowsDriver.cs",
+      "beforeSha256": "30ae03d682eaeb03f8b6d6f4b8c9b92ce29ef6adf00487e165f4716eda70abc4",
+      "afterSha256": "88d2a83c05300975348a64cc50d7a7698852507330dfaa7099dc55e4b221e573"
+    },
+    {
+      "path": "src/ExternalLibraries.Consolonia.PlatformSupport/Assembly.cs",
+      "beforeSha256": "b79dfce3408c2b929dacac9b849db390875b591a595ed1bdc248da132938d160",
+      "afterSha256": "1b057ed5a533104e14aa6c564aeb698005ee02936f4327c50af22b0ca9603adb"
+    },
+    {
+      "path": "src/ExternalLibraries.Consolonia.PlatformSupport/CursesConsole.cs",
+      "beforeSha256": "1171a302e68a9b4d9dcdb87321b138f165807005f8f1e76432dfb77e227b01bf",
+      "afterSha256": "95ed8c52c1ea29ee6691ea3e9b08d876a7d6fa0e1f29700980915356a3fc07f7"
+    },
+    {
+      "path": "src/ExternalLibraries.Consolonia.PlatformSupport/CursesConsole.Kitty.cs",
+      "beforeSha256": "e2db982875c47449d8a2f91341484474e662da6d90b8b2251ca5bc65c1211ced",
+      "afterSha256": "6c1920e32efc02627ffe7d893e396f8619e556ba37de6893bc328b0d5f005640"
+    },
+    {
+      "path": "src/ExternalLibraries.Consolonia.PlatformSupport/Gpm.cs",
+      "beforeSha256": "6b659fe3e1eae91117781b3d31ca5e5221b10dc478c5172a6f3395a756e09549",
+      "afterSha256": "aca5d3c739025c563fd3b0ee703dd129cd89782474ce686b1b1542ed420dd2c5"
+    },
+    {
+      "path": "src/ExternalLibraries.Consolonia.PlatformSupport/GpmMonitor.cs",
+      "beforeSha256": "da3523c3c35cacfe0d37d31bc3962aecc8a7261ccd4a2c80563aaa5d099919d8",
+      "afterSha256": "2b60b4b1202ab152285fdf1be149b1e3842ccd800df6382840a11adb5bba83bc"
+    },
+    {
+      "path": "src/ExternalLibraries.Consolonia.PlatformSupport/Helpers.cs",
+      "beforeSha256": "d75141b3ae5addd05b045f28d0b26ce5568122648c4e2dfd886a2a1287a23802",
+      "afterSha256": "ee5f8043ceb4912df9408c1531ab34dd8727ebbd7680be44316ec183fd842c95"
+    },
+    {
+      "path": "src/ExternalLibraries.Consolonia.PlatformSupport/PlatformSupportExtensions.cs",
+      "beforeSha256": "0814f82b9dc58ced3ff0f8d1263ae3fbe2cea27a8dbafe6c7e0c8a563850483e",
+      "afterSha256": "44cb6cbead024769f52771ee6a3f2c9522c5ef450bed846f72a9fb7c3ad15343"
+    },
+    {
+      "path": "src/ExternalLibraries.Consolonia.PlatformSupport/Win32Console.cs",
+      "beforeSha256": "e1e018441e8763a2ab19850b401ac1504d279838630565482a09ea631795f4f2",
+      "afterSha256": "da9c3636db89d7fd30db4b8ea3b2d8cc567b27f7e1982a884004ddf598c18e9c"
+    },
+    {
+      "path": "src/ExternalLibraries.Consolonia.PlatformSupport/WindowsConsoleBuffer.cs",
+      "beforeSha256": "b1e4a81677748d838ff4541a2c7736f3f06349585a33718b92719a1cf43c39b3",
+      "afterSha256": "d0c5c1243d5598f07dea71f0e03a6470f39438caee1dfa02dd1c423738b005e3"
+    },
+    {
+      "path": "src/ExternalLibraries.Consolonia.PlatformSupport/WindowsLegacyConsoleOutput.cs",
+      "beforeSha256": "47e3aa8e6f7093b9270e5825c2faac94c2a2d51c33e4a02ddfe7fab7e4fc5f8b",
+      "afterSha256": "d8550998fb99346c6c86426b0a65124871fa9d30f40ace1d0ac34fced3fefc7c"
+    },
+    {
+      "path": "src/ExternalLibraries.Iciclecreek.Avalonia.WindowManager/Extensions.cs",
+      "beforeSha256": "4ec86ae4f71503265d333fa48fd9b7d3226ee75ae0f22a417a61ca9027d13ab1",
+      "afterSha256": "ec40b659d19179b64fd932e57503c0f3d4af5641199a341db540d4672c7b1cab"
+    },
+    {
+      "path": "src/ExternalLibraries.Iciclecreek.Avalonia.WindowManager/IPortableWindowHost.cs",
+      "beforeSha256": "3c9d83274e586e45896dd71bca0903d2878240a5a1d5baafd9e3bd6ded7f6878",
+      "afterSha256": "1f2331c8df7375bbe57284ed7c5d067a8a610ffd6a5a112672c1fff219ee25d9"
+    },
+    {
+      "path": "src/ExternalLibraries.Iciclecreek.Avalonia.WindowManager/ManagedWindow.axaml.cs",
+      "beforeSha256": "5d9c36dcc174746aa9ee7ae9061b7fe1a64de5bebf83b39a1c01c204b8f6b617",
+      "afterSha256": "2ac7176d1088e0b10cd529b2c4c84b42602174349e2d22c6404eadf910576cf7"
+    },
+    {
+      "path": "src/ExternalLibraries.Iciclecreek.Avalonia.WindowManager/ManagedWindowHost.cs",
+      "beforeSha256": "fd2ee297d5ce0154622ab70b108f5e13a522c2cd56b2198e357e819e7fdf3fba",
+      "afterSha256": "0d6187faf835d13b25808feba678f91f2354f4b641d616243e2b1e20952e6fc1"
+    },
+    {
+      "path": "src/ExternalLibraries.Iciclecreek.Avalonia.WindowManager/PortableWindow.cs",
+      "beforeSha256": "d2996ea6c615e264c773953e181d0ecf06ce7ac9573f6722d22b90bdf1c69159",
+      "afterSha256": "9c7d639ff9a578c972813e2e12cbe676cdf5d1764398cbba636a7512103225d7"
+    },
+    {
+      "path": "src/ExternalLibraries.Iciclecreek.Avalonia.WindowManager/SystemWindowHost.cs",
+      "beforeSha256": "3f71551ad67f3df78d337ef69d410940eaafcdae05d3d6d688c4936d38e93b92",
+      "afterSha256": "1879e4f8f54f51f37c1c7695f37f6166cc8fbcc95851f3e040e22c2dda358e50"
+    },
+    {
+      "path": "src/ExternalLibraries.Iciclecreek.Avalonia.WindowManager/WindowManagerTheme.xaml.cs",
+      "beforeSha256": "f3806eafe25714d99571c1612938edf4ea23fb28426ed3f380a62eced36c65b0",
+      "afterSha256": "64ca061a12053bfa6029e35db3023007753bcdf2e099bfa948ea9542048e4f89"
+    },
+    {
+      "path": "src/ExternalLibraries.Iciclecreek.Avalonia.WindowManager/WindowsPanel.axaml.cs",
+      "beforeSha256": "3a27aa0f54e6696468e3a77481304f9de16fc7946f96e5bc370d98628fc28797",
+      "afterSha256": "b707682a308eb75bc51f04529fcce9b72d1a8d654fec516d22d7d1a4b3c5d234"
+    },
+    {
+      "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/AsmDef.cs",
+      "beforeSha256": "2efb6765a8eb4bcd68cbf5d23981e33969b95729350264fa1f1a1ac68667ffc2",
+      "afterSha256": "5949a54db115f6071da5981df6580efff2518b019a4f8ea6b6f15199d6d9268c"
+    },
+    {
+      "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/AssociateAttribute.cs",
+      "beforeSha256": "501f987b3c57c43f251b49a4a6d4301b2e709e85c285d2823aa34b1dc13cc9bf",
+      "afterSha256": "a6902b7a9795f1671663e33bdfeb636a7934bc64f5c6a9607b1bfc897e1aa704"
+    },
+    {
+      "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/AssociateStringAttribute.cs",
+      "beforeSha256": "66cf1ac573c1b7f47f85b9ba4883174f63c87933cddcfd0c8c651664c8daac0e",
+      "afterSha256": "99140fb5dab831dceea5307b6bdc1ec317b0da44bc54092f601e7b2ebf51b287"
+    },
+    {
+      "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/Cfg.cs",
+      "beforeSha256": "f3729473cb6073a739bc22730a3df50a7e409e0aad1bbafb063261c1587441cc",
+      "afterSha256": "dfe5dd637881a581ae414ed1e5c7b2d71d156d805188c11bfa4507f4fbc05e05"
+    },
+    {
+      "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/CfgMgr32.cs",
+      "beforeSha256": "39ecd566a7c32150eefe72018732d2f2514fb0160a6eb1d19bfdb2fb21e62b63",
+      "afterSha256": "aeafc28437a8f30fc6cd448f15c4222bb5324f60e84de9ebfe27f0c6ac09e48e"
+    },
+    {
+      "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/ErrorHelper.cs",
+      "beforeSha256": "2d3979ada46b62268175d69d95ee30f630fbcabe27408a44e22621f3c1e29ab1",
+      "afterSha256": "4bc0e876a7ff2fbdc8b13b9a284a3261e86c67892dab5bc70cc9a7875fc65d9e"
+    },
+    {
+      "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/FieldValueHash.cs",
+      "beforeSha256": "0eb4d44389c2d9c702a0c878f0959bdd1aa86d6c6b1261bdea38a0059565e0d3",
+      "afterSha256": "8af160b253164205298256b69e737056fc8a6ce4f237d99af868cc9ab2f3b8fa"
+    },
+    {
+      "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/FunctionHelper.cs",
+      "beforeSha256": "05feab7fb1cb19d8a38ceccc5155b7fd595244e0910bce2330318af8b342cf3e",
+      "afterSha256": "91722971d552ee8894ddc8cce9f5aa79368f2f6d5d3323580fab3c94c67fa520"
+    },
+    {
+      "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/IndirectResource.cs",
+      "beforeSha256": "1dd99eb7918484c4586d380c0e195b6635b6f5ccbdc01097fd6affc9dbd22b61",
+      "afterSha256": "304f94740c06da386934c2b1ad43f2bfa447bf86ffa97de1aca8259240409e0e"
+    },
+    {
+      "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/IndirectString.cs",
+      "beforeSha256": "161f699b3bbb16f928620540cd6312596e8c44f75ccf4d9ce8eb716eda770b82",
+      "afterSha256": "267c01d953e6f76df01625b5b86900f6fe836203939a5d2ece5c72ca66cef2ec"
+    },
+    {
+      "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/Lib.cs",
+      "beforeSha256": "9030fc0eece7a8b86d22fe3ad8aa54d471910db43993b4432af63fe6efd7541d",
+      "afterSha256": "0d03009017bb364820331618f08f32a0459129eabe7dc6e96485cb93b13a6a5a"
+    },
+    {
+      "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/OverlappedAsyncBase.cs",
+      "beforeSha256": "414bf8ca8d8567a36897bfc262c30df9a20ccdf33611a3cb3d8b9c9ba260c6e9",
+      "afterSha256": "bec5ccbf0ef7ae36ba5158f7a897c9f8987a82e7a3f177bec2a9ee841e6de3a6"
+    },
+    {
+      "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/PInvokeDataAttribute.cs",
+      "beforeSha256": "6ef663420d5adf366211123d3c41cab0c263c31375b974d6be9728338d1733cf",
+      "afterSha256": "b166f8c12e2facd857dafefc2a49864d8604c4a38b7bdb8636a37c348503c286"
+    },
+    {
+      "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/Registry.cs",
+      "beforeSha256": "733a838c0452221fd12eb80eee21187a8daae4ff98ce136eb95973aa699acec2",
+      "afterSha256": "a8f0fe73970d0c0c5e3e25102006095e9912e3f1dc1cad1afa5a5b50c8b91afd"
+    },
+    {
+      "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/RegStr.cs",
+      "beforeSha256": "1f360f4a9947654006ca91b6e38ec7d7517eb9ac228636c2fc66daf79cf15036",
+      "afterSha256": "5af76d5d2d5e3c995ea5af3174738356744449c47af1cff7d5d6afd9173be42d"
+    },
+    {
+      "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/ResourceId.cs",
+      "beforeSha256": "4675dba53463dfc7aa193e0671a60bd12aae29af6aa07402669ec1b0f022487d",
+      "afterSha256": "1edf451399945176a788a23f2b1266a34d63b69d1e5f97793a8288437aa24e10"
+    },
+    {
+      "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/SdkDdkVer.cs",
+      "beforeSha256": "3f1032ded59d7788cc7c6d3736812875808f33b84821fbc74304e797114584e3",
+      "afterSha256": "7f8dd651daa44fe2ba5eb63de3d0fceaba623ea96ff4b7f820d52334ac612020"
+    },
+    {
+      "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/ShTypes.cs",
+      "beforeSha256": "772665d0579af87a8ca94c6db8bed0fda333958b2b38cf7d1695d789854b1026",
+      "afterSha256": "a568996d8548f404ef1d1237c255ad340fdd352b5a59c25c882a5fdba6b1b29f"
+    },
+    {
+      "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/StructHelper.cs",
+      "beforeSha256": "c2e753eb3414ee4e9384c972c41057ab6bef01a629453f14428d1b9f94e3a448",
+      "afterSha256": "3d9b00edd47b8cfcb97a14636d8e3af7652d67ace76a7906a0515c8c8f3b9032"
+    },
+    {
+      "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/Wdm.cs",
+      "beforeSha256": "e8b44ffe02ccac1a253f6d2951d2c05065e76b8ee5c926c0572e8108f61deb55",
+      "afterSha256": "802808c6e4eca21b8f9833e60267f3afeeaaba525e0d4f215adf16c2421faf21"
+    },
+    {
+      "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/BkwdComp/EnumeratorToEnumVariantMarshaler.cs",
+      "beforeSha256": "1f115f0ee757af96841fd342540b52ae4573ae3da7e2d6eb2dd4878b00b2def0",
+      "afterSha256": "acd371627810131c532a70f6cc4f2fcef638981596fc66e20e478be203b121a2"
+    },
+    {
+      "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/Collections/IEnumFromCom.cs",
+      "beforeSha256": "23a7d7334e7eaa313b0bbb2bcec87cd229ffb8780122bf1f21391f3a6b781fa1",
+      "afterSha256": "dddc966f34ee3e144c97914eaedd9d69a9d9e8531cc9a12fbf286d096bc807e6"
+    },
+    {
+      "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/Collections/IEnumGenerics.cs",
+      "beforeSha256": "9fea316defa42d9d8efec742e1c1d6025a8ac469e20867416f9d3eb352c2f5e4",
+      "afterSha256": "15c4d5740787abff5dabff354c1699b34bf912e0ed715321bacc8b5cd5fa040a"
+    },
+    {
+      "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/Handles/HANDLE.cs",
+      "beforeSha256": "03284397f02d12fc8a4da267d9c1ac99ed25d6a71915fbb80aa056691ad5e076",
+      "afterSha256": "909d85edf73f146ab82b9c35c6d584e1d297db5a4de35144ecd11802e8dfcf83"
+    },
+    {
+      "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/Handles/HANDLEConverter.cs",
+      "beforeSha256": "0b5bca6699c5e01ff8d9b1d915ae30eb6542ac4ce9648f37aaa5d5f7e0f1e860",
+      "afterSha256": "e1ec90411873bb75b62bf3c59ffdfb1e8fa42918356c79e6c6032e1ea4781591"
+    },
+    {
+      "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/Handles/IHandle.cs",
+      "beforeSha256": "0d2873868334b0aa26acaa5cbc8f4523c1eef65d1cb9cfca37960db526a9bd71",
+      "afterSha256": "348a651f88e9cf1319f7df419484f3c7a4867e864927b4d58277b4c2cbaffd3a"
+    },
+    {
+      "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/Handles/SafeHANDLE.cs",
+      "beforeSha256": "166e3bc138c616528ce9f2bbd3f8c59fa6a3d823dec02962aef84bf7cd023d70",
+      "afterSha256": "cfbc0a1b995ff53c23efebe805fd995f187e3cf5a1a57e017e9ad33dc0a22f9c"
+    },
+    {
+      "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/InteropServices/CoTaskMemStringMarshaler.cs",
+      "beforeSha256": "c8be4bc79f352ecdb4e705032c56eb0be21e532ff53bfc31415baa13ca7fec7a",
+      "afterSha256": "ffd2c4c60fcaf4aaf3b33791991a0ecdba76929efcdbb2911a2ff76cda892275"
+    },
+    {
+      "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/InteropServices/GenericStringMarshaler.cs",
+      "beforeSha256": "a3837cbab942e747c61e9b25ccf8d6ed2884b65f02be8b2af36f218b73362859",
+      "afterSha256": "8f2e6837d2670406f817e479386497f8d35501565c805e2720ee52328f4fd622"
+    },
+    {
+      "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/InteropServices/NullTermStringArrayMarshaler.cs",
+      "beforeSha256": "2fb0b52adfd1a6896b4b3d1d03e34d2d6eda124a11951f1393c741d9e30ab291",
+      "afterSha256": "281a904ee49ad0aabfb325cc9d03002c97a5ba01122c19b7c36375e75d96d1a1"
+    },
+    {
+      "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/InteropServices/SafeAnysizeStruct.cs",
+      "beforeSha256": "b58e1cdd680e21802244b340b7d1566f85cdffee9a1600ce1ef46e9c94de3d87",
+      "afterSha256": "07c649a213265ea94c1d885f329bde3aa4f46e60ce090c468f8adccd4df41818"
+    },
+    {
+      "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/InteropServices/SafeElementArray.cs",
+      "beforeSha256": "7de7129b9099be8c53c6f3087c5fc01c765bff68d852a3c736c87b2ca889da01",
+      "afterSha256": "84f53c52e6bdc1ffe092be5973653aab46e25d20c8e02080634ba33ec2997a82"
+    },
+    {
+      "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/InteropServices/SafeNativeArray.cs",
+      "beforeSha256": "62cfce9b1c86636de098bebbf0145fb47e0f7d3d05e2c65c58a7e5b38b74fdb3",
+      "afterSha256": "349b824235f5c5fa59130480a42c90d953549c24087caaf45cf880a52fd9954a"
+    },
+    {
+      "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/InteropServices/SafeNativeLinkedList.cs",
+      "beforeSha256": "c311ef730053a2ad5b8b966a4bf014925d533a065037faff9ec9d420ba26f8b0",
+      "afterSha256": "8da2bc7c52c0a10cf7abb9b1bbe15c2010fd8b6bc1f4ae5b621165f7e6d95882"
+    },
+    {
+      "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/InteropServices/SafeNativeListBase.cs",
+      "beforeSha256": "28e264059d29ed7cb4c8f54148f22c812517a6aab7af9b0a2dde33cfee83da70",
+      "afterSha256": "691c9cb5cab481b7cc2f0e775311ffa17d2f8987bed762cd020b71a3e5695b18"
+    },
+    {
+      "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/InteropServices/StringPtrArrayMarshaler.cs",
+      "beforeSha256": "46b462c5ac9af9e490bce5d6dded6c3b7be053dc46e544b36b4f0fb210889504",
+      "afterSha256": "3699963e7663bcf173b30e6c04f1567cbce04d10655b80e477e0250b318ad9f4"
+    },
+    {
+      "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/ObjBase/STGM.cs",
+      "beforeSha256": "571123ea567f9ff43a9c56dd735275882f23de8cd6e99b3d1dfbfc2529ca429b",
+      "afterSha256": "b4ba593e0d525b14236cd7ea403ed1ad528d3918ec383298e82afa89315896e7"
+    },
+    {
+      "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/Reason/SystemShutDownReason.cs",
+      "beforeSha256": "6af41b6a4a3f5fd11983da024146a8ad31edb1bc6897cd876e542a78bd6c7bc2",
+      "afterSha256": "0077fab419c5becfcb97b9f5179683ee6dff3a55808f70b21229e1e23dfb03ab"
+    },
+    {
+      "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/UrlMon/URLZONE.cs",
+      "beforeSha256": "c61f90da6042e89bc98a9727578ed5a35322c57699e9f1cd98d54c29b9d5a490",
+      "afterSha256": "e3c8ea2f390926b066b449d428296e4b1ae5a6c645e8481efb9b9a1512c4412a"
+    },
+    {
+      "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/WinBase/OFSTRUCT.cs",
+      "beforeSha256": "57ff7ede91c092eb97ec0f728ad7db31037ae8091fc6ae1d1473b90b630e5a60",
+      "afterSha256": "c56f5cfcd27623ccc67eb55e4e5a8ff43e59f5650b163a3168a320dbbfb6d249"
+    },
+    {
+      "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/WinBase/PFILETIME.cs",
+      "beforeSha256": "65b87a4d76aa64cc052dde0acefa23c56fea90202b86f2e927dcc7bbae3bfc6d",
+      "afterSha256": "de8ed6c0ad757f8e13b1b382795b3ab907de3889ee715ab249f95e83dbc493f3"
+    },
+    {
+      "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/WinBase/SECURITY_ATTRIBUTES.cs",
+      "beforeSha256": "369b45891503b59ffd2d148b446503aa0999a7489d0eb78a8b9f135b16bbba5b",
+      "afterSha256": "6145000cc2253467eab713365c0120ef2d207b1e13927be82902b224d2ec75fa"
+    },
+    {
+      "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/WinBase/SYSTEMTIME.cs",
+      "beforeSha256": "8f835253bea5a7da91c8ba6ae40b867a552682efd6145ea97e51bb62c2d69c6f",
+      "afterSha256": "eb04cbe968b09a92ab7d0185dc176b463bcc3430f9b278398497bc6edec78dfe"
+    },
+    {
+      "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/WinBase/WIN32_FIND_DATA.cs",
+      "beforeSha256": "9eabb2bd9b87db42078c19d1f67659b5577e3bd3087f36a9019e74e65c9e45f4",
+      "afterSha256": "fb28629f504cef9e853287bf2b5c6c9360982435a8f1b682a7fb06c084973596"
+    },
+    {
+      "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/WinDef/COLORREF.cs",
+      "beforeSha256": "6d138808c8f755e56aff52dca15345fe99e96f4f5273c118f2eb5980876e15dc",
+      "afterSha256": "11541439778553cb6ab1513a8312cff7d037e4a9d856c21992ec26d2df498a92"
+    },
+    {
+      "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/WinDef/POINT.cs",
+      "beforeSha256": "5a9a30370edfd9962c7f534bb94b2d434cc8f4cbe8554f2401893aa5dc96dd81",
+      "afterSha256": "80964c016068797e6761cc10e2bbca23fea9e234203657858c4eb4a8167dbd5b"
+    },
+    {
+      "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/WinDef/POINTS.cs",
+      "beforeSha256": "8aa2a611593908582193b2c73b4c0f7af155890b1cb553790f7fd72ace4a6a81",
+      "afterSha256": "71e845467159be83b526a38df9a6b2dac239bab2731da7df9e1210eee161374e"
+    },
+    {
+      "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/WinDef/RECT.cs",
+      "beforeSha256": "f9dd0124cc20f8b39e49be7dd845f856dcd53404b34effc9b044d2f50e08a43e",
+      "afterSha256": "0bbff10d35c7c87ac3a878412c7c56dd1615fd37bfe7e5db234af6c3c04c5f3e"
+    },
+    {
+      "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/WinDef/SIZE.cs",
+      "beforeSha256": "f46cfee86322aeed6f601dcab3763ad5b87940781c45959423e16e214f678552",
+      "afterSha256": "2725aa2fc76308de3339804809f696b78373fa12d5d798c49eba58b020181680"
+    },
+    {
+      "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/WinError/HRESULT.cs",
+      "beforeSha256": "7f3eaf52c3b22793d936d45d88b58d25bae1935f74dcf28447c70b083d6f8b21",
+      "afterSha256": "0b8083208bcfa822e735954afaa1f4f37ff962aabb17368e17c1cbf7f35877d2"
+    },
+    {
+      "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/WinError/HRESULT.Values.cs",
+      "beforeSha256": "59c82639808401d14eb41b008194fbac3086f616b2434d63279061e7cd3dd817",
+      "afterSha256": "e84ec4c0abef1c1bc6ac00133d3d0513a16c68ad2216b820dcb4388d615bae0b"
+    },
+    {
+      "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/WinError/IErrorProvider.cs",
+      "beforeSha256": "319d5817664ac1d8ed6257d797572ff46682f899a37fa4caa40da6542e046234",
+      "afterSha256": "1c0fb4f59e05c20c3ad8ec71f6ff3d51adae467ee7e779619195f4afd5f5fced"
+    },
+    {
+      "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/WinError/NTStatus.cs",
+      "beforeSha256": "b03ef2294f642faefb5420cb9b2fe9602f95416d4bb2adfab1f4153a3315b487",
+      "afterSha256": "70484ed90cac39cde4afcbd8dd2a421acba73813da612d876d4595069ea02260"
+    },
+    {
+      "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/WinError/NTStatus.Values.cs",
+      "beforeSha256": "36a3727aa83f367eb7ef20ca5062d15e660067ebd7a5b1029e5c39474628400c",
+      "afterSha256": "20d34995193cb15d22bcb6d3ed22b0167af3df3cf47353dc8edcd220f05adca2"
+    },
+    {
+      "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/WinError/Win32Error.cs",
+      "beforeSha256": "5cf40eb53ce84a3c91feaadee4d88f4b40b8c3e32556fda5451067ee7e91042a",
+      "afterSha256": "13c47e5bd61e9a722b2328b7ef2524b2af118eee9dfbfde82c100740f2bac74d"
+    },
+    {
+      "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/WinError/Win32Error.Values.cs",
+      "beforeSha256": "37dfed09a2e5a7eb978ee28eb0c5ca21429a4695005ccfb7e0455fd792aa55ee",
+      "afterSha256": "3e3cf28e82e5ed72d806018c4e509c0920875c923adf87c1722b00beff15d81d"
+    },
+    {
+      "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/WinGdi/WinGdi.DEVMODE.cs",
+      "beforeSha256": "70ef09811b72309c7ac5609e4d15e82ff8c19f1106babb990e5c2141524caf10",
+      "afterSha256": "0cdac8cf2ee28091b7335b1dadc41cfebc41a8dcae350a25756a5e37cbdf4322"
+    },
+    {
+      "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/WinGdi/WinGdi.LOGFONT.cs",
+      "beforeSha256": "515a2853f7072114a079873e9d81a68319ddf9210bc8903567a967f08c9a69bf",
+      "afterSha256": "b1e897673e1b595a9355425feacee1c1a0201572949bc4726dec4c5115ea0331"
+    },
+    {
+      "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/WinGdi/WinGdi.LOGPALETTE.cs",
+      "beforeSha256": "bf24a594f19a3ca3d894b678abed3bd113160bae14f36b3486f1020bb6d894b8",
+      "afterSha256": "305338f9bb18ad86a8a6a8cede7a00ba33967b69f9a3650791e5944abee22ad4"
+    },
+    {
+      "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/WinGdi/WinGdi.RGBQUAD.cs",
+      "beforeSha256": "32d237d2003952d86cf8b8fb34e2b6643fc84928eb68a45b6040872138b72251",
+      "afterSha256": "c92a109411e7f943237d46b8621f0fd4c073357dbda861fcea8ae1a85cbd1269"
+    },
+    {
+      "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/WinGdi/WinGdi.TEXTMETRIC.cs",
+      "beforeSha256": "622f725750e8948f75018a77d8ade5fd76aabea0ccbdefaabee613e0c1e3ffc4",
+      "afterSha256": "fa37916c4dafb5d421bee4a23db13923491d72be40d520387ea40fc3c5816d83"
+    },
+    {
+      "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/WinNT/ACCESS_MASK.cs",
+      "beforeSha256": "ac4cef9c96c99e55e37019301e857f577194fc55ab5868d2ce912fb24ac24435",
+      "afterSha256": "d5fca305add8639beffb11a7739f487174ea1594e275abb2088bb93147cba97f"
+    },
+    {
+      "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/WinNT/CORRELATION_VECTOR.cs",
+      "beforeSha256": "cfd6c51fb6a0b4f7435a32c57ba8f9551d59333ebcaf4d41371d2a3863757776",
+      "afterSha256": "a8c5cf36cfe1f0cb8e21744a016dcee6bd4c6cb3f717518c3b402ce27c0dfeed"
+    },
+    {
+      "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/WinNT/FileFlagsAndAttributes.cs",
+      "beforeSha256": "844a5439bffced813e0972ffc76b7db51a9470e5fb513444239b32b1b8733ac8",
+      "afterSha256": "62cad6fee551158baab9916cc4f09202d96c20923d3b0954be8bbaf6fc4785b5"
+    },
+    {
+      "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/WinNT/LANGID.cs",
+      "beforeSha256": "0a915d28fa2b41e77bb641b20e355310d2c35f564a7dabf6764aac2964e4c2d7",
+      "afterSha256": "cbd8b10f13dca53ba2fe6a9d164780d4a2ff264420e099ebfc6e5f0ee31eee82"
+    },
+    {
+      "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/WinNT/LCID.cs",
+      "beforeSha256": "fa10f886ab46a3702e8e0d1ba0a8277a7ddbc9a0fc95797451c16691d072e9da",
+      "afterSha256": "394a40c6e4edd965078d94043c861e05a93ef6e33fa8b551e2c2453c3d188a1f"
+    },
+    {
+      "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/WinNT/OBJECT_TYPE_LIST.cs",
+      "beforeSha256": "f1f4b44ae221cd006566cdf7b17801474f810aa4c6a1dcb649dc49b02c93222b",
+      "afterSha256": "c00db40543cad0758939a19f8a5a590c44b0ad3cacb99d6fe50ef09c8d9559f6"
+    },
+    {
+      "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/WinNT/ProcessorArchitecture.cs",
+      "beforeSha256": "004829b4d71d79ced07338754336583b71beb9d1553518dd05ad27107e90aaf1",
+      "afterSha256": "7fcd20efd0233701f5f571b0668ce22d4d32968c778d970b6ca6720eee8c57ca"
+    },
+    {
+      "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/WinNT/SECURITY_INFORMATION.cs",
+      "beforeSha256": "e4132db993d6a59ef7b0bb9875e9a1bc056fefba52bcc1972cf17f45619d8e5b",
+      "afterSha256": "4c9b5231807f0ea21d02237306543b66da0b69125e7e71ebfa3e167dedd2695f"
+    },
+    {
+      "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/WinUser/CLIPFORMAT.cs",
+      "beforeSha256": "2ea571959dba7858d07a2958ca7f8ea51e3acdcf6014ebc2ac602cb7359efeeb",
+      "afterSha256": "6b5a77a2dc7f2e6625d379ea638542e53f38bd9559bafb167ce45621d5419084"
+    },
+    {
+      "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/WinUser/DrawTextFlags.cs",
+      "beforeSha256": "fcdf3c59e19e6315efcd3a66da6545295c736218df77581aaaaf87b6273bf108",
+      "afterSha256": "546e44e7d37cd7df8e3776a7671a97f5995dec2317fdf9613408c3f51c83028b"
+    },
+    {
+      "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/WinUser/Macros.cs",
+      "beforeSha256": "ad2cab44e7c18562bf99b698ba64af09c2bb6f09e86fa327f8a42a321d87e061",
+      "afterSha256": "57805df55c6ad6cd43e90966dc34a3568bcb94607bb8fa35460f059f9ad3e3d4"
+    },
+    {
+      "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/WinUser/MouseButtonState.cs",
+      "beforeSha256": "0ec6520f111ec50c4bc22e9e74fe06e6b5c0ef27a00693fd46ccafeeabd3529c",
+      "afterSha256": "6a6dde0e6c360ccb089acf58363ad683b91919f9a9269ad2ef1b758f265cd36e"
+    },
+    {
+      "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/WinUser/MSG.cs",
+      "beforeSha256": "6c2046e7c31217d3fbeb9f43356fa7f105eed0d31f9d76d17cf378e6b9343dca",
+      "afterSha256": "557bd72507aaf73542158afcb2792fbea07357fe7339ce12c1cb825c09a7cbea"
+    },
+    {
+      "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/WinUser/ShowWindowCommand.cs",
+      "beforeSha256": "9e359c7a4b4cf7010b6110499ae168798fc353e27d8c01e37864e6d648f41e80",
+      "afterSha256": "94d835f9ac995941e44c1ba08d11a636c4cfa965fd7fd20732cf211188381924"
+    },
+    {
+      "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/WinUser/SystemColorIndex.cs",
+      "beforeSha256": "7f5ecfd5a63e934c0502319c4b1fcc8ad4c986a1a9c523404b45a283b293831b",
+      "afterSha256": "fccc20284019f24055a8304b6b5f3fc5e237fb0e57adda57f5eb681e28fd4676"
+    },
+    {
+      "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/WTypes/CY.cs",
+      "beforeSha256": "12eca0f4ce6c8ccc8a1b3a93ca5f397b3b84fa7f79e4661bf1d9e9f2fa25208a",
+      "afterSha256": "e183e5e880406e321ff74d7c29cd3a85c3d45f6399a7269b44fd52a0fb18db11"
+    },
+    {
+      "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/WTypes/DATE.cs",
+      "beforeSha256": "d2584060de18f9076ff59536a19d5481c88663f93a5d4ace2da43178795edb6f",
+      "afterSha256": "70ff88d87e4ce9de08d623da90b15d8de32520c2710f5a4b17d4ae1606449642"
+    },
+    {
+      "path": "src/ExternalLibraries.Vanara.PInvoke.Shared/WTypes/DECIMAL.cs",
+      "beforeSha256": "bb6cc728bac0ba6a9fd2971ce144f1af00948b40e3c2c004b98954c641b4d0d5",
+      "afterSha256": "7c8c3e1b6198bec48c12309c6ad446400ab08742b4c7b0a4aed88bf030b28091"
+    },
+    {
+      "path": "src/ExternalLibraries.Consolonia.PlatformSupport/Clipboard/ClipboardProcessRunner.cs",
+      "beforeSha256": "1ae23cc83246fff3b0de2c275c80ffa377e2f12feeb62981056b0d1c5626be3e",
+      "afterSha256": "f05b53a68c9010454320efbeca88f3be2d6b1aeabb3be4c34746121c957163e0"
+    },
+    {
+      "path": "src/ExternalLibraries.Consolonia.PlatformSupport/Clipboard/MacClipboard.cs",
+      "beforeSha256": "bf189fb41567b1a2f90d0ff99c1e3a5ee31df944e83315ff5fea04ab8c533148",
+      "afterSha256": "d0646c77f6f96236be62f72c65889be3b45f32216556e1d77068a8118b262411"
+    },
+    {
+      "path": "src/ExternalLibraries.Consolonia.PlatformSupport/Clipboard/Win32Clipboard.cs",
+      "beforeSha256": "fb8b1937b19c73c42b668c6b1494e2b8e6d0d903ac65d9d3a2476c5e02b4b4eb",
+      "afterSha256": "8b2f64f09b531a4173d1e44f3c9540e47c916b059f967533ccda549e0b0e6a38"
+    },
+    {
+      "path": "src/ExternalLibraries.Consolonia.PlatformSupport/Clipboard/WslClipboard.cs",
+      "beforeSha256": "314c775b37deedf87e29c379a4b74dbabcbd583b87fc2c7a515449cd797f125e",
+      "afterSha256": "35a0be065323dc6bc592a6389d575879db4188f16ec3a6276b54ef06d6e0980a"
+    },
+    {
+      "path": "src/ExternalLibraries.Consolonia.PlatformSupport/Clipboard/X11Clipboard.cs",
+      "beforeSha256": "f0c2e5fe8a50f49abb555106a7896ca668e77553b3bb6ed717950d6d28b2f518",
+      "afterSha256": "c1aeecdc461a9f2833fce210d91ccd4a18dc889ffd6323ee991fb6efd6b8276f"
+    },
+    {
+      "path": "src/ExternalLibraries.Consolonia.PlatformSupport/Clipboard/XClipClipboard.cs",
+      "beforeSha256": "33bbf51f121f9f4698e4ba4963df2a1b941588c1de8569bccf5684e8794579fc",
+      "afterSha256": "cb96cf12b5f55e26397912d913a1d63990307b73873d8d9e8237102bd5050aa4"
+    }
+  ],
+  "stage": "Whitespace/encoding stage, before the separate token-changing style corrections"
+}
