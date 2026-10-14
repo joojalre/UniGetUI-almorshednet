@@ -3496,6 +3496,38 @@ namespace Avalonia.Collections
                 return;
             }
 
+            if (args.Action == NotifyCollectionChangedAction.Move)
+            {
+                // Source indices describe this view only when it has no transforms.
+                // Preserve correctness for grouped, filtered, sorted, paged and range moves
+                // through the existing refresh path; single plain moves stay incremental.
+                if (UsesLocalArray || args.OldItems == null || args.OldItems.Count != 1 ||
+                    args.OldStartingIndex < 0 || args.NewStartingIndex < 0)
+                {
+                    RefreshOrDefer();
+                    return;
+                }
+                object oldCurrentItem = CurrentItem;
+                int oldCurrentPosition = CurrentPosition;
+                bool oldIsCurrentBeforeFirst = IsCurrentBeforeFirst;
+                bool oldIsCurrentAfterLast = IsCurrentAfterLast;
+                object item = _internalList[args.OldStartingIndex];
+                _internalList.RemoveAt(args.OldStartingIndex);
+                _internalList.Insert(args.NewStartingIndex, item);
+                if (oldCurrentPosition >= 0 && oldCurrentPosition < Count)
+                {
+                    int position = oldCurrentPosition;
+                    if (position == args.OldStartingIndex) position = args.NewStartingIndex;
+                    else if (args.OldStartingIndex < args.NewStartingIndex && position > args.OldStartingIndex && position <= args.NewStartingIndex) position--;
+                    else if (args.NewStartingIndex < args.OldStartingIndex && position >= args.NewStartingIndex && position < args.OldStartingIndex) position++;
+                    SetCurrent(oldCurrentItem, position);
+                }
+                OnCollectionChanged(new NotifyCollectionChangedEventArgs(
+                    NotifyCollectionChangedAction.Move, item, args.NewStartingIndex, args.OldStartingIndex));
+                RaiseCurrencyChanges(false, oldCurrentItem, oldCurrentPosition, oldIsCurrentBeforeFirst, oldIsCurrentAfterLast);
+                return;
+            }
+
             if (args.Action == NotifyCollectionChangedAction.Reset)
             {
                 // if we have no items now, clear our own internal list

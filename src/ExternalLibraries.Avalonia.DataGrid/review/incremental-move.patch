@@ -1,0 +1,103 @@
+diff --git a/src/ExternalLibraries.Avalonia.DataGrid/Collections/DataGridCollectionView.cs b/src/ExternalLibraries.Avalonia.DataGrid/Collections/DataGridCollectionView.cs
+index cdbcea76e..ee57338b1 100644
+--- a/src/ExternalLibraries.Avalonia.DataGrid/Collections/DataGridCollectionView.cs
++++ b/src/ExternalLibraries.Avalonia.DataGrid/Collections/DataGridCollectionView.cs
+@@ -3496,6 +3496,38 @@ namespace Avalonia.Collections
+                 return;
+             }
+ 
++            if (args.Action == NotifyCollectionChangedAction.Move)
++            {
++                // Source indices describe this view only when it has no transforms.
++                // Preserve correctness for grouped, filtered, sorted, paged and range moves
++                // through the existing refresh path; single plain moves stay incremental.
++                if (UsesLocalArray || args.OldItems == null || args.OldItems.Count != 1 ||
++                    args.OldStartingIndex < 0 || args.NewStartingIndex < 0)
++                {
++                    RefreshOrDefer();
++                    return;
++                }
++                object oldCurrentItem = CurrentItem;
++                int oldCurrentPosition = CurrentPosition;
++                bool oldIsCurrentBeforeFirst = IsCurrentBeforeFirst;
++                bool oldIsCurrentAfterLast = IsCurrentAfterLast;
++                object item = _internalList[args.OldStartingIndex];
++                _internalList.RemoveAt(args.OldStartingIndex);
++                _internalList.Insert(args.NewStartingIndex, item);
++                if (oldCurrentPosition >= 0 && oldCurrentPosition < Count)
++                {
++                    int position = oldCurrentPosition;
++                    if (position == args.OldStartingIndex) position = args.NewStartingIndex;
++                    else if (args.OldStartingIndex < args.NewStartingIndex && position > args.OldStartingIndex && position <= args.NewStartingIndex) position--;
++                    else if (args.NewStartingIndex < args.OldStartingIndex && position >= args.NewStartingIndex && position < args.OldStartingIndex) position++;
++                    SetCurrent(oldCurrentItem, position);
++                }
++                OnCollectionChanged(new NotifyCollectionChangedEventArgs(
++                    NotifyCollectionChangedAction.Move, item, args.NewStartingIndex, args.OldStartingIndex));
++                RaiseCurrencyChanges(false, oldCurrentItem, oldCurrentPosition, oldIsCurrentBeforeFirst, oldIsCurrentAfterLast);
++                return;
++            }
++
+             if (args.Action == NotifyCollectionChangedAction.Reset)
+             {
+                 // if we have no items now, clear our own internal list
+diff --git a/src/ExternalLibraries.Avalonia.DataGrid/DataGridDataConnection.cs b/src/ExternalLibraries.Avalonia.DataGrid/DataGridDataConnection.cs
+index e476b4cbc..b8b419c73 100644
+--- a/src/ExternalLibraries.Avalonia.DataGrid/DataGridDataConnection.cs
++++ b/src/ExternalLibraries.Avalonia.DataGrid/DataGridDataConnection.cs
+@@ -686,6 +686,12 @@ namespace Avalonia.Controls
+                         }
+                     }
+                     break;
++                case NotifyCollectionChangedAction.Move:
++                    if (!IsGrouping && e.OldItems != null && e.OldItems.Count == 1)
++                    {
++                        _owner.MoveRowAt(e.OldStartingIndex, e.NewStartingIndex, e.OldItems[0]);
++                    }
++                    break;
+                 case NotifyCollectionChangedAction.Replace:
+                     throw new NotSupportedException(); // 
+ 
+diff --git a/src/ExternalLibraries.Avalonia.DataGrid/DataGridRows.cs b/src/ExternalLibraries.Avalonia.DataGrid/DataGridRows.cs
+index 51b589fe6..531cba5a7 100644
+--- a/src/ExternalLibraries.Avalonia.DataGrid/DataGridRows.cs
++++ b/src/ExternalLibraries.Avalonia.DataGrid/DataGridRows.cs
+@@ -408,6 +408,38 @@ namespace Avalonia.Controls
+             }
+         }
+ 
++        internal void MoveRowAt(int oldIndex, int newIndex, object item)
++        {
++            if (oldIndex == newIndex) return;
++            int MapSlot(int slot)
++            {
++                if (slot == oldIndex) return newIndex;
++                if (oldIndex < newIndex && slot > oldIndex && slot <= newIndex) return slot - 1;
++                if (newIndex < oldIndex && slot >= newIndex && slot < oldIndex) return slot + 1;
++                return slot;
++            }
++            bool movedWasSelected = GetRowSelection(oldIndex);
++            int currentSlot = MapSlot(CurrentSlot);
++            int currentColumn = CurrentColumnIndex;
++            int anchorSlot = MapSlot(AnchorSlot);
++            NoSelectionChangeCount++;
++            try
++            {
++                RemoveRowAt(oldIndex, item);
++                InsertRowAt(newIndex);
++                if (movedWasSelected) SetRowSelection(newIndex, true, false);
++                AnchorSlot = anchorSlot;
++                if (currentSlot >= 0 && currentColumn >= 0)
++                {
++                    SetCurrentCellCore(currentColumn, currentSlot, false, false);
++                }
++            }
++            finally
++            {
++                NoSelectionChangeCount--;
++            }
++        }
++
+         internal void RemoveRowAt(int rowIndex, object item)
+         {
+             RemoveElementAt(SlotFromRowIndex(rowIndex), item, true);

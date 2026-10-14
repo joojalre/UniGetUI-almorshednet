@@ -408,6 +408,38 @@ namespace Avalonia.Controls
             }
         }
 
+        internal void MoveRowAt(int oldIndex, int newIndex, object item)
+        {
+            if (oldIndex == newIndex) return;
+            int MapSlot(int slot)
+            {
+                if (slot == oldIndex) return newIndex;
+                if (oldIndex < newIndex && slot > oldIndex && slot <= newIndex) return slot - 1;
+                if (newIndex < oldIndex && slot >= newIndex && slot < oldIndex) return slot + 1;
+                return slot;
+            }
+            bool movedWasSelected = GetRowSelection(oldIndex);
+            int currentSlot = MapSlot(CurrentSlot);
+            int currentColumn = CurrentColumnIndex;
+            int anchorSlot = MapSlot(AnchorSlot);
+            NoSelectionChangeCount++;
+            try
+            {
+                RemoveRowAt(oldIndex, item);
+                InsertRowAt(newIndex);
+                if (movedWasSelected) SetRowSelection(newIndex, true, false);
+                AnchorSlot = anchorSlot;
+                if (currentSlot >= 0 && currentColumn >= 0)
+                {
+                    SetCurrentCellCore(currentColumn, currentSlot, false, false);
+                }
+            }
+            finally
+            {
+                NoSelectionChangeCount--;
+            }
+        }
+
         internal void RemoveRowAt(int rowIndex, object item)
         {
             RemoveElementAt(SlotFromRowIndex(rowIndex), item, true);

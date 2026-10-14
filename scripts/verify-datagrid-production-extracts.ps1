@@ -20,6 +20,7 @@ function Get-Block([string]$Text,[string]$Marker){
 }
 function Get-Hash([string]$Text){[Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes($Text.Replace("`r`n","`n").Trim())))}
 $specs=@(
+ @{Name='package-incremental-ordering';Source='src/UniGetUI.Avalonia/Models/PackageCollections.cs';Fixture='ProductionPackageSort.cs';Marker='public void ApplyChanges(';EndBlock='private IComparer<PackageWrapper> GetOrderComparer()';Tail=$false},
  @{Name='package-sorter-enum';Source='src/UniGetUI.Avalonia/Models/PackageCollections.cs';Fixture='ProductionPackageSort.cs';Marker='public enum Sorter';Tail=$false},
  @{Name='package-comparison-methods';Source='src/UniGetUI.Avalonia/Models/PackageCollections.cs';Fixture='ProductionPackageSort.cs';Marker='public sealed class ObservablePackageCollection :';Tail=$true},
  @{Name='history-comparer';Source='src/UniGetUI.Avalonia/ViewModels/Pages/LogPages/OperationHistoryRowViewModel.cs';Fixture='ProductionHistorySort.cs';Marker='internal sealed class OperationHistoryRowComparer';Tail=$false},
