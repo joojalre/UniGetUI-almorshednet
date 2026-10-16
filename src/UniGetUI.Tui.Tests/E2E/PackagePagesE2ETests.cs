@@ -340,7 +340,9 @@ internal sealed class PackagePagesE2ETests : TuiE2ETestBase
         await EnterPage();
         await Type("tailspin-jq");
         await Key(K.Enter);
-        await WaitForTextAsync("tailspin-jq");
+        await WaitUntilAsync(
+            () => Page(TuiPageIds.Discover).VisibleRows.Any(row => row.Id == "tailspin-jq"),
+            "the Tailspin jq search result");
         await Key(K.Down);
         await Key(K.Enter);
         await WaitForDialogAsync("Package details");
