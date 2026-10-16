@@ -129,15 +129,41 @@
             </Panel>
         </DataTemplate>
         <DataTemplate x:Key="CatalogInstallAction" x:DataType="vm:CatalogTileViewModel">
-            <Panel>
-                <Button Content="{t:Translate Install}" IsVisible="{Binding ShowInstall}" IsEnabled="{Binding CanInstall}"
-                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
-                        ToolTip.Tip="{Binding StatusText}" ToolTip.ShowOnDisabled="True"
-                        Command="{Binding $parent[UserControl].((vm:SoftwareCatalogViewModel)DataContext).InstallCommand}"
-                        CommandParameter="{Binding}"/>
-                <TextBlock Text="{t:Translate Installed}" IsVisible="{Binding IsInstalled}"
-                           FontWeight="SemiBold" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,8"/>
-            </Panel>
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="4">
+                <Panel>
+                    <Button Content="{t:Translate Install}" IsVisible="{Binding ShowInstall}" IsEnabled="{Binding CanInstall}"
+                            HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                            ToolTip.Tip="{Binding StatusText}" ToolTip.ShowOnDisabled="True"
+                            Command="{Binding $parent[UserControl].((vm:SoftwareCatalogViewModel)DataContext).InstallCommand}"
+                            CommandParameter="{Binding}"/>
+                    <Button Content="{t:Translate Update}" IsVisible="{Binding ShowUpdate}" Classes="accent"
+                            HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                            Command="{Binding UpdateCommand}"/>
+                    <TextBlock Text="{t:Translate Installed}" IsVisible="{Binding ShowInstalledLabel}"
+                               FontWeight="SemiBold" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,8"/>
+                </Panel>
+                <Button Grid.Column="1" Width="32" Padding="0"
+                        HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
+                        VerticalAlignment="Stretch"
+                        ToolTip.Tip="{t:Translate More actions}"
+                        automation:AutomationProperties.Name="{t:Translate More actions}">
+                    <!-- Drawn dots rather than a "⋯" glyph, whose font metrics sit it above centre. -->
+                    <StackPanel Orientation="Horizontal" Spacing="3"
+                                HorizontalAlignment="Center" VerticalAlignment="Center"
+                                automation:AutomationProperties.AccessibilityView="Raw">
+                        <Ellipse Width="3.5" Height="3.5" Fill="{Binding $parent[Button].Foreground}"/>
+                        <Ellipse Width="3.5" Height="3.5" Fill="{Binding $parent[Button].Foreground}"/>
+                        <Ellipse Width="3.5" Height="3.5" Fill="{Binding $parent[Button].Foreground}"/>
+                    </StackPanel>
+                    <Button.Flyout>
+                        <MenuFlyout>
+                            <MenuItem Header="{t:Translate Update}" IsVisible="{Binding ShowUpdate}" Command="{Binding UpdateCommand}"/>
+                            <MenuItem Header="{t:Translate Uninstall}" IsVisible="{Binding IsInstalled}" Command="{Binding UninstallCommand}"/>
+                            <MenuItem Header="{t:Translate Package details}" Command="{Binding DetailsCommand}"/>
+                        </MenuFlyout>
+                    </Button.Flyout>
+                </Button>
+            </Grid>
         </DataTemplate>
         </ResourceDictionary>
     </UserControl.Resources>
@@ -381,10 +407,12 @@
                                             <TextBlock Text="{Binding Entry.Id}" FontSize="12" TextWrapping="Wrap"
                                                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                             <StackPanel Orientation="Horizontal" Spacing="6">
-                                                <TextBlock Text="{Binding Entry.ManagerName}" FontSize="12"/>
+                                                <TextBlock Text="{Binding ManagerDisplayName}" FontSize="12"/>
                                                 <TextBlock Text=" / " FontSize="12"/>
                                                 <TextBlock Text="{Binding Entry.Source}" FontSize="12"/>
                                             </StackPanel>
+                                            <TextBlock Text="{Binding PinnedVersionText}" IsVisible="{Binding HasPinnedVersion}" FontSize="12"
+                                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                         </StackPanel>
                                         <TextBlock Grid.Row="3" Text="{Binding StatusText}" TextWrapping="Wrap" FontSize="12"
                                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
@@ -432,7 +460,7 @@
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate x:DataType="vm:CatalogTileViewModel">
                                     <StackPanel Spacing="2" VerticalAlignment="Center" Margin="8,0">
-                                        <TextBlock Text="{Binding Entry.ManagerName}" TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Text="{Binding ManagerDisplayName}" TextTrimming="CharacterEllipsis"/>
                                         <TextBlock Text="{Binding Entry.Source}" FontSize="11" TextTrimming="CharacterEllipsis"/>
                                     </StackPanel>
                                 </DataTemplate>
@@ -472,15 +500,16 @@
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="vm:CatalogTileViewModel">
                                 <Border Width="350" MinHeight="124" Margin="4" Padding="12" CornerRadius="4"
-                                        Background="{DynamicResource ControlFillColorDefaultBrush}">
+                                        Background="{DynamicResource ControlFillColorDefaultBrush}"
+                                        ToolTip.Tip="{Binding ToolTipText}">
                                     <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
                                         <ContentControl Content="{Binding}" ContentTemplate="{StaticResource CatalogSmallIcon}"
                                                         VerticalAlignment="Center"/>
                                         <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center">
                                             <TextBlock Text="{Binding Entry.Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"
-                                                       Opacity="{Binding TitleOpacity}" ToolTip.Tip="{Binding UnavailableReason}"/>
+                                                       Opacity="{Binding TitleOpacity}"/>
                                             <TextBlock Text="{Binding Entry.Id}" FontSize="11" TextTrimming="CharacterEllipsis"/>
-                                            <TextBlock Text="{Binding Entry.Source}" FontSize="11" TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Text="{Binding SourceDisplay}" FontSize="11" TextTrimming="CharacterEllipsis"/>
                                         </StackPanel>
                                         <ContentControl Grid.Column="2" Content="{Binding}"
                                                         ContentTemplate="{StaticResource CatalogInstallAction}" VerticalAlignment="Center"/>
@@ -509,7 +538,8 @@
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="vm:CatalogTileViewModel">
                                 <Border Width="160" MinHeight="196" Margin="4" Padding="8" CornerRadius="4"
-                                        Background="{DynamicResource ControlFillColorDefaultBrush}">
+                                        Background="{DynamicResource ControlFillColorDefaultBrush}"
+                                        ToolTip.Tip="{Binding ToolTipText}">
                                     <StackPanel Spacing="8">
                                         <Panel Width="64" Height="64" HorizontalAlignment="Center" Opacity="{Binding TitleOpacity}">
                                             <Image Source="{Binding IconBitmap}" IsVisible="{Binding HasCustomIcon}" Stretch="Uniform"
@@ -518,8 +548,7 @@
                                                               Width="64" Height="64" IsVisible="{Binding !HasCustomIcon}"/>
                                         </Panel>
                                         <TextBlock Text="{Binding Entry.Name}" TextTrimming="CharacterEllipsis"
-                                                   TextAlignment="Center" Opacity="{Binding TitleOpacity}"
-                                                   ToolTip.Tip="{Binding UnavailableReason}"/>
+                                                   TextAlignment="Center" Opacity="{Binding TitleOpacity}"/>
                                         <TextBlock Text="{Binding Entry.Id}" FontSize="11" TextTrimming="CharacterEllipsis"
                                                    TextAlignment="Center"/>
                                         <ContentControl Content="{Binding}" ContentTemplate="{StaticResource CatalogInstallAction}"/>
@@ -533,12 +562,17 @@
                       </ItemsControl.ItemTemplate>
                     </ItemsControl>
                 </ScrollViewer>
-                <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center"
-                           FontSize="30" FontWeight="Bold" Opacity="0.5"
-                           TextAlignment="Center" TextWrapping="Wrap"
-                           Text="{Binding BackgroundText}"
-                           IsVisible="{Binding HasBackgroundText}"
-                           IsHitTestVisible="False"/>
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12" Margin="24,0"
+                            IsVisible="{Binding HasBackgroundText}">
+                    <TextBlock FontSize="30" FontWeight="Bold" Opacity="0.5"
+                               TextAlignment="Center" TextWrapping="Wrap"
+                               Text="{Binding BackgroundText}"
+                               IsHitTestVisible="False"/>
+                    <SelectableTextBlock FontSize="13" Opacity="0.7"
+                                         TextAlignment="Center" TextWrapping="Wrap"
+                                         Text="{Binding BackgroundDetail}"
+                                         IsVisible="{Binding HasBackgroundDetail}"/>
+                </StackPanel>
             </Panel>
         </Grid>
         <Grid Grid.Row="4" Margin="0,4" HorizontalAlignment="Right">

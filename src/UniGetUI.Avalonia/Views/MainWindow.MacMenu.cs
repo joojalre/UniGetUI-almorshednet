@@ -4,6 +4,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.VisualTree;
 using AvaloniaEdit;
+using UniGetUI.Avalonia.ViewModels;
 using UniGetUI.Core.Tools;
 
 namespace UniGetUI.Avalonia.Views;
@@ -18,6 +19,9 @@ public partial class MainWindow
     // Text target resolved once per refresh, so the Edit predicates don't each walk the tree.
     private TextBox? _menuTextBox;
     private TextEditor? _menuEditor;
+
+    private NativeMenu? _macViewMenu;
+    private NativeMenuItem[] _macPageItems = [];
 
     private void SetupMacMenuBar()
     {
@@ -60,17 +64,14 @@ public partial class MainWindow
             new NativeMenuItemSeparator(),
             Action(CoreTools.Translate("Find"), TriggerPageSearch, Key.F, enabled: () => PageShortcutListener is not null));
 
-        var view = Submenu(CoreTools.Translate("View"),
-            Item(CoreTools.Translate("Discover Packages"), navigate, "Discover", Key.D1),
-            Item(CoreTools.Translate("Software Updates"), navigate, "Updates", Key.D2),
-            Item(CoreTools.Translate("Installed Packages"), navigate, "Installed", Key.D3),
-            Item(CoreTools.Translate("Package Bundles"), navigate, "Bundles", Key.D4),
-            Item(CoreTools.Translate("Package Managers"), navigate, "Managers", Key.D6),
+        _macPageItems = CreateMacPageItems();
+        var view = Submenu(CoreTools.Translate("View"), [
+            .. _macPageItems,
             new NativeMenuItemSeparator(),
             Item(CoreTools.Translate("Toggle navigation panel"), ViewModel.ToggleSidebarCommand, null, Key.S, KeyModifiers.Control),
             new NativeMenuItemSeparator(),
             Action(CoreTools.Translate("Reload"), TriggerPageReload, Key.R, enabled: () => PageShortcutListener is not null),
-            Action(CoreTools.Translate("Package details"), TriggerPageDetails, Key.I, enabled: () => PageShortcutListener is not null));
+            Action(CoreTools.Translate("Package details"), TriggerPageDetails, Key.I, enabled: () => PageShortcutListener is not null)]);
 
         // macOS greys Minimize and Zoom out for a window in full screen.
         var window = Submenu(CoreTools.Translate("Window"),
@@ -88,7 +89,38 @@ public partial class MainWindow
             Item(CoreTools.Translate("Package Manager logs"), navigate, "ManagerLog"),
             Item(CoreTools.Translate("Operation history"), navigate, "OperationHistory"));
 
+        _macViewMenu = view.Menu;
+        sidebar.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(SidebarViewModel.NavigationPages))
+                RefreshMacViewMenu();
+        };
         NativeMenu.SetMenu(this, new NativeMenu { Items = { edit, view, window, help } });
+        UpdateMacMenuState();
+    }
+
+    // Settings is reached from the application menu (⌘,), so the View menu skips it.
+    private NativeMenuItem[] CreateMacPageItems()
+        => ViewModel.ShortcutPages
+            .Select((page, index) => (page, key: Key.D1 + index))
+            .Where(p => p.page != PageType.Settings)
+            .Select(p => Item(PageMenuTitle(p.page), ViewModel.Sidebar.RequestNavigationCommand, p.page.ToString(), p.key))
+            .ToArray();
+
+    private void RefreshMacViewMenu()
+    {
+        if (_macViewMenu is null)
+            return;
+
+        foreach (var item in _macPageItems)
+        {
+            _macViewMenu.Items.Remove(item);
+            _macMenuStates.RemoveAll(state => state.Item == item);
+        }
+
+        _macPageItems = CreateMacPageItems();
+        for (int i = 0; i < _macPageItems.Length; i++)
+            _macViewMenu.Items.Insert(i, _macPageItems[i]);
         UpdateMacMenuState();
     }
 
@@ -144,6 +176,18 @@ public partial class MainWindow
                 onEditor(editor);
         }, key, extraModifiers, enabled: () => _menuTextBox is { } textBox ? canTextBox(textBox)
             : _menuEditor is { } editor && canEditor(editor));
+
+    private static string PageMenuTitle(PageType page) => page switch
+    {
+        PageType.Catalog => CoreTools.Translate("Software Catalog"),
+        PageType.Discover => CoreTools.Translate("Discover Packages"),
+        PageType.Updates => CoreTools.Translate("Software Updates"),
+        PageType.Installed => CoreTools.Translate("Installed Packages"),
+        PageType.Bundles => CoreTools.Translate("Package Bundles"),
+        PageType.CatalogEditor => CoreTools.Translate("Catalog Editor"),
+        PageType.Managers => CoreTools.Translate("Package Managers"),
+        _ => CoreTools.Translate("Settings"),
+    };
 
     private NativeMenuItem Submenu(string header, params NativeMenuItemBase[] items)
     {

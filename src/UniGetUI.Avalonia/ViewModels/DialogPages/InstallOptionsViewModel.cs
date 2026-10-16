@@ -3,7 +3,6 @@ using System.Net.Http;
 using System.Windows.Input;
 using Avalonia.Automation;
 using Avalonia.Media.Imaging;
-using Avalonia.Platform;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using UniGetUI.Avalonia.Infrastructure;
@@ -384,8 +383,7 @@ public partial class InstallOptionsViewModel : ObservableObject
         ForceKillChecked = Settings.Get(Settings.K.KillProcessesThatRefuseToDie);
 
         // Show fallback immediately, then replace with real icon if available
-        using var fallback = AssetLoader.Open(_fallbackIconUri);
-        PackageIcon = new Bitmap(fallback);
+        PackageIcon = BitmapLoader.TryLoadAsset(_fallbackIconUri);
         _ = LoadIconAsync();
 
         if (caps.SupportsCustomVersions)
@@ -666,7 +664,7 @@ public partial class InstallOptionsViewModel : ObservableObject
 
             Bitmap bmp;
             if (uri.IsFile)
-                bmp = new Bitmap(uri.LocalPath);
+                bmp = BitmapLoader.LoadFile(uri.LocalPath);
             else if (uri.Scheme is "http" or "https")
             {
                 var bytes = await _iconHttp.GetByteArrayAsync(uri);

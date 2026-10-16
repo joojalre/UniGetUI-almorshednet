@@ -1,6 +1,8 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using UniGetUI.Avalonia.Infrastructure;
 using UniGetUI.Core.Data;
+using UniGetUI.Core.Tools;
 using UniGetUI.PackageEngine.Classes.Serializable;
 using UniGetUI.PackageEngine.Interfaces;
 
@@ -78,11 +80,35 @@ internal static class SoftwareCatalog
 {
     public static string FilePath => Path.Combine(CoreData.UniGetUIGlobalDirectory, "SoftwareCatalog.json");
 
-    internal static async Task SaveAsync(string filePath, CatalogDefinition[] catalogs)
+    private static string Serialize(CatalogDefinition[] catalogs)
     {
         var document = new CatalogDocument { Version = 1, Catalogs = catalogs };
         string json = JsonSerializer.Serialize(document, CatalogJsonContext.Default.CatalogDocument);
         Parse(json);
+        return json;
+    }
+
+    /// <summary>
+    /// Saves through the administrator prompt (macOS password dialog, Windows UAC), for a
+    /// machine-wide location the user cannot write. Returns false when the user cancels the prompt.
+    /// </summary>
+    internal static Task<bool> SaveWithAdminRightsAsync(string filePath, CatalogDefinition[] catalogs)
+    {
+        string destination = Path.GetFullPath(filePath);
+        string contents = Serialize(catalogs) + Environment.NewLine;
+        if (OperatingSystem.IsWindows())
+            return WindowsAdminFileInstaller.WriteAsync(destination, contents);
+        if (OperatingSystem.IsMacOS())
+            return MacAdminFileInstaller.WriteAsync(destination, contents,
+                CoreTools.Translate("UniGetUI needs administrator rights to save the software catalog."));
+        throw new PlatformNotSupportedException();
+    }
+
+    internal static bool CanSaveWithAdminRights => OperatingSystem.IsWindows() || OperatingSystem.IsMacOS();
+
+    internal static async Task SaveAsync(string filePath, CatalogDefinition[] catalogs)
+    {
+        string json = Serialize(catalogs);
         string destination = Path.GetFullPath(filePath);
         string temporary = Path.Combine(Path.GetDirectoryName(destination)!, $".catalog-{Guid.NewGuid():N}.tmp");
         try
@@ -101,6 +127,24 @@ internal static class SoftwareCatalog
     }
 
     public static Task<CatalogDefinition[]> LoadAsync() => LoadAsync(FilePath);
+
+    /// <summary>
+    /// Whether the machine-wide catalog exists, loads and lists at least one package: only then is
+    /// it worth leading the navigation with. Missing, empty and broken catalogs all count as unset.
+    /// </summary>
+    public static bool HasUsableCatalog() => HasUsableCatalog(FilePath);
+
+    internal static bool HasUsableCatalog(string filePath)
+    {
+        try
+        {
+            return File.Exists(filePath) && Parse(File.ReadAllText(filePath)).Any(c => c.Packages.Length > 0);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
+        {
+            return false;
+        }
+    }
 
     internal static async Task<CatalogDefinition[]> LoadAsync(string filePath)
     {
