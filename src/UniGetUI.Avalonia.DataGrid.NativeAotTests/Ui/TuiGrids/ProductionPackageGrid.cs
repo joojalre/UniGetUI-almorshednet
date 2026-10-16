@@ -6,6 +6,7 @@ using Avalonia.Media;
 using UniGetUI.Tui.Infrastructure;
 
 namespace TuiGridFixture;
+
 internal sealed class ProductionPackageGrid
 {
     private readonly PackagePageKind _kind;

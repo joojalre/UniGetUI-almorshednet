@@ -1,6 +1,38 @@
 {
-  "sourceRevision": "7636ed073c5067f035a44a0b08e174468d67ea28",
   "tested": false,
+  "sourceRevision": "7636ed073c5067f035a44a0b08e174468d67ea28",
+  "fragments": [
+    {
+      "source": "src/UniGetUI.Tui/Views/Pages/PackageListPage.cs",
+      "startLine": 523,
+      "boundary": "Exact fragment; surrounding inert wrapper is fixture-only",
+      "sourceSha256": "563A3AF3D78ED5E03632E3A3E7C9898BA6AF9BE1F5B87EBE092F436C6C9356E8",
+      "lineCount": 53,
+      "output": "ProductionPackageGrid.cs",
+      "fragmentSha256": "94C1E3FC2FD67837B100860C5A06446AB592C664CB3EC90FF10DB9BB0EDDCE35",
+      "outputSha256": "B05C7C5E8417B569E4B7D43D5298A8003747380EF0915F82284110DBB9C8EC60"
+    },
+    {
+      "source": "src/UniGetUI.Tui/Views/Pages/HistoryPage.cs",
+      "startLine": 55,
+      "boundary": "Exact fragment; surrounding inert wrapper is fixture-only",
+      "sourceSha256": "60B8DCE941C6967E113FB51618466A0134CFC16DEF9009C70AFDD2AE2BDAA858",
+      "lineCount": 28,
+      "output": "ProductionHistoryGrid.cs",
+      "fragmentSha256": "4B763C34DAE03E2F6FFDABD8A095F16F284783351DDADB5C299B7D0731EE6788",
+      "outputSha256": "9B76EC98D668EA58CA5CD4F5AF9089A5FC2595BD0051117B2110C39ABA6ED028"
+    },
+    {
+      "source": "src/UniGetUI.Tui/Views/Pages/OperationsPage.cs",
+      "startLine": 49,
+      "boundary": "Exact fragment; surrounding inert wrapper is fixture-only",
+      "sourceSha256": "DDD91DD371905AED4C276C633D15BE1BC4188FACDB5976DA9B9099653A8A6F0D",
+      "lineCount": 15,
+      "output": "ProductionOperationsGrid.cs",
+      "fragmentSha256": "0FF188312A708B32E6178493343A445209B2452022562C990BDF244207C2343B",
+      "outputSha256": "5E074070AFFD7DD8D737166129A0C72B5ED24B548130AD6B0C390A1BFB701D24"
+    }
+  ],
   "helpers": [
     {
       "mode": "Link real production helper in test project; no copied implementation",
@@ -11,38 +43,6 @@
       "mode": "Link real production helper in test project; no copied implementation",
       "sourceSha256": "0EC159E71A0723463BE44AA21B9614662690B27EC2D73509896118377C51CF23",
       "source": "src/UniGetUI.Tui/Infrastructure/DataGridTextBinding.cs"
-    }
-  ],
-  "fragments": [
-    {
-      "startLine": 523,
-      "fragmentSha256": "94C1E3FC2FD67837B100860C5A06446AB592C664CB3EC90FF10DB9BB0EDDCE35",
-      "output": "ProductionPackageGrid.cs",
-      "sourceSha256": "563A3AF3D78ED5E03632E3A3E7C9898BA6AF9BE1F5B87EBE092F436C6C9356E8",
-      "source": "src/UniGetUI.Tui/Views/Pages/PackageListPage.cs",
-      "outputSha256": "61F398687ACD23BBAEC15F502509CDB34BDF24DA61205FB9DE1A9A27E39167A0",
-      "lineCount": 53,
-      "boundary": "Exact fragment; surrounding inert wrapper is fixture-only"
-    },
-    {
-      "startLine": 55,
-      "fragmentSha256": "4B763C34DAE03E2F6FFDABD8A095F16F284783351DDADB5C299B7D0731EE6788",
-      "output": "ProductionHistoryGrid.cs",
-      "sourceSha256": "60B8DCE941C6967E113FB51618466A0134CFC16DEF9009C70AFDD2AE2BDAA858",
-      "source": "src/UniGetUI.Tui/Views/Pages/HistoryPage.cs",
-      "outputSha256": "45B95C43ADD8F564A6C97D8CB24E47E004DE16C09665628662B167B54DB62505",
-      "lineCount": 28,
-      "boundary": "Exact fragment; surrounding inert wrapper is fixture-only"
-    },
-    {
-      "startLine": 49,
-      "fragmentSha256": "0FF188312A708B32E6178493343A445209B2452022562C990BDF244207C2343B",
-      "output": "ProductionOperationsGrid.cs",
-      "sourceSha256": "DDD91DD371905AED4C276C633D15BE1BC4188FACDB5976DA9B9099653A8A6F0D",
-      "source": "src/UniGetUI.Tui/Views/Pages/OperationsPage.cs",
-      "outputSha256": "223991A610C71055CCAAA36C82679F02FC5FB923EE31A02DD47C39684A012647",
-      "lineCount": 15,
-      "boundary": "Exact fragment; surrounding inert wrapper is fixture-only"
     }
   ]
 }
