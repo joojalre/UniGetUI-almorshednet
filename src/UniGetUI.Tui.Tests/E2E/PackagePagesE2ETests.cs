@@ -347,6 +347,11 @@ internal sealed class PackagePagesE2ETests : TuiE2ETestBase
         await WaitForTextAsync("A lightweight and flexible command-line JSON processor.", "Scoop");
         await PressButtonAsync("Install");
         await WaitForOperationsToFinishAsync();
+        await WaitUntilAsync(
+            () => InstalledVersion("Scoop", "tailspin-jq") == "1.7.1",
+            "tailspin-jq to be installed",
+            TimeSpan.FromSeconds(40)
+        );
         NAssert.That(InstalledVersion("Scoop", "tailspin-jq"), Is.EqualTo("1.7.1"));
     }
 }
