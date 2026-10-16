@@ -6,7 +6,6 @@ using Avalonia.Media;
 using UniGetUI.Tui.Infrastructure;
 
 namespace TuiGridFixture;
-
 internal sealed class ProductionHistoryGrid
 {
     private readonly DataGrid _grid;
