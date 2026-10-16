@@ -54,7 +54,7 @@ namespace UniGetUI.Core.Language
                 Locale = ResolveLocale(lang);
 
                 MainLangDict = LoadLanguageFile(Locale);
-                Formatter = new() { Locale = Locale.Replace('_', '-') };
+                Formatter = CreateFormatter(Locale);
 
                 SelectedLocale = Locale;
                 Logger.Info("Loaded language locale: " + Locale);
@@ -67,7 +67,7 @@ namespace UniGetUI.Core.Language
                 // Keep the app functional even if locale resolution fails.
                 Locale = "en";
                 MainLangDict = LoadLanguageFile(Locale);
-                Formatter = new() { Locale = "en" };
+                Formatter = CreateFormatter(Locale);
                 SelectedLocale = Locale;
             }
         }
@@ -83,6 +83,56 @@ namespace UniGetUI.Core.Language
             }
 
             return "en";
+        }
+
+        /// <summary>
+        /// Translation files are keyed by language codes such as <c>default</c>, which is a
+        /// settings sentinel and not a <see cref="CultureInfo"/> name. MessageFormat constructs
+        /// a culture from its locale and throws on the UI thread when that name is invalid.
+        /// </summary>
+        private static MessageFormatter CreateFormatter(string? locale)
+        {
+            return new() { Locale = ToMessageFormatLocale(locale) };
+        }
+
+        private static string ToMessageFormatLocale(string? locale)
+        {
+            string candidate = (locale ?? string.Empty).Trim().Replace('_', '-');
+            if (TryGetCultureName(candidate, out string cultureName))
+            {
+                return cultureName;
+            }
+
+            int separator = candidate.IndexOf('-');
+            if (separator > 0 && TryGetCultureName(candidate[..separator], out cultureName))
+            {
+                return cultureName;
+            }
+
+            return "en";
+        }
+
+        private static bool TryGetCultureName(string name, out string cultureName)
+        {
+            cultureName = "";
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                return false;
+            }
+
+            try
+            {
+                cultureName = CultureInfo.GetCultureInfo(name).Name;
+                return cultureName.Length > 0;
+            }
+            catch (CultureNotFoundException)
+            {
+                return false;
+            }
+            catch (ArgumentException)
+            {
+                return false;
+            }
         }
 
         private static IEnumerable<string> GetLocaleCandidates(string lang)
@@ -270,8 +320,19 @@ namespace UniGetUI.Core.Language
 
         public string Translate(string key, Dictionary<string, object?> dict)
         {
-            Formatter ??= new() { Locale = (Locale ?? "en").Replace('_', '-') };
-            return Formatter.FormatMessage(Translate(key), dict);
+            string pattern = Translate(key);
+            Formatter ??= CreateFormatter(Locale);
+            try
+            {
+                return Formatter.FormatMessage(pattern, dict);
+            }
+            catch (CultureNotFoundException ex)
+            {
+                Logger.Warn($"Message formatter rejected locale '{Locale}'; retrying with en.");
+                Logger.Warn(ex);
+                Formatter = CreateFormatter("en");
+                return Formatter.FormatMessage(pattern, dict);
+            }
         }
     }
 }
