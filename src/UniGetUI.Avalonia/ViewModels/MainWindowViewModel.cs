@@ -657,6 +657,8 @@ public partial class MainWindowViewModel : ViewModelBase
             "catalog" when Sidebar.SoftwareCatalogEnabled => PageType.Catalog,
             "catalog-editor" when Sidebar.SoftwareCatalogEnabled => PageType.CatalogEditor,
             "settings" => PageType.Settings,
+            // A usable admin-curated catalog is the simplest starting point, so it wins over the default pages.
+            _ when Sidebar.HasUsableCatalog => PageType.Catalog,
             _ => UpgradablePackagesLoader.Instance is { } l && l.Count() > 0 ? PageType.Updates : PageType.Discover,
         };
         NavigateTo(type);
@@ -690,39 +692,25 @@ public partial class MainWindowViewModel : ViewModelBase
             _ => throw new InvalidDataException($"Unknown page type {type}"),
         };
 
-    public static PageType GetNextPage(PageType type) =>
-        GetNextPage(type, Settings.Get(Settings.K.EnableSoftwareCatalog));
+    /// <summary>
+    /// The navigation pages in sidebar order: Ctrl/Cmd+1, +2, … follow it (the More menu takes the
+    /// next number), and so does the previous/next page cycle.
+    /// </summary>
+    internal static PageType[] GetShortcutPages(IEnumerable<PageType> navigationPages)
+        => [.. navigationPages, PageType.Settings, PageType.Managers];
 
-    internal static PageType GetNextPage(PageType type, bool catalogEnabled) =>
-        type switch
-        {
-            PageType.Discover => PageType.Updates,
-            PageType.Updates => PageType.Installed,
-            PageType.Installed => PageType.Bundles,
-            PageType.Bundles => catalogEnabled ? PageType.Catalog : PageType.Settings,
-            PageType.Catalog => catalogEnabled ? PageType.CatalogEditor : PageType.Settings,
-            PageType.CatalogEditor => PageType.Settings,
-            PageType.Settings => PageType.Managers,
-            PageType.Managers => PageType.Discover,
-            _ => PageType.Discover,
-        };
+    public PageType[] ShortcutPages => GetShortcutPages(Sidebar.NavigationPages);
 
-    public static PageType GetPreviousPage(PageType type) =>
-        GetPreviousPage(type, Settings.Get(Settings.K.EnableSoftwareCatalog));
+    internal static PageType GetNextPage(PageType type, PageType[] pages) => Step(type, pages, +1);
 
-    internal static PageType GetPreviousPage(PageType type, bool catalogEnabled) =>
-        type switch
-        {
-            PageType.Discover => PageType.Managers,
-            PageType.Updates => PageType.Discover,
-            PageType.Installed => PageType.Updates,
-            PageType.Bundles => PageType.Installed,
-            PageType.Catalog => PageType.Bundles,
-            PageType.CatalogEditor => catalogEnabled ? PageType.Catalog : PageType.Bundles,
-            PageType.Settings => catalogEnabled ? PageType.CatalogEditor : PageType.Bundles,
-            PageType.Managers => PageType.Settings,
-            _ => PageType.Discover,
-        };
+    internal static PageType GetPreviousPage(PageType type, PageType[] pages) => Step(type, pages, -1);
+
+    // Pages outside the sidebar order (logs, help, …) step to Discover.
+    private static PageType Step(PageType type, PageType[] pages, int direction)
+    {
+        int index = Array.IndexOf(pages, type);
+        return index < 0 ? PageType.Discover : pages[(index + direction + pages.Length) % pages.Length];
+    }
 
     public void NavigateTo(PageType newPage_t, bool toHistory = true) =>
         _ = NavigateToAsync(newPage_t, toHistory);

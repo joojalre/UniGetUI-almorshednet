@@ -38,16 +38,16 @@ public sealed partial class Interface_P : UserControl, ISettingsPage
         ThemeSelector.ShowAddedItems();
         ThemeSelector.ValueChanged += (_, _) => App.ApplyTheme(CoreSettings.GetValue(CoreSettings.K.PreferredTheme));
 
+        bool catalogEnabled = CoreSettings.Get(CoreSettings.K.EnableSoftwareCatalog);
         StartupPageSelector.AddItem(CoreTools.Translate("Default"), "default");
+        if (catalogEnabled)
+            StartupPageSelector.AddItem(CoreTools.Translate("Software Catalog"), "catalog");
         StartupPageSelector.AddItem(CoreTools.Translate("Discover Packages"), "discover");
         StartupPageSelector.AddItem(CoreTools.Translate("Software Updates"), "updates");
         StartupPageSelector.AddItem(CoreTools.Translate("Installed Packages"), "installed");
         StartupPageSelector.AddItem(CoreTools.Translate("Package Bundles"), "bundles");
-        if (CoreSettings.Get(CoreSettings.K.EnableSoftwareCatalog))
-        {
-            StartupPageSelector.AddItem(CoreTools.Translate("Software Catalog"), "catalog");
+        if (catalogEnabled)
             StartupPageSelector.AddItem(CoreTools.Translate("Catalog Editor"), "catalog-editor");
-        }
         StartupPageSelector.AddItem(CoreTools.Translate("Settings"), "settings");
         StartupPageSelector.SettingName = CoreSettings.K.StartupPage;
         StartupPageSelector.Text = CoreTools.Translate("UniGetUI startup page:");
@@ -60,5 +60,10 @@ public sealed partial class Interface_P : UserControl, ISettingsPage
         NavMenuModeSelector.Text = CoreTools.Translate("Navigation menu:");
         NavMenuModeSelector.ShowAddedItems();
         NavMenuModeSelector.ValueChanged += (_, _) => MainWindow.Instance?.RefreshNavigationMode();
+
+        NavigationOrderCard.Description = CoreTools.Translate(
+            "Drag the pages in the navigation menu, or press {0} on a focused page, to reorder them. Keyboard shortcuts follow the same order.",
+            OperatingSystem.IsMacOS() ? "Option+Up/Down" : "Alt+Up/Down");
+        NavigationOrderCard.Click += (_, _) => MainWindow.Instance?.ResetNavigationOrder();
     }
 }

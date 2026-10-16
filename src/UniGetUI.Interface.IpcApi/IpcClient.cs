@@ -1474,7 +1474,7 @@ public sealed class IpcClient : IDisposable
         {
             return method == HttpMethod.Post
                 ? TimeSpan.FromMinutes(5)
-                : TimeSpan.FromSeconds(30);
+                : TimeSpan.FromMinutes(3);
         }
 
         if (IpcHttpRoutes.StartsWith(relativePath, "/bundles/install"))

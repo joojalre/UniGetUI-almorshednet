@@ -51,6 +51,8 @@ public partial class PackageDetailsWindow : UniGetUI.Avalonia.Views.DialogPages.
     /// <summary>True when the user confirmed the main action (install/update/uninstall) without extras.</summary>
     public bool ShouldProceedWithOperation { get; private set; }
 
+    public string? InstallVersion { get; init; }
+
     private readonly PackageDetailsViewModel _vm;
     private readonly TEL_InstallReferral _referral;
     private InstallOptionsViewModel? _installVm;
@@ -104,7 +106,7 @@ public partial class PackageDetailsWindow : UniGetUI.Avalonia.Views.DialogPages.
 
         MainActionButton.Click += (_, _) => OnMainAction();
         ActionVariantsButton.Flyout = BuildActionFlyout();
-        InstallOptionsSaveButton.Click += (_, _) => _ = SaveInstallOptionsAsync();
+        InstallOptionsSaveButton.Click += (_, _) => _ = SaveInstallOptionsAndRefreshAsync();
         ContributeButton.Click += (_, _) => OpenUrl(ContributeUrl);
         PrevScreenshotButton.Click += (_, _) => NavigateScreenshot(-1);
         NextScreenshotButton.Click += (_, _) => NavigateScreenshot(1);
@@ -153,6 +155,12 @@ public partial class PackageDetailsWindow : UniGetUI.Avalonia.Views.DialogPages.
         };
         var embed = new InstallOptionsControl { DataContext = _installVm };
         InstallOptionsHolder.Content = embed;
+    }
+
+    private async Task SaveInstallOptionsAndRefreshAsync()
+    {
+        await SaveInstallOptionsAsync();
+        await _vm.RefreshDetailsAsync();
     }
 
     private async Task SaveInstallOptionsAsync()
@@ -1107,6 +1115,8 @@ public partial class PackageDetailsWindow : UniGetUI.Avalonia.Views.DialogPages.
             interactive: interactive,
             no_integrity: no_integrity,
             remove_data: remove_data);
+        if (role is OperationType.Install && !string.IsNullOrEmpty(InstallVersion))
+            opts.Version = InstallVersion;
 
         if (PackageOperation.HasPendingOperation(pkg, role)) return;
 

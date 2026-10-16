@@ -188,6 +188,7 @@ public partial class MainWindow : Window
 
     public MainWindow()
     {
+        UiAutomationGuard.Attach(this);
         Instance = this;
         DataContext = new MainWindowViewModel();
         InitializeComponent();
@@ -310,8 +311,8 @@ public partial class MainWindow : Window
 
         _focusSidebarSelectionOnNextPageChange = true;
         ViewModel.NavigateTo(e.KeyModifiers.HasFlag(KeyModifiers.Shift)
-            ? MainWindowViewModel.GetPreviousPage(ViewModel.CurrentPage_t, SoftwareCatalogEnabled)
-            : MainWindowViewModel.GetNextPage(ViewModel.CurrentPage_t, SoftwareCatalogEnabled));
+            ? MainWindowViewModel.GetPreviousPage(ViewModel.CurrentPage_t, ViewModel.ShortcutPages)
+            : MainWindowViewModel.GetNextPage(ViewModel.CurrentPage_t, ViewModel.ShortcutPages));
         e.Handled = true;
     }
 
@@ -360,23 +361,20 @@ public partial class MainWindow : Window
             TriggerPageSelectAll();
             e.Handled = true;
         }
-        else if (isCtrl && !isShift && e.Key is Key.D1 or Key.D2 or Key.D3 or Key.D4 or Key.D5 or Key.D6)
+        else if (isCtrl && !isShift && e.Key is >= Key.D1 and <= Key.D9
+                 && e.Key - Key.D1 <= ViewModel.ShortcutPages.Length)
         {
-            _focusSidebarSelectionOnNextPageChange = true;
-            ViewModel.NavigateTo(e.Key switch
+            var pages = ViewModel.ShortcutPages;
+            int index = e.Key - Key.D1;
+            if (index == pages.Length)
             {
-                Key.D1 => PageType.Discover,
-                Key.D2 => PageType.Updates,
-                Key.D3 => PageType.Installed,
-                Key.D4 => PageType.Bundles,
-                Key.D5 => PageType.Settings,
-                _ => PageType.Managers,
-            });
-            e.Handled = true;
-        }
-        else if (isCtrl && !isShift && e.Key == Key.D7)
-        {
-            ShowMoreMenu();
+                ShowMoreMenu();
+            }
+            else
+            {
+                _focusSidebarSelectionOnNextPageChange = true;
+                ViewModel.NavigateTo(pages[index]);
+            }
             e.Handled = true;
         }
         else if (isCtrl && !isShift && (e.Key == Key.D || (OperatingSystem.IsMacOS() && e.Key == Key.I)))
@@ -566,6 +564,8 @@ public partial class MainWindow : Window
     // Re-reads the NavMenuMode setting so the layout switch applies live from the settings page.
     public void RefreshNavigationMode()
         => ViewModel.Sidebar.Mode = SidebarViewModel.ParseMode(Settings.GetValue(Settings.K.NavMenuMode));
+
+    public void ResetNavigationOrder() => ViewModel.Sidebar.ResetNavigationPages();
 
     // Let the splitter hover surface replace the separator visually without changing its layout thickness.
     private void OperationsSplitter_PointerEntered(object? sender, PointerEventArgs e)

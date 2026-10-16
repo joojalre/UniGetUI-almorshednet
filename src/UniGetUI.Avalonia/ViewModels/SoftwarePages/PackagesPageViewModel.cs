@@ -9,7 +9,6 @@ using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
-using Avalonia.Platform;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -173,6 +172,9 @@ public partial class PackagesPageViewModel : ViewModelBase
     [ObservableProperty] private bool _isLoading;
     [ObservableProperty] private bool _backgroundTextVisible;
     [ObservableProperty] private bool _loadingImageVisible;
+    private static readonly Lazy<Bitmap?> _loadingImage =
+        new(() => BitmapLoader.TryLoadAsset("avares://UniGetUI/Assets/Images/launcher.png"));
+    public Bitmap? LoadingImage => _loadingImage.Value;
     [ObservableProperty] private Bitmap? _noPackagesImage;
     [ObservableProperty] private bool _noPackagesImageVisible;
     [ObservableProperty] private string _backgroundText = "";
@@ -255,8 +257,7 @@ public partial class PackagesPageViewModel : ViewModelBase
         NoMatchesText = data.NoMatches_BackgroundText;
         if (_showPackageIllustrations && !string.IsNullOrEmpty(data.NoPackages_ImagePath))
         {
-            using var stream = AssetLoader.Open(new Uri(data.NoPackages_ImagePath));
-            NoPackagesImage = new Bitmap(stream);
+            NoPackagesImage = BitmapLoader.TryLoadAsset(data.NoPackages_ImagePath);
         }
         _noPackagesSubtitleBase = data.NoPackages_SubtitleText_Base;
         _stillLoadingSubtitle = data.MainSubtitle_StillLoading;
@@ -727,7 +728,7 @@ public partial class PackagesPageViewModel : ViewModelBase
         {
             BackgroundText = _stillLoadingSubtitle;
             BackgroundTextVisible = true;
-            LoadingImageVisible = _showPackageIllustrations;
+            LoadingImageVisible = _showPackageIllustrations && LoadingImage is not null;
             NoPackagesImageVisible = false;
         }
         else if (FilteredPackages.Count == 0)
@@ -1061,6 +1062,18 @@ public partial class PackagesPageViewModel : ViewModelBase
     }
 
     // ─── Subtitle ─────────────────────────────────────────────────────────────
+    // Page-specific state appended to the subtitle, e.g. an editor's unsaved-changes marker.
+    private string _subtitleSuffix = "";
+    public string SubtitleSuffix
+    {
+        get => _subtitleSuffix;
+        set
+        {
+            _subtitleSuffix = value;
+            UpdateSubtitle();
+        }
+    }
+
     public void UpdateSubtitle()
     {
         if (Loader.IsLoading || (LoadsOnStart && Loader.HasPendingInitialLoad))
@@ -1081,13 +1094,13 @@ public partial class PackagesPageViewModel : ViewModelBase
             if (_showLastCheckedTime)
                 r += " " + CoreTools.Translate("(Last checked: {0})", _lastLoadTime.ToString(CultureInfo.CurrentCulture));
 
-            Subtitle = r;
+            Subtitle = r + SubtitleSuffix;
         }
         else
         {
             Subtitle = _noPackagesSubtitleBase + (_showLastCheckedTime
                 ? " " + CoreTools.Translate("(Last checked: {0})", _lastLoadTime.ToString(CultureInfo.CurrentCulture))
-                : "");
+                : "") + SubtitleSuffix;
         }
     }
 
@@ -1153,12 +1166,14 @@ public partial class PackagesPageViewModel : ViewModelBase
         IEnumerable<IPackage> packages,
         bool? elevated = null,
         bool? interactive = null,
-        bool? no_integrity = null)
+        bool? no_integrity = null,
+        string? version = null)
     {
         foreach (var pkg in packages)
         {
             var opts = await InstallOptionsFactory.LoadApplicableAsync(
                 pkg, elevated: elevated, interactive: interactive, no_integrity: no_integrity);
+            if (!string.IsNullOrEmpty(version)) opts.Version = version;
             if (PackageOperation.HasPendingOperation(pkg, OperationType.Install)) continue;
             var op = new InstallPackageOperation(pkg, opts);
             op.OperationSucceeded += (_, _) => TelemetryHandler.InstallPackage(pkg, TEL_OP_RESULT.SUCCESS, TEL_InstallReferral.DIRECT_SEARCH);
