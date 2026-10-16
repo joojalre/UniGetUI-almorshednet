@@ -1470,6 +1470,11 @@ public sealed class IpcClient : IDisposable
             return TimeSpan.FromSeconds(5);
         }
 
+        if (IpcHttpRoutes.Matches(relativePath, "/packages/search"))
+        {
+            return TimeSpan.FromMinutes(3);
+        }
+
         if (IpcHttpRoutes.StartsWith(relativePath, "/packages/"))
         {
             return method == HttpMethod.Post
