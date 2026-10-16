@@ -54,6 +54,21 @@ namespace UniGetUI.Core.Language.Tests
         }
 
         [Fact]
+        public void ParameterizedTranslation_AcceptsDefaultLanguageKey()
+        {
+            LanguageEngine engine = new();
+            engine.LoadLanguage("default");
+
+            // "default" is a language-reference sentinel, not a CultureInfo name. Formatting must
+            // still substitute placeholders instead of throwing on the UI thread.
+            Assert.Equal("default", engine.Locale);
+            Assert.Equal(
+                "3 updates",
+                engine.Translate("{0} updates", new Dictionary<string, object?> { ["0"] = 3 })
+            );
+        }
+
+        [Fact]
         public void TestLoadingUkrainianSpecificTranslation()
         {
             LanguageEngine engine = new();
