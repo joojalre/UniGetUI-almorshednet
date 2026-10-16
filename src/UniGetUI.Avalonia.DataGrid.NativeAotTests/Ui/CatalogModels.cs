@@ -12,6 +12,7 @@ public sealed class CatalogTileViewModel(CatalogEntry entry, string catalogName 
 {
     public CatalogEntry Entry { get; } = entry;
     public string CatalogName { get; } = catalogName;
+    public string ManagerDisplayName => Entry.ManagerName;
     private Bitmap? _iconBitmap;
     public Bitmap? IconBitmap { get => _iconBitmap; set { _iconBitmap = value; Changed(nameof(IconBitmap)); Changed(nameof(HasCustomIcon)); } }
     public bool HasCustomIcon => IconBitmap is not null;
@@ -43,6 +44,7 @@ public sealed partial class SoftwareCatalogViewModel : Observable
     public bool SortAscending { get => _sortAscending; set { if (_sortAscending == value) return; _sortAscending = value; ApplyAvailabilityFilter(); OnPropertyChanged(nameof(SortAscending)); } }
     public SoftwareCatalogViewModel() => InstallCommand = new RecordCommand(value => RecordedInstalls.Add((CatalogTileViewModel)value!));
     private void OnPropertyChanged(string name) => Changed(name);
+    private static void SaveSortDirection(bool _) { }
     private void ApplyAvailabilityFilter()
     {
         var ordered = SortTiles(Packages.ToArray());
