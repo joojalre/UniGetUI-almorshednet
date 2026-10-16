@@ -180,6 +180,7 @@ internal sealed class PackageListPage : UserControl, ITuiPage
 
     private DataGridList<PackageRow> _rows = [];
     private AbstractPackageLoader? _subscribed;
+    private bool _bundleChangeSubscribed;
     private bool _dirty;
     private DateTime _lastLoadTime = DateTime.Now;
     private string _submittedQuery = string.Empty;
@@ -803,26 +804,39 @@ internal sealed class PackageListPage : UserControl, ITuiPage
     {
         base.OnDetachedFromVisualTree(e);
         _filterDebounce.Stop();
+        if (_bundleChangeSubscribed)
+        {
+            TuiBundleService.UnsavedChangesStateChanged -= OnBundleUnsavedChangesStateChanged;
+            _bundleChangeSubscribed = false;
+        }
     }
 
     private void Subscribe()
     {
         AbstractPackageLoader loader = Loader;
-        if (ReferenceEquals(loader, _subscribed)) return;
-        if (_subscribed is not null)
+        if (!ReferenceEquals(loader, _subscribed))
         {
-            _subscribed.PackagesChanged -= OnPackagesChanged;
-            _subscribed.StartedLoading -= OnLoaderEvent;
-            _subscribed.FinishedLoading -= OnFinishedLoading;
+            if (_subscribed is not null)
+            {
+                _subscribed.PackagesChanged -= OnPackagesChanged;
+                _subscribed.StartedLoading -= OnLoaderEvent;
+                _subscribed.FinishedLoading -= OnFinishedLoading;
+            }
+
+            loader.PackagesChanged += OnPackagesChanged;
+            loader.StartedLoading += OnLoaderEvent;
+            loader.FinishedLoading += OnFinishedLoading;
+            _subscribed = loader;
         }
 
-        loader.PackagesChanged += OnPackagesChanged;
-        loader.StartedLoading += OnLoaderEvent;
-        loader.FinishedLoading += OnFinishedLoading;
-        _subscribed = loader;
-        if (_kind == PackagePageKind.Bundles)
-            TuiBundleService.UnsavedChangesStateChanged += () => Dispatcher.UIThread.Post(UpdateTitle);
+        if (_kind == PackagePageKind.Bundles && !_bundleChangeSubscribed)
+        {
+            TuiBundleService.UnsavedChangesStateChanged += OnBundleUnsavedChangesStateChanged;
+            _bundleChangeSubscribed = true;
+        }
     }
+
+    private void OnBundleUnsavedChangesStateChanged() => Dispatcher.UIThread.Post(UpdateTitle);
 
     private void OnPackagesChanged(object? sender, PackagesChangedEvent e) => ScheduleRefresh();
 
