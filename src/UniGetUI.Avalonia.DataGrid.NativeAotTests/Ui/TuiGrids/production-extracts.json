@@ -1,12 +1,12 @@
 {
   "tested": false,
-  "sourceRevision": "7e516ea5c0a9a5aec740405652a9e44bec158210",
+  "sourceRevision": "7636ed073c5067f035a44a0b08e174468d67ea28",
   "fragments": [
     {
       "source": "src/UniGetUI.Tui/Views/Pages/PackageListPage.cs",
-      "startLine": 522,
+      "startLine": 523,
       "boundary": "Exact fragment; surrounding inert wrapper is fixture-only",
-      "sourceSha256": "5FA8F2C0BFF6EB9B9C40BD7BDAEE5115ADDA5AFE2F75DAC5DD3037B1C53B0FF4",
+      "sourceSha256": "563A3AF3D78ED5E03632E3A3E7C9898BA6AF9BE1F5B87EBE092F436C6C9356E8",
       "lineCount": 53,
       "output": "ProductionPackageGrid.cs",
       "fragmentSha256": "94C1E3FC2FD67837B100860C5A06446AB592C664CB3EC90FF10DB9BB0EDDCE35",
