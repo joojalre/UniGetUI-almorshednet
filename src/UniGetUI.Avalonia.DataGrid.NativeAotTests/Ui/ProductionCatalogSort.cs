@@ -10,6 +10,7 @@ public sealed partial class SoftwareCatalogViewModel
         else
         {
             _sortAscending = true;
+            SaveSortDirection(true);
             OnPropertyChanged(nameof(SortAscending));
             SortField = field;
         }
@@ -18,7 +19,7 @@ public sealed partial class SoftwareCatalogViewModel
     private static string SortKey(CatalogSortField field, CatalogTileViewModel t) => field switch
     {
         CatalogSortField.Id => t.Entry.Id,
-        CatalogSortField.Source => t.Entry.ManagerName + "/" + t.Entry.Source,
+        CatalogSortField.Source => t.ManagerDisplayName + "/" + t.Entry.Source,
         _ => t.Entry.Name,
     };
 
